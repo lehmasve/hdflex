@@ -1,0 +1,33 @@
+Package: hdflex
+Type: Package
+Title: High-Dimensional Density Forecast Combinations
+Version: 1.0
+Date: 2023-02-06
+Authors@R: c(
+             person("Sven", "Lehmann", 
+                     email   = "sven.lehmann@uni-rostock.de", 
+                     role    = c("aut", "cre")),
+             person("Philipp", "Adämmer", 
+                     email   = "philipp.adaemmer@uni-greifswald.de", 
+                     role    = "aut"),
+             person("Rainer", "Schüssler", 
+                     email   = "Rainer.schüssler@uni-rostock.de", 
+                     role    = "aut"))
+Maintainer: Sven Lehmann <sven.lehmann@uni-rostock.de>
+Description: Provides functions to estimate and evaluate density forecast combinations in a high-dimensional setting. The methods are explained in detail in Adämmer et al (2023) <http://dx.doi.org/10.2139/ssrn.4342487>.
+License: GPL (>= 2)
+Depends: R (>= 4.2.0)
+NeedsCompilation: Yes
+Imports: 
+	 parallel (>= 4.2.1),
+	 dplyr (>= 1.0.10),
+	 Rcpp (>= 1.0.9),
+	 roll (>= 1.1.6),
+	 stringr (>= 1.4.1),
+	 checkmate (>= 2.1.0)
+LinkingTo: Rcpp, RcppArmadillo
+RoxygenNote: 7.2.2
+Encoding: UTF-8
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

@@ -1,0 +1,152 @@
+[
+    {
+        "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+        "file_last_write": 1675778281.0,
+        "definitions": [
+            {
+                "usr": "c:@F@init_dsc#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "init_dsc(int)",
+                "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+                "line": 7,
+                "column": 18,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@forget_dsc#I#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "forget_dsc(Rcpp::NumericVector, double)",
+                "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+                "line": 18,
+                "column": 18,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@active_models_dsc#I#I#b#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "active_models_dsc(Rcpp::NumericVector, int, bool)",
+                "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+                "line": 30,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@matrix_subset_idx#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "matrix_subset_idx(Rcpp::NumericMatrix, Rcpp::IntegerVector, int)",
+                "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+                "line": 71,
+                "column": 18,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@agg_density_dsc#I#I#I#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "agg_density_dsc(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::IntegerVector, int)",
+                "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+                "line": 91,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@update_dsc#I#I#I#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "update_dsc(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, int, int)",
+                "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+                "line": 125,
+                "column": 18,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@dsc_loop#I#d#I#b#I#I#I#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "dsc_loop(Rcpp::NumericVector, double, int, bool, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, int, int, int)",
+                "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+                "line": 153,
+                "column": 10,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/init.c",
+        "file_last_write": 1675778404.0,
+        "definitions": [],
+        "hidden": false
+    },
+    {
+        "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
+        "file_last_write": 1675778293.0,
+        "definitions": [
+            {
+                "usr": "c:@F@init_tvc#&$@N@arma@S@Col>#d#S0_#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "init_tvc(arma::vec &, arma::vec &, int)",
+                "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
+                "line": 7,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@init_tvc_forecast#&$@N@arma@S@Col>#d#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "init_tvc_forecast(arma::vec &, int)",
+                "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
+                "line": 55,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@tvc_model#&$@N@arma@S@Col>#d#S0_#I#d#d#$@N@arma@S@Mat>#d#S2_#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "tvc_model(arma::vec &, arma::vec &, int, double, double, arma::mat, arma::mat, double)",
+                "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
+                "line": 91,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@tvc_model_forecasts#&$@N@arma@S@Col>#d#S0_#I#d#$@N@arma@S@Mat>#d#S2_#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "tvc_model_forecasts(arma::vec &, arma::vec &, int, double, arma::mat, arma::mat, double)",
+                "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
+                "line": 148,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@tvc_model_loop#&$@N@arma@S@Col>#d#S0_#d#d#$@N@arma@S@Mat>#d#S2_#d#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "tvc_model_loop(arma::vec &, arma::vec &, double, double, arma::mat, arma::mat, double, int, int, int)",
+                "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
+                "line": 193,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@tvc_model_loop_forecasts#&$@N@arma@S@Col>#d#S0_#d#$@N@arma@S@Mat>#d#S2_#d#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "tvc_model_loop_forecasts(arma::vec &, arma::vec &, double, arma::mat, arma::mat, double, int, int, int)",
+                "file": "C:/Users/svenleh/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
+                "line": 243,
+                "column": 9,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    }
+]
