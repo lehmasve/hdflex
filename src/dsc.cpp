@@ -106,7 +106,7 @@ using namespace Rcpp;
     // Calculate Combined Predictive Density
        variance_agg = 1 / sum(active_weights / oos_variance_tvp_sub);
              mu_agg = sum(active_weights * oos_forecast_tvp_sub / oos_variance_tvp_sub) *
-                      variance_agg;
+                          variance_agg;
 
     // Calculate Predictive Log Score
        ln_score = R::dnorm(oos_equity_premium(t), mu_agg, pow( variance_agg, 0.5 ), true ); 

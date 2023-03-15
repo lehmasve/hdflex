@@ -68,7 +68,7 @@ gamma_grid  <-  c(0.9, 0.95, 0.99, 1)
 psi_grid    <-  c(1, 2, 3)
 ew_grid     <-  c(1)
 delta       <-  0.9992
-n_cores     <-  4
+n_cores     <-  1
 
 # Apply DSC-Function
 results  <-  hdflex::dsc(gamma_grid,
