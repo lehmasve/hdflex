@@ -28,8 +28,7 @@ using namespace Rcpp;
 // Function III - Rank and Subset Forecasting Models (Active Models)
 //[[Rcpp::export]]
    List active_models_dsc(NumericVector weights, 
-                          int psi, 
-                          bool equal_weight){
+                          int psi){
                               
     // Define Variables
        List ret(2);
@@ -44,18 +43,10 @@ using namespace Rcpp;
        IntegerVector idx_sub = idx[seq(0, psi-1)];
    
     // Calculate Active Weights
-    if (equal_weight == 1) {
-        
-        // Re-Weight
-           active_weights.fill(1.0 / psi); 
+        active_weights.fill(1.0 / psi); 
 
-    } 
-    if (equal_weight == 0) {
-
-        // Re-Weight 
-           active_weights = weights[idx_sub];
-           active_weights = active_weights / sum(active_weights);
-    }    
+        //   active_weights = weights[idx_sub];
+        //   active_weights = active_weights / sum(active_weights); 
     
     // Fill list  
        ret[0] = active_weights;
@@ -153,7 +144,6 @@ using namespace Rcpp;
     List dsc_loop(NumericVector weights, 
                   double gam, 
                   int psi, 
-                  bool equal_weight,
                   NumericVector oos_equity_premium,
                   NumericMatrix oos_forecast_tvp,             
                   NumericMatrix oos_variance_tvp,
@@ -173,7 +163,7 @@ using namespace Rcpp;
            weights = forget_dsc(weights, gam);
 
         // Active Models
-           active_results     = active_models_dsc(weights, psi, equal_weight);                                    
+           active_results     = active_models_dsc(weights, psi);                                    
            active_weights     = active_results(0);
            selected_models(t) = active_results(1);
 

@@ -1,7 +1,7 @@
 [
     {
         "file": "/Users/slehmann/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
-        "file_last_write": 1678719253.0,
+        "file_last_write": 1678960635.0,
         "definitions": [
             {
                 "usr": "c:@F@init_dsc#I#",
@@ -24,10 +24,10 @@
                 "hidden": false
             },
             {
-                "usr": "c:@F@active_models_dsc#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#I#b#",
+                "usr": "c:@F@active_models_dsc#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#I#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "active_models_dsc(Rcpp::NumericVector, int, bool)",
+                "name": "active_models_dsc(Rcpp::NumericVector, int)",
                 "file": "/Users/slehmann/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
                 "line": 30,
                 "column": 9,
@@ -39,7 +39,7 @@
                 "parent_name": "",
                 "name": "matrix_subset_idx(Rcpp::NumericMatrix, Rcpp::IntegerVector, int)",
                 "file": "/Users/slehmann/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
-                "line": 71,
+                "line": 62,
                 "column": 18,
                 "hidden": false
             },
@@ -49,7 +49,7 @@
                 "parent_name": "",
                 "name": "agg_density_dsc(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::IntegerVector, int)",
                 "file": "/Users/slehmann/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
-                "line": 91,
+                "line": 82,
                 "column": 9,
                 "hidden": false
             },
@@ -59,17 +59,17 @@
                 "parent_name": "",
                 "name": "update_dsc(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, int, int)",
                 "file": "/Users/slehmann/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
-                "line": 125,
+                "line": 116,
                 "column": 18,
                 "hidden": false
             },
             {
-                "usr": "c:@F@dsc_loop#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#I#b#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#I#I#I#",
+                "usr": "c:@F@dsc_loop#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#I#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#I#I#I#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "dsc_loop(Rcpp::NumericVector, double, int, bool, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, int, int, int)",
+                "name": "dsc_loop(Rcpp::NumericVector, double, int, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, int, int, int)",
                 "file": "/Users/slehmann/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
-                "line": 153,
+                "line": 144,
                 "column": 10,
                 "hidden": false
             }
@@ -78,7 +78,7 @@
     },
     {
         "file": "/Users/slehmann/Dropbox/HFTP/Package/hdflex/src/init.c",
-        "file_last_write": 1675778404.0,
+        "file_last_write": 1678961735.0,
         "definitions": [],
         "hidden": false
     },
@@ -142,6 +142,156 @@
                 "parent_name": "",
                 "name": "tvc_model_loop_forecasts(arma::vec &, arma::vec &, double, arma::mat, arma::mat, double, int, int, int)",
                 "file": "/Users/slehmann/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
+                "line": 243,
+                "column": 9,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+        "file_last_write": 1678960635.0,
+        "definitions": [
+            {
+                "usr": "c:@F@init_dsc#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "init_dsc(int)",
+                "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+                "line": 7,
+                "column": 18,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@forget_dsc#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "forget_dsc(Rcpp::NumericVector, double)",
+                "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+                "line": 18,
+                "column": 18,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@active_models_dsc#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "active_models_dsc(Rcpp::NumericVector, int)",
+                "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+                "line": 30,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@matrix_subset_idx#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI13#@N@Rcpp@ST>1#T@PreserveStorage#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "matrix_subset_idx(Rcpp::NumericMatrix, Rcpp::IntegerVector, int)",
+                "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+                "line": 62,
+                "column": 18,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@agg_density_dsc#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#$@N@Rcpp@S@Vector>#VI13#@N@Rcpp@ST>1#T@PreserveStorage#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "agg_density_dsc(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::IntegerVector, int)",
+                "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+                "line": 82,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@update_dsc#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "update_dsc(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, int, int)",
+                "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+                "line": 116,
+                "column": 18,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@dsc_loop#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#I#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "dsc_loop(Rcpp::NumericVector, double, int, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, int, int, int)",
+                "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/dsc.cpp",
+                "line": 144,
+                "column": 10,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/init.c",
+        "file_last_write": 1678961735.0,
+        "definitions": [],
+        "hidden": false
+    },
+    {
+        "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
+        "file_last_write": 1675778293.0,
+        "definitions": [
+            {
+                "usr": "c:@F@init_tvc#&$@N@arma@S@Col>#d#S0_#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "init_tvc(arma::vec &, arma::vec &, int)",
+                "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
+                "line": 7,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@init_tvc_forecast#&$@N@arma@S@Col>#d#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "init_tvc_forecast(arma::vec &, int)",
+                "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
+                "line": 55,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@tvc_model#&$@N@arma@S@Col>#d#S0_#I#d#d#$@N@arma@S@Mat>#d#S2_#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "tvc_model(arma::vec &, arma::vec &, int, double, double, arma::mat, arma::mat, double)",
+                "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
+                "line": 91,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@tvc_model_forecasts#&$@N@arma@S@Col>#d#S0_#I#d#$@N@arma@S@Mat>#d#S2_#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "tvc_model_forecasts(arma::vec &, arma::vec &, int, double, arma::mat, arma::mat, double)",
+                "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
+                "line": 148,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@tvc_model_loop#&$@N@arma@S@Col>#d#S0_#d#d#$@N@arma@S@Mat>#d#S2_#d#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "tvc_model_loop(arma::vec &, arma::vec &, double, double, arma::mat, arma::mat, double, int, int, int)",
+                "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
+                "line": 193,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@tvc_model_loop_forecasts#&$@N@arma@S@Col>#d#S0_#d#$@N@arma@S@Mat>#d#S2_#d#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "tvc_model_loop_forecasts(arma::vec &, arma::vec &, double, arma::mat, arma::mat, double, int, int, int)",
+                "file": "/Users/slehmann/Library/CloudStorage/Dropbox/HFTP/Package/hdflex/src/tvc.cpp",
                 "line": 243,
                 "column": 9,
                 "hidden": false

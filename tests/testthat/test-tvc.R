@@ -1,5 +1,3 @@
-context("tvc")
-
 ### Simulate Data
 set.seed(123)
 
@@ -37,8 +35,6 @@ test_that("Test whether y is Numeric Vector", {
                              lambda_grid,
                              kappa_grid,
                              sample_length,
-                             raw_names,
-                             f_names,
                              n_cores),
               "Must be of type 'numeric', not 'data.frame'.", fixed = TRUE)
 })
@@ -47,14 +43,12 @@ test_that("Test whether y is not NULL", {
 
   equity_premium  <-  NULL
   testthat::expect_error(tvc(equity_premium,
-                               raw_preds,
-                               f_preds,
-                               lambda_grid,
-                               kappa_grid,
-                               sample_length,
-                               raw_names,
-                               f_names,
-                               n_cores),
+                             raw_preds,
+                             f_preds,
+                             lambda_grid,
+                             kappa_grid,
+                             sample_length,
+                             n_cores),
               "Must be of type 'numeric', not 'NULL'.", fixed = TRUE)
 })
 
@@ -62,14 +56,12 @@ test_that("Test whether y has only numeric values", {
 
   equity_premium[10]  <-  "test"
   testthat::expect_error(tvc(equity_premium,
-                               raw_preds,
-                               f_preds,
-                               lambda_grid,
-                               kappa_grid,
-                               sample_length,
-                               raw_names,
-                               f_names,
-                               n_cores),
+                             raw_preds,
+                             f_preds,
+                             lambda_grid,
+                             kappa_grid,
+                             sample_length,
+                             n_cores),
               "Must be of type 'numeric', not 'character'.", fixed = TRUE)
 })
 
@@ -77,14 +69,12 @@ test_that("Test whether y has no NA-Values", {
 
   equity_premium[10]  <-  NA
   testthat::expect_error(tvc(equity_premium,
-                               raw_preds,
-                               f_preds,
-                               lambda_grid,
-                               kappa_grid,
-                               sample_length,
-                               raw_names,
-                               f_names,
-                               n_cores),
+                             raw_preds,
+                             f_preds,
+                             lambda_grid,
+                             kappa_grid,
+                             sample_length,
+                             n_cores),
               "Contains missing values", fixed = TRUE)
 })
 
@@ -93,14 +83,12 @@ test_that("Test whether x is matrix", {
 
   raw_preds  <-  as.data.frame(raw_preds)
   testthat::expect_error(tvc(equity_premium,
-                               raw_preds,
-                               f_preds,
-                               lambda_grid,
-                               kappa_grid,
-                               sample_length,
-                               raw_names,
-                               f_names,
-                               n_cores),
+                             raw_preds,
+                             f_preds,
+                             lambda_grid,
+                             kappa_grid,
+                             sample_length,
+                             n_cores),
               "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
 })
 
@@ -108,14 +96,12 @@ test_that("Test whether x has the same number of observations as y", {
 
   raw_preds  <-  raw_preds[1:10, ]
   testthat::expect_error(tvc(equity_premium,
-                               raw_preds,
-                               f_preds,
-                               lambda_grid,
-                               kappa_grid,
-                               sample_length,
-                               raw_names,
-                               f_names,
-                               n_cores),
+                             raw_preds,
+                             f_preds,
+                             lambda_grid,
+                             kappa_grid,
+                             sample_length,
+                             n_cores),
                         "Must have exactly", fixed = TRUE)
 })
 
@@ -124,14 +110,12 @@ test_that("Test whether f is matrix", {
 
   f_preds  <-  as.data.frame(f_preds)
   testthat::expect_error(tvc(equity_premium,
-                               raw_preds,
-                               f_preds,
-                               lambda_grid,
-                               kappa_grid,
-                               sample_length,
-                               raw_names,
-                               f_names,
-                               n_cores),
+                             raw_preds,
+                             f_preds,
+                             lambda_grid,
+                             kappa_grid,
+                             sample_length,
+                             n_cores),
                         "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
 })
 
@@ -139,32 +123,31 @@ test_that("Test whether f has the same number of observations as y", {
 
   f_preds  <-  f_preds[1:10, ]
   testthat::expect_error(tvc(equity_premium,
-                               raw_preds,
-                               f_preds,
-                               lambda_grid,
-                               kappa_grid,
-                               sample_length,
-                               raw_names,
-                               f_names,
-                               n_cores),
+                             raw_preds,
+                             f_preds,
+                             lambda_grid,
+                             kappa_grid,
+                             sample_length,
+                             n_cores),
                         "Must have exactly", fixed = TRUE)
 })
 
 ### Tests on x and f
 test_that("Test whether either x or f is provided", {
 
-  x_preds  <-  NULL
-  f_preds  <-  NULL
+  raw_preds  <-  NULL
+  f_preds    <-  NULL
   testthat::expect_error(tvc(equity_premium,
-                               raw_preds,
-                               f_preds,
-                               lambda_grid,
-                               kappa_grid,
-                               sample_length,
-                               raw_names,
-                               f_names,
-                               n_cores),
-            "Assertion on 'checkmate::checkNull(f) == checkmate::checkNull(f_names)' failed: Must be TRUE.", fixed = TRUE)
+                             raw_preds,
+                             f_preds,
+                             lambda_grid,
+                             kappa_grid,
+                             sample_length,
+                             n_cores),
+            "Assertion failed. One of the following must apply:
+ * checkmate::checkMatrix(x): Must be of type 'matrix', not 'NULL'
+ * checkmate::checkMatrix(f): Must be of type 'matrix', not 'NULL'",
+            fixed = TRUE)
 })
 
 ### Output
@@ -177,8 +160,6 @@ test_that("Test whether the output has the right format", {
                    lambda_grid,
                    kappa_grid,
                    sample_length,
-                   raw_names,
-                   f_names,
                    n_cores)
 
   # List Contains Three Elements

@@ -4,7 +4,7 @@
 \alias{dsc}
 \title{Generate Dynamic Subset Forecast Combinations}
 \usage{
-dsc(gamma_grid, psi_grid, ew_grid, y, mu_mat, var_mat, delta, n_cores)
+dsc(gamma_grid, psi_grid, y, mu_mat, var_mat, delta, n_cores)
 }
 \arguments{
 \item{gamma_grid}{Numerical Vector.
@@ -13,12 +13,6 @@ Tuning parameter to exponentially down-weight past predictive performance.}
 \item{psi_grid}{Integer Vector.
 Tuning parameter that controls the size of the active subsets
 (number of predictive densities that are combined).}
-
-\item{ew_grid}{Boolean.
-Choose 1 to assign equal weights (that sum to one)
-to an active subset of forecasting models.
-Choose 0 to assign the weights based on the corresponding
-predictive likelihoods in t - 1 to an active subset of forecasting models.}
 
 \item{y}{A matrix of dimension `T * 1` or Numeric Vector of length `T`
 containing the observations of the target variable.}
@@ -52,4 +46,127 @@ that are used for building the combined forecast and
 the subset sizes may vary over time based on the data.
 If only one forecasting model is picked, the approach (temporarily)
 collapses to pure model selection.
+}
+\examples{
+\donttest{
+
+  ### Simulate Data
+  set.seed(123)
+
+  # Set Dimensions
+  numb_obs   <-  500
+  numb_pred  <-  50
+  numb_forc  <-  10
+
+  # Create Random Target-Variable
+  equity_premium  <-  rnorm(n = numb_obs, mean = 0, sd = 1)
+
+  # Create Random Text-Variables
+  raw_preds            <-  replicate(numb_pred, sample(0:10,
+                                                       numb_obs,
+                                                       rep = TRUE), )
+  raw_names            <-  paste0("X", as.character(seq_len(numb_pred)))
+  colnames(raw_preds)  <-  raw_names
+
+  # Create Random Point Forecasts
+  f_preds            <-  replicate(10, rnorm(n    = numb_obs,
+                                             mean = 0,
+                                             sd   = 0.5), )
+  f_names            <-  paste0("F", as.character(seq_len(numb_forc)))
+  colnames(f_preds)  <-  f_names
+
+  # Create Benchmark
+  benchmark  <-  dplyr::lag(roll::roll_mean(equity_premium,
+                                            width = length(equity_premium),
+                                            min_obs = 1), n = 1)
+
+  # Specify TV-C-Parameter
+  sample_length  <-  floor(numb_obs / 10)
+  lambda_grid    <-  c(0.9995, 0.9999, 1.0000)
+  kappa_grid     <-  c(0.94)
+  n_cores        <-  1
+
+  # Apply TV-C-Function
+  results  <-  hdflex::tvc(equity_premium,
+                           raw_preds,
+                           f_preds,
+                           lambda_grid,
+                           kappa_grid,
+                           sample_length,
+                           n_cores)
+
+  # Assign Results
+  forecast_tvc      <-  results[[1]]
+  variance_tvc      <-  results[[2]]
+  model_names_tvc   <-  results[[3]]
+
+  # Cut Initialization-Period
+  nr_drp              <-  dim(forecast_tvc)[1] -
+                          dim(na.omit(forecast_tvc))[1] + 1
+  sample_period_idx   <-  (nr_drp + sample_length):numb_obs
+
+  # Trim Objects
+  sub_forecast_tvc    <-  forecast_tvc[sample_period_idx, , drop = FALSE]
+  sub_variance_tvc    <-  variance_tvc[sample_period_idx, , drop = FALSE]
+  sub_benchmark       <-  benchmark[sample_period_idx]
+  sub_equity_premium  <-  equity_premium[sample_period_idx]
+
+  ##### Dynamic Subset Combination #####
+  # Set DSC Parameter
+  nr_mods     <-  length(model_names_tvc)
+  gamma_grid  <-  c(0.9, 0.95, 0.99, 1)
+  psi_grid    <-  c(1, 2, 3, 4, 5)
+  delta       <-  0.9992
+  n_cores     <-  1
+
+  # Apply DSC-Function
+  results  <-  hdflex::dsc(gamma_grid,
+                           psi_grid,
+                           sub_equity_premium,
+                           sub_forecast_tvc,
+                           sub_variance_tvc,
+                           delta,
+                           n_cores)
+
+  # Assign Results
+  sub_forecast_dsc    <-  results[[1]]
+  sub_variance_dsc    <-  results[[2]]
+  model_names_comb    <-  results[[3]]
+  sub_chosen_para     <-  results[[4]]
+  sub_models_idx      <-  results[[5]]
+
+  # Define Evaluation Period
+  eval_period_idx     <-  50:length(sub_equity_premium)
+
+  # Trim Objects
+  oos_equity_premium  <-  sub_equity_premium[eval_period_idx]
+  oos_benchmark       <-  sub_benchmark[eval_period_idx]
+  oos_forecast_dsc    <-  sub_forecast_dsc[eval_period_idx]
+  oos_variance_dsc    <-  sub_variance_dsc[eval_period_idx]
+  oos_models_idx      <-  lapply(seq_along(model_names_comb), function(i) {
+                                      sub_models_idx[[i]][eval_period_idx]})
+  oos_chosen_para     <-  sub_chosen_para[eval_period_idx, , drop = FALSE]
+  oos_dates           <-  seq(as.Date("1989-12-01"),
+                              by = "day",
+                              length.out = length(eval_period_idx))
+
+  # Assign Names
+  names(oos_forecast_dsc)  <-  oos_dates
+  names(oos_variance_dsc)  <-  oos_dates
+
+  # Apply Statistial-Evaluation-Function
+  eval_results  <-  eval_dsc(oos_equity_premium,
+                             oos_benchmark,
+                             oos_forecast_dsc,
+                             oos_dates,
+                             oos_chosen_para,
+                             model_names_tvc,
+                             oos_models_idx)
+
+  # Assign Results
+  cw_t          <-  eval_results[[1]]
+  oos_r2        <-  eval_results[[2]]
+  csed          <-  eval_results[[3]]
+  pred_pockets  <-  eval_results[[4]]
+}
 }

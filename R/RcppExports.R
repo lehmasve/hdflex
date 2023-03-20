@@ -9,8 +9,8 @@ forget_dsc <- function(weights, gam) {
     .Call(`_hdflex_forget_dsc`, weights, gam)
 }
 
-active_models_dsc <- function(weights, psi, equal_weight) {
-    .Call(`_hdflex_active_models_dsc`, weights, psi, equal_weight)
+active_models_dsc <- function(weights, psi) {
+    .Call(`_hdflex_active_models_dsc`, weights, psi)
 }
 
 matrix_subset_idx <- function(mat, col_idx, t) {
@@ -25,8 +25,8 @@ update_dsc <- function(weights, oos_equity_premium, oos_forecast_tvp, oos_varian
     .Call(`_hdflex_update_dsc`, weights, oos_equity_premium, oos_forecast_tvp, oos_variance_tvp, n_models, t)
 }
 
-dsc_loop <- function(weights, gam, psi, equal_weight, oos_equity_premium, oos_forecast_tvp, oos_variance_tvp, len_para_grid, oos_length, n_models) {
-    .Call(`_hdflex_dsc_loop`, weights, gam, psi, equal_weight, oos_equity_premium, oos_forecast_tvp, oos_variance_tvp, len_para_grid, oos_length, n_models)
+dsc_loop <- function(weights, gam, psi, oos_equity_premium, oos_forecast_tvp, oos_variance_tvp, len_para_grid, oos_length, n_models) {
+    .Call(`_hdflex_dsc_loop`, weights, gam, psi, oos_equity_premium, oos_forecast_tvp, oos_variance_tvp, len_para_grid, oos_length, n_models)
 }
 
 init_tvc <- function(y_var, x_var, sample_length) {

@@ -1,5 +1,3 @@
-context("eval_dsc")
-
 ### Simulate Data
 set.seed(123)
 
@@ -39,8 +37,6 @@ results  <-  hdflex::tvc(equity_premium,
                          lambda_grid,
                          kappa_grid,
                          sample_length,
-                         raw_names,
-                         f_names,
                          n_cores)
 
 # Assign Results
@@ -66,14 +62,12 @@ rm(list = c("results", "forecast_tvc", "variance_tvc"))
 nr_mods     <-  length(model_names_tvc)
 gamma_grid  <-  c(0.9, 0.95, 0.99, 1)
 psi_grid    <-  c(1, 2, 3)
-ew_grid     <-  c(1)
 delta       <-  0.9992
 n_cores     <-  1
 
 # Apply DSC-Function
 results  <-  hdflex::dsc(gamma_grid,
                          psi_grid,
-                         ew_grid,
                          sub_equity_premium,
                          sub_forecast_tvc,
                          sub_variance_tvc,

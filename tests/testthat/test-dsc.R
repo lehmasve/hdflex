@@ -1,5 +1,3 @@
-context("dsc")
-
 ### Simulate Data
 set.seed(123)
 
@@ -24,7 +22,6 @@ colnames(variance_tvc)  <-  v_tvc_names
 nr_mods     <-  numb_mods
 gamma_grid  <-  c(0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99, 0.995, 0.9999, 1)
 psi_grid    <-  c(1, 2, 3)
-ew_grid     <-  c(0, 1)
 delta       <-  0.9992
 n_cores     <-  1
 
@@ -33,7 +30,6 @@ test_that("Test whether every input parameter is specified.", {
 
   testthat::expect_error(dsc(NULL,
                              psi_grid,
-                             ew_grid,
                              equity_premium,
                              forecast_tvc,
                              variance_tvc,
@@ -43,7 +39,6 @@ test_that("Test whether every input parameter is specified.", {
 
   testthat::expect_error(dsc(gamma_grid,
                              NULL,
-                             ew_grid,
                              equity_premium,
                              forecast_tvc,
                              variance_tvc,
@@ -54,7 +49,6 @@ test_that("Test whether every input parameter is specified.", {
   testthat::expect_error(dsc(gamma_grid,
                              psi_grid,
                              NULL,
-                             equity_premium,
                              forecast_tvc,
                              variance_tvc,
                              delta,
@@ -63,17 +57,6 @@ test_that("Test whether every input parameter is specified.", {
 
   testthat::expect_error(dsc(gamma_grid,
                              psi_grid,
-                             ew_grid,
-                             NULL,
-                             forecast_tvc,
-                             variance_tvc,
-                             delta,
-                             n_cores),
-              "not 'NULL'.", fixed = TRUE)
-
-  testthat::expect_error(dsc(gamma_grid,
-                             psi_grid,
-                             ew_grid,
                              equity_premium,
                              NULL,
                              variance_tvc,
@@ -83,7 +66,6 @@ test_that("Test whether every input parameter is specified.", {
 
   testthat::expect_error(dsc(gamma_grid,
                              psi_grid,
-                             ew_grid,
                              equity_premium,
                              forecast_tvc,
                              NULL,
@@ -93,7 +75,6 @@ test_that("Test whether every input parameter is specified.", {
 
   testthat::expect_error(dsc(gamma_grid,
                              psi_grid,
-                             ew_grid,
                              equity_premium,
                              forecast_tvc,
                              variance_tvc,
@@ -103,7 +84,6 @@ test_that("Test whether every input parameter is specified.", {
 
   testthat::expect_error(dsc(gamma_grid,
                              psi_grid,
-                             ew_grid,
                              equity_premium,
                              forecast_tvc,
                              variance_tvc,
@@ -118,7 +98,6 @@ test_that("Test whether the output has the right format", {
   # Apply TVP-Function
   results  <-  dsc(gamma_grid,
                    psi_grid,
-                   ew_grid,
                    equity_premium,
                    forecast_tvc,
                    variance_tvc,
@@ -129,7 +108,7 @@ test_that("Test whether the output has the right format", {
   testthat::expect_equal(length(results), 5)
 
   # Number of Models
-  numb_combs  <-  length(gamma_grid) * length(psi_grid) * length(ew_grid)
+  numb_combs  <-  length(gamma_grid) * length(psi_grid)
 
   # Number of Forecasts
   checkmate::expect_numeric(results[[1]],

@@ -27,10 +27,6 @@
 #' @param init_length Integer. Denotes the number of observations used
 #' to initialize (estimate) the the TV-C models
 #' (e.g. the observational variance).
-#' @param x_names Character vector with all 'raw' predictor names.
-#' Use NULL if no 'raw' predictors are included.
-#' @param f_names Character vector with all point forecast names.
-#' Use NULL if no point forecasts are included.
 #' @param n_cores Integer. The number of cores to use for the estimation.
 #' @return List that contains (1) a matrix with all forecasts,
 #' (2) a matrix with all variances and (3) a vector with all model names.
@@ -38,124 +34,127 @@
 #' @import parallel
 #' @import checkmate
 #' @importFrom stats na.omit
-#' @example
+#' @examples
 #' \donttest{
-#
-#   ### Simulate Data
-#   set.seed(123)
-#
-#   # Set Dimensions
-#   numb_obs   <-  500
-#   numb_pred  <-  50
-#   numb_forc  <-  10
-#
-#   # Create Random Target-Variable
-#   equity_premium  <-  rnorm(n = numb_obs, mean = 0, sd = 1)
-#
-#   # Create Random Text-Variables
-#   raw_preds            <-  replicate(numb_pred, sample(0:10, numb_obs, rep = TRUE), )
-#   raw_names            <-  paste0("X", as.character(seq_len(ncol(raw_preds))))
-#   colnames(raw_preds)  <-  raw_names
-#
-#   # Create Random Point Forecasts
-#   f_preds            <-  replicate(10, rnorm(n = numb_obs, mean = 0, sd = 0.5), )
-#   f_names            <-  paste0("F", as.character(seq_len(ncol(f_preds))))
-#   colnames(f_preds)  <-  f_names
-#
-#   # Create Benchmark
-#   benchmark  <-  dplyr::lag(roll::roll_mean(equity_premium,
-#                                             width = length(equity_premium),
-#                                             min_obs = 1), n = 1)
-#
-#   # Specify TV-C-Parameter
-#   sample_length  <-  floor(numb_obs / 10)
-#   lambda_grid    <-  c(0.9995, 0.9999, 1.0000)
-#   kappa_grid     <-  c(0.94)
-#   n_cores        <-  1
-#
-#   # Apply TV-C-Function
-#   results  <-  hdflex::tvc(equity_premium,
-#                            raw_preds,
-#                            f_preds,
-#                            lambda_grid,
-#                            kappa_grid,
-#                            sample_length,
-#                            raw_names,
-#                            f_names,
-#                            n_cores)
-#
-#   # Assign Results
-#   forecast_tvc      <-  results[[1]]
-#   variance_tvc      <-  results[[2]]
-#   model_names_tvc   <-  results[[3]]
-#
-#   # Cut Initialization-Period
-#   nr_drp              <-  dim(forecast_tvc)[1] - dim(na.omit(forecast_tvc))[1] + 1
-#   sample_period_idx   <-  (nr_drp + sample_length):numb_obs
-#
-#   # Trim Objects
-#   sub_forecast_tvc    <-  forecast_tvc[sample_period_idx, , drop = FALSE]
-#   sub_variance_tvc    <-  variance_tvc[sample_period_idx, , drop = FALSE]
-#   sub_benchmark       <-  benchmark[sample_period_idx]
-#   sub_equity_premium  <-  equity_premium[sample_period_idx]
-#
-#   ##### Dynamic Subset Combination #####
-#   # Set DSC Parameter
-#   nr_mods     <-  length(model_names_tvc)
-#   gamma_grid  <-  c(0.9, 0.95, 0.99, 1)
-#   psi_grid    <-  c(1, 2, 3, 4, 5)
-#   ew_grid     <-  1
-#   delta       <-  0.9992
-#   n_cores     <-  1
-#
-#   # Apply DSC-Function
-#   results  <-  hdflex::dsc(gamma_grid,
-#                            psi_grid,
-#                            ew_grid,
-#                            sub_equity_premium,
-#                            sub_forecast_tvc,
-#                            sub_variance_tvc,
-#                            delta,
-#                            n_cores)
-#
-#   # Assign Results
-#   sub_forecast_dsc    <-  results[[1]]
-#   sub_variance_dsc    <-  results[[2]]
-#   model_names_comb      <-  results[[3]]
-#   sub_chosen_parameter  <-  results[[4]]
-#   sub_models_idx        <-  results[[5]]
-#
-#   # Define Evaluation Period
-#   eval_period_idx      <-  50:length(sub_equity_premium)
-#
-#   # Trim Objects
-#   oos_equity_premium   <-  sub_equity_premium[eval_period_idx]
-#   oos_benchmark        <-  sub_benchmark[eval_period_idx]
-#   oos_forecast_dsc   <-  sub_forecast_dsc[eval_period_idx]
-#   oos_variance_dsc   <-  sub_variance_dsc[eval_period_idx]
-#   oos_models_idx       <-  lapply(seq_along(model_names_comb), function(i) {
-#                                       sub_models_idx[[i]][eval_period_idx]})
-#   oos_chosen_parameter <-  sub_chosen_parameter[eval_period_idx, , drop = FALSE]
-#   oos_dates            <-  seq(as.Date("1989-12-01"), by = "day", length.out = length(eval_period_idx))
-#
-#   # Assign Names
-#   names(oos_forecast_dsc)  <-  oos_dates
-#   names(oos_variance_dsc)  <-  oos_dates
-#
-#   # Apply Statistial-Evaluation-Function
-#   eval_results  <-  eval_dsc(oos_equity_premium,
-#                              oos_benchmark,
-#                              oos_forecast_dsc,
-#                              oos_dates,
-#                              oos_chosen_parameter,
-#                              model_names_tvc,
-#                              oos_models_idx)
-#
-#   # Assign Results
-#   cw_t          <-  eval_results[[1]]
-#   oos_r2        <-  eval_results[[2]]
-#   csed          <-  eval_results[[3]]
-#   pred_pockets  <-  eval_results[[4]]
+#'
+#'   ### Simulate Data
+#'   set.seed(123)
+#'
+#'   # Set Dimensions
+#'   numb_obs   <-  500
+#'   numb_pred  <-  50
+#'   numb_forc  <-  10
+#'
+#'   # Create Random Target-Variable
+#'   equity_premium  <-  rnorm(n = numb_obs, mean = 0, sd = 1)
+#'
+#'   # Create Random Text-Variables
+#'   raw_preds            <-  replicate(numb_pred, sample(0:10,
+#'                                                        numb_obs,
+#'                                                        rep = TRUE), )
+#'   raw_names            <-  paste0("X", as.character(seq_len(numb_pred)))
+#'   colnames(raw_preds)  <-  raw_names
+#'
+#'   # Create Random Point Forecasts
+#'   f_preds            <-  replicate(10, rnorm(n    = numb_obs,
+#'                                              mean = 0,
+#'                                              sd   = 0.5), )
+#'   f_names            <-  paste0("F", as.character(seq_len(numb_forc)))
+#'   colnames(f_preds)  <-  f_names
+#'
+#'   # Create Benchmark
+#'   benchmark  <-  dplyr::lag(roll::roll_mean(equity_premium,
+#'                                             width = length(equity_premium),
+#'                                             min_obs = 1), n = 1)
+#'
+#'   # Specify TV-C-Parameter
+#'   sample_length  <-  floor(numb_obs / 10)
+#'   lambda_grid    <-  c(0.9995, 0.9999, 1.0000)
+#'   kappa_grid     <-  c(0.94)
+#'   n_cores        <-  1
+#'
+#'   # Apply TV-C-Function
+#'   results  <-  hdflex::tvc(equity_premium,
+#'                            raw_preds,
+#'                            f_preds,
+#'                            lambda_grid,
+#'                            kappa_grid,
+#'                            sample_length,
+#'                            n_cores)
+#'
+#'   # Assign Results
+#'   forecast_tvc      <-  results[[1]]
+#'   variance_tvc      <-  results[[2]]
+#'   model_names_tvc   <-  results[[3]]
+#'
+#'   # Cut Initialization-Period
+#'   nr_drp              <-  dim(forecast_tvc)[1] -
+#'                           dim(na.omit(forecast_tvc))[1] + 1
+#'   sample_period_idx   <-  (nr_drp + sample_length):numb_obs
+#'
+#'   # Trim Objects
+#'   sub_forecast_tvc    <-  forecast_tvc[sample_period_idx, , drop = FALSE]
+#'   sub_variance_tvc    <-  variance_tvc[sample_period_idx, , drop = FALSE]
+#'   sub_benchmark       <-  benchmark[sample_period_idx]
+#'   sub_equity_premium  <-  equity_premium[sample_period_idx]
+#'
+#'   ##### Dynamic Subset Combination #####
+#'   # Set DSC Parameter
+#'   nr_mods     <-  length(model_names_tvc)
+#'   gamma_grid  <-  c(0.9, 0.95, 0.99, 1)
+#'   psi_grid    <-  c(1, 2, 3, 4, 5)
+#'   delta       <-  0.9992
+#'   n_cores     <-  1
+#'
+#'   # Apply DSC-Function
+#'   results  <-  hdflex::dsc(gamma_grid,
+#'                            psi_grid,
+#'                            sub_equity_premium,
+#'                            sub_forecast_tvc,
+#'                            sub_variance_tvc,
+#'                            delta,
+#'                            n_cores)
+#'
+#'   # Assign Results
+#'   sub_forecast_dsc    <-  results[[1]]
+#'   sub_variance_dsc    <-  results[[2]]
+#'   model_names_comb    <-  results[[3]]
+#'   sub_chosen_para     <-  results[[4]]
+#'   sub_models_idx      <-  results[[5]]
+#'
+#'   # Define Evaluation Period
+#'   eval_period_idx     <-  50:length(sub_equity_premium)
+#'
+#'   # Trim Objects
+#'   oos_equity_premium  <-  sub_equity_premium[eval_period_idx]
+#'   oos_benchmark       <-  sub_benchmark[eval_period_idx]
+#'   oos_forecast_dsc    <-  sub_forecast_dsc[eval_period_idx]
+#'   oos_variance_dsc    <-  sub_variance_dsc[eval_period_idx]
+#'   oos_models_idx      <-  lapply(seq_along(model_names_comb), function(i) {
+#'                                       sub_models_idx[[i]][eval_period_idx]})
+#'   oos_chosen_para     <-  sub_chosen_para[eval_period_idx, , drop = FALSE]
+#'   oos_dates           <-  seq(as.Date("1989-12-01"),
+#'                               by = "day",
+#'                               length.out = length(eval_period_idx))
+#'
+#'   # Assign Names
+#'   names(oos_forecast_dsc)  <-  oos_dates
+#'   names(oos_variance_dsc)  <-  oos_dates
+#'
+#'   # Apply Statistial-Evaluation-Function
+#'   eval_results  <-  eval_dsc(oos_equity_premium,
+#'                              oos_benchmark,
+#'                              oos_forecast_dsc,
+#'                              oos_dates,
+#'                              oos_chosen_para,
+#'                              model_names_tvc,
+#'                              oos_models_idx)
+#'
+#'   # Assign Results
+#'   cw_t          <-  eval_results[[1]]
+#'   oos_r2        <-  eval_results[[2]]
+#'   csed          <-  eval_results[[3]]
+#'   pred_pockets  <-  eval_results[[4]]
 #' }
 
 ### Time-Varying Coefficient Model
@@ -165,8 +164,6 @@ tvc  <- function(y,
                  lambda_grid,
                  kappa_grid,
                  init_length,
-                 x_names,
-                 f_names,
                  n_cores) {
 
   ### Checkmate
@@ -180,14 +177,6 @@ tvc  <- function(y,
   checkmate::assert(checkmate::checkMatrix(x),
                     checkmate::checkMatrix(f),
                     combine = "or")
-
-  # If x is provided, x_names must be provided and vice versa
-  checkmate::assertTRUE(
-              checkmate::checkNull(x) == checkmate::checkNull(x_names))
-
-  # If f is provided, f_names must be provided and vice versa
-  checkmate::assertTRUE(
-              checkmate::checkNull(f) == checkmate::checkNull(f_names))
 
   # Check if x is numeric matrix and has the same number of observations as y
   checkmate::assertMatrix(x,
@@ -221,18 +210,6 @@ tvc  <- function(y,
   checkmate::assertInt(init_length,
                        lower = 2,
                        upper = length(y))
-
-  # Check if x_names is character vector with an entry for every column of x
-  checkmate::assertCharacter(x_names,
-                             len = ncol(x),
-                             unique = TRUE,
-                             null.ok = TRUE)
-
-  # Check if f_names is character vector with an entry for every column of f
-  checkmate::assertCharacter(f_names,
-                             len = ncol(f),
-                             unique = TRUE,
-                             null.ok = TRUE)
 
   # Check if n_cores is Integer bigger or equal to 1
   checkmate::assertInt(n_cores,
@@ -332,6 +309,13 @@ tvc  <- function(y,
     }
 
     ### Get Model Names
+    # Get / Create Predictor Names
+    if (!is.null(colnames(x))) {
+      x_names  <-  colnames(x)
+    } else {
+      x_names  <-  paste0("X", as.character(seq_len(ncol(x))))
+    }
+
     # Set up Vector
     model_names_raw  <-  rep(NA, nr_mods)
                   i  <-  1
@@ -444,6 +428,13 @@ tvc  <- function(y,
     }
 
     ### Get Model Names
+    # Get / Create Predictor Names
+    if (!is.null(colnames(f))) {
+      f_names  <-  colnames(f)
+    } else {
+      f_names  <-  paste0("F", as.character(seq_len(ncol(f))))
+    }
+
     # Set up Vector
     model_names_f  <-  rep(NA, nr_mods)
           i        <-  1

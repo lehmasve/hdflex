@@ -35,15 +35,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // active_models_dsc
-List active_models_dsc(NumericVector weights, int psi, bool equal_weight);
-RcppExport SEXP _hdflex_active_models_dsc(SEXP weightsSEXP, SEXP psiSEXP, SEXP equal_weightSEXP) {
+List active_models_dsc(NumericVector weights, int psi);
+RcppExport SEXP _hdflex_active_models_dsc(SEXP weightsSEXP, SEXP psiSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type weights(weightsSEXP);
     Rcpp::traits::input_parameter< int >::type psi(psiSEXP);
-    Rcpp::traits::input_parameter< bool >::type equal_weight(equal_weightSEXP);
-    rcpp_result_gen = Rcpp::wrap(active_models_dsc(weights, psi, equal_weight));
+    rcpp_result_gen = Rcpp::wrap(active_models_dsc(weights, psi));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -93,22 +92,21 @@ BEGIN_RCPP
 END_RCPP
 }
 // dsc_loop
-List dsc_loop(NumericVector weights, double gam, int psi, bool equal_weight, NumericVector oos_equity_premium, NumericMatrix oos_forecast_tvp, NumericMatrix oos_variance_tvp, int len_para_grid, int oos_length, int n_models);
-RcppExport SEXP _hdflex_dsc_loop(SEXP weightsSEXP, SEXP gamSEXP, SEXP psiSEXP, SEXP equal_weightSEXP, SEXP oos_equity_premiumSEXP, SEXP oos_forecast_tvpSEXP, SEXP oos_variance_tvpSEXP, SEXP len_para_gridSEXP, SEXP oos_lengthSEXP, SEXP n_modelsSEXP) {
+List dsc_loop(NumericVector weights, double gam, int psi, NumericVector oos_equity_premium, NumericMatrix oos_forecast_tvp, NumericMatrix oos_variance_tvp, int len_para_grid, int oos_length, int n_models);
+RcppExport SEXP _hdflex_dsc_loop(SEXP weightsSEXP, SEXP gamSEXP, SEXP psiSEXP, SEXP oos_equity_premiumSEXP, SEXP oos_forecast_tvpSEXP, SEXP oos_variance_tvpSEXP, SEXP len_para_gridSEXP, SEXP oos_lengthSEXP, SEXP n_modelsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type weights(weightsSEXP);
     Rcpp::traits::input_parameter< double >::type gam(gamSEXP);
     Rcpp::traits::input_parameter< int >::type psi(psiSEXP);
-    Rcpp::traits::input_parameter< bool >::type equal_weight(equal_weightSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type oos_equity_premium(oos_equity_premiumSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type oos_forecast_tvp(oos_forecast_tvpSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type oos_variance_tvp(oos_variance_tvpSEXP);
     Rcpp::traits::input_parameter< int >::type len_para_grid(len_para_gridSEXP);
     Rcpp::traits::input_parameter< int >::type oos_length(oos_lengthSEXP);
     Rcpp::traits::input_parameter< int >::type n_models(n_modelsSEXP);
-    rcpp_result_gen = Rcpp::wrap(dsc_loop(weights, gam, psi, equal_weight, oos_equity_premium, oos_forecast_tvp, oos_variance_tvp, len_para_grid, oos_length, n_models));
+    rcpp_result_gen = Rcpp::wrap(dsc_loop(weights, gam, psi, oos_equity_premium, oos_forecast_tvp, oos_variance_tvp, len_para_grid, oos_length, n_models));
     return rcpp_result_gen;
 END_RCPP
 }

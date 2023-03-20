@@ -8,9 +8,9 @@
 */
 
 /* .Call calls */
-extern SEXP _hdflex_active_models_dsc(SEXP, SEXP, SEXP);
+extern SEXP _hdflex_active_models_dsc(SEXP, SEXP);
 extern SEXP _hdflex_agg_density_dsc(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP _hdflex_dsc_loop(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP _hdflex_dsc_loop(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _hdflex_forget_dsc(SEXP, SEXP);
 extern SEXP _hdflex_init_dsc(SEXP);
 extern SEXP _hdflex_init_tvc(SEXP, SEXP, SEXP);
@@ -23,9 +23,9 @@ extern SEXP _hdflex_tvc_model_loop_forecasts(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP,
 extern SEXP _hdflex_update_dsc(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_hdflex_active_models_dsc",        (DL_FUNC) &_hdflex_active_models_dsc,         3},
+    {"_hdflex_active_models_dsc",        (DL_FUNC) &_hdflex_active_models_dsc,         2},
     {"_hdflex_agg_density_dsc",          (DL_FUNC) &_hdflex_agg_density_dsc,           6},
-    {"_hdflex_dsc_loop",                 (DL_FUNC) &_hdflex_dsc_loop,                 10},
+    {"_hdflex_dsc_loop",                 (DL_FUNC) &_hdflex_dsc_loop,                  9},
     {"_hdflex_forget_dsc",               (DL_FUNC) &_hdflex_forget_dsc,                2},
     {"_hdflex_init_dsc",                 (DL_FUNC) &_hdflex_init_dsc,                  1},
     {"_hdflex_init_tvc",                 (DL_FUNC) &_hdflex_init_tvc,                  3},
