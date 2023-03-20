@@ -1,7 +1,7 @@
 Package: hdflex
 Type: Package
 Title: High-Dimensional Density Forecast Combinations
-Version: 1.0
+Version: 0.1
 Date: 2023-02-06
 Authors@R: c(
              person("Sven", "Lehmann", 
