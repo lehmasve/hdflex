@@ -1,6 +1,6 @@
 {
     "args": [
-        "-std=gnu++11",
+        "-std=gnu++14",
         "-I/Library/Frameworks/R.framework/Resources/include",
         "-DNDEBUG",
         "-I/opt/R/arm64/include",
@@ -18,7 +18,7 @@
     ],
     "pch": "RcppArmadillo",
     "is_cpp": true,
-    "hash": "168431816116843181611668462899",
+    "hash": "168431938016841590691668462899",
     "compiler": "9187624033895064082",
     "rversion": "4.2.2",
     "dbversion": 4

@@ -2,172 +2,239 @@
 % Please edit documentation in R/tvc.R
 \name{tvc}
 \alias{tvc}
-\title{Compute Univariate Time-Varying Coefficient (TV-C) Regressions}
+\title{Compute density forecasts based on univariate time-varying
+coefficient (TV-C) models in state-space form}
 \usage{
-tvc(y, x, f, lambda_grid, kappa_grid, init_length, n_cores)
+tvc(y, X, F, lambda_grid, kappa_grid, init_length, n_cores)
 }
 \arguments{
-\item{y}{A matrix of dimension `T * 1` or Numeric Vector of length `T`
+\item{y}{A matrix of dimension `T * 1` or numeric vector of length `T`
 containing the observations of the target variable.}
 
-\item{x}{A matrix with `T` rows containing
-the lagged raw predictors in each column.
-Use `NULL` if no "raw" predictors shall be included.}
+\item{X}{A matrix with `T` rows containing
+the lagged 'simple' signals in each column.
+Use NULL if no 'simple' signal shall be included.}
 
-\item{f}{A matrix with `T` rows containing
+\item{F}{A matrix with `T` rows containing
 point forecasts of y in each column.
 Use NULL if no point forecasts shall be included.}
 
 \item{lambda_grid}{A numeric vector denoting the discount factor(s)
 that control the dynamics of the coefficients.
-Each predictor in combination with each value of
-lambda defines a separate forecasting model.
+Each signal in combination with each value of
+lambda provides a separate candidate forecast.
 Constant coefficients are nested for the case `lambda = 1`.}
 
 \item{kappa_grid}{A numeric vector to accomodate time-varying volatility.
 The observational variance is estimated via
 Exponentially Weighted Moving Average.
 Constant variance is nested for the case `kappa = 1`.
-Each predictor in combination with each value of
-kappa defines a separate forecasting model.}
+Each signal in combination with each value of
+kappa provides a separate forecast.}
 
-\item{init_length}{Integer. Denotes the number of observations used
-to initialize (estimate) the the TV-C models
-(e.g. the observational variance).}
+\item{init_length}{An integer that denotes the number of observations used
+to initialize the observational variance and the coefficients' variance.}
 
-\item{n_cores}{Integer. The number of cores to use for the estimation.}
+\item{n_cores}{An integer that denotes the number of CPU-cores used
+for the computation.}
 }
 \value{
-List that contains (1) a matrix with all forecasts,
-(2) a matrix with all variances and (3) a vector with all model names.
+A list that contains
+(1) a matrix with the first moments (point forecasts)
+of the conditionally normal predictive distributions and
+(2) a matrix with the second moments (variance)
+of the conditionally normal predictive distributions.
 }
 \description{
 `tvc()` can be used to generate density forecasts based on
-univariate time-varying coefficient regressions
-(nesting constant coefficients as a special case)
-with time-varying volatility. In addition to “raw” predictors,
-`tvc()` accommodates point forecast as predictors.
+univariate time-varying coefficient models. In each forecasting model,
+we include an intercept and one predictive signal. The predictive signal
+either represents the value of a 'simple' signal
+or the the value of an external point forecast.
+All models are estimated independently from each other and
+estimation and forecasting are carried out recursively.
 }
 \examples{
 \donttest{
 
-  ### Simulate Data
-  set.seed(123)
+ # Packages
+ library("tidyverse")
+ library("hdflex")
 
-  # Set Dimensions
-  numb_obs   <-  500
-  numb_pred  <-  50
-  numb_forc  <-  10
+ # Set Target-Variables
+ target_var_names  <- c("GDPCTPI", "PCECTPI", "CPIAUCSL", "CPILFESL")
 
-  # Create Random Target-Variable
-  equity_premium  <-  rnorm(n = numb_obs, mean = 0, sd = 1)
+ # Load Data
+ data  <-  inflation_data
 
-  # Create Random Text-Variables
-  raw_preds            <-  replicate(numb_pred, sample(0:10,
-                                                       numb_obs,
-                                                       rep = TRUE), )
-  raw_names            <-  paste0("X", as.character(seq_len(numb_pred)))
-  colnames(raw_preds)  <-  raw_names
+ # Loop over Target Variables
+ results <-  do.call("rbind", lapply(X = seq_along(target_var_names), FUN = function(p) {
 
-  # Create Random Point Forecasts
-  f_preds            <-  replicate(10, rnorm(n    = numb_obs,
-                                             mean = 0,
-                                             sd   = 0.5), )
-  f_names            <-  paste0("F", as.character(seq_len(numb_forc)))
-  colnames(f_preds)  <-  f_names
+     # Y-Column-Name
+     y_target    <-  paste(target_var_names[p], "h_1", sep = "_")
+     y_signal    <-  target_var_names[p]
+     not_target  <-  setdiff(paste(target_var_names, "h_1", sep = "_"),
+                             y_target)
 
-  # Create Benchmark
-  benchmark  <-  dplyr::lag(roll::roll_mean(equity_premium,
-                                            width = length(equity_premium),
-                                            min_obs = 1), n = 1)
+     # Create Forecast-Dataset
+     dataset  <-  data                                                    \%>\%
+                   select(-any_of(c(y_signal, not_target)))               \%>\%
+                   mutate(across(all_of(y_target), .fns = list("lag_1" =
+                          ~dplyr::lag(., 1))), .after = 2)                \%>\%
+                   mutate(across(all_of(y_target), .fns = list("lag_2" =
+                          ~dplyr::lag(., 2))), .after = 3)                \%>\%
+                   mutate(across(-c(1, 2, 3, 4), dplyr::lag))             \%>\%
+                   slice(-c(1:3))                                         \%>\%
+                   column_to_rownames("Date")                             \%>\%
+                   as.matrix()
 
-  # Specify TV-C-Parameter
-  sample_length  <-  floor(numb_obs / 10)
-  lambda_grid    <-  c(0.9995, 0.9999, 1.0000)
-  kappa_grid     <-  c(0.94)
-  n_cores        <-  1
+     # Get Dates & Length
+     full_dates   <-  rownames(dataset)
+     full_length  <-  length(full_dates)
 
-  # Apply TV-C-Function
-  results  <-  hdflex::tvc(equity_premium,
-                           raw_preds,
-                           f_preds,
-                           lambda_grid,
-                           kappa_grid,
-                           sample_length,
-                           n_cores)
+     # Create Time-Sequence for loop
+     T_full      <-  full_length -1
+     T_sequence  <-  122:T_full
 
-  # Assign Results
-  forecast_tvc      <-  results[[1]]
-  variance_tvc      <-  results[[2]]
-  model_names_tvc   <-  results[[3]]
+     ### Benchmark Model ###
+     # Create Result Matrices for Predictions
+     preds_ar2  <-  matrix(NA, ncol = 1, nrow = full_length,
+                           dimnames = list(full_dates, "AR"))
 
-  # Cut Initialization-Period
-  nr_drp              <-  dim(forecast_tvc)[1] -
-                          dim(na.omit(forecast_tvc))[1] + 1
-  sample_period_idx   <-  (nr_drp + sample_length):numb_obs
+     # Create Result Matrices for Squared Errors
+     se_ar2     <-  matrix(NA, ncol = 1, nrow = full_length,
+                           dimnames = list(full_dates, "AR"))
 
-  # Trim Objects
-  sub_forecast_tvc    <-  forecast_tvc[sample_period_idx, , drop = FALSE]
-  sub_variance_tvc    <-  variance_tvc[sample_period_idx, , drop = FALSE]
-  sub_benchmark       <-  benchmark[sample_period_idx]
-  sub_equity_premium  <-  equity_premium[sample_period_idx]
+     # Loop over t
+     for(t in T_sequence) {
 
-  ##### Dynamic Subset Combination #####
-  # Set DSC Parameter
-  nr_mods     <-  length(model_names_tvc)
-  gamma_grid  <-  c(0.9, 0.95, 0.99, 1)
-  psi_grid    <-  c(1, 2, 3, 4, 5)
-  delta       <-  0.9992
-  n_cores     <-  1
+         ### Pre-Process Data ###
+         # Train Data
+         x_train     <-  scale(dataset[1:t, -1, drop = FALSE])
+         y_train     <-        dataset[1:t,  1, drop = FALSE]
 
-  # Apply DSC-Function
-  results  <-  hdflex::dsc(gamma_grid,
-                           psi_grid,
-                           sub_equity_premium,
-                           sub_forecast_tvc,
-                           sub_variance_tvc,
-                           delta,
-                           n_cores)
+         # Predict Data
+         x_pred      <-  scale(dataset[1:(t+1), -1, drop = FALSE])[(t+1), , drop = FALSE]
+         y_pred      <-        dataset[t+1, 1]
 
-  # Assign Results
-  sub_forecast_dsc    <-  results[[1]]
-  sub_variance_dsc    <-  results[[2]]
-  model_names_comb    <-  results[[3]]
-  sub_chosen_para     <-  results[[4]]
-  sub_models_idx      <-  results[[5]]
+         ### Model 1: AR(2) ###
+         # Train Data
+         x_train_ar  <-  cbind(int = 1, x_train[, c(1:2), drop = FALSE])
 
-  # Define Evaluation Period
-  eval_period_idx     <-  50:length(sub_equity_premium)
+         # Predict Data
+         x_pred_ar   <-  cbind(int = 1,  x_pred[, c(1:2), drop = FALSE])
 
-  # Trim Objects
-  oos_equity_premium  <-  sub_equity_premium[eval_period_idx]
-  oos_benchmark       <-  sub_benchmark[eval_period_idx]
-  oos_forecast_dsc    <-  sub_forecast_dsc[eval_period_idx]
-  oos_variance_dsc    <-  sub_variance_dsc[eval_period_idx]
-  oos_models_idx      <-  lapply(seq_along(model_names_comb), function(i) {
-                                      sub_models_idx[[i]][eval_period_idx]})
-  oos_chosen_para     <-  sub_chosen_para[eval_period_idx, , drop = FALSE]
-  oos_dates           <-  seq(as.Date("1989-12-01"),
-                              by = "day",
-                              length.out = length(eval_period_idx))
+         # Fit Regressions
+         model_ar    <-  .lm.fit(x_train_ar, y_train)
 
-  # Assign Names
-  names(oos_forecast_dsc)  <-  oos_dates
-  names(oos_variance_dsc)  <-  oos_dates
+         # Predict & Combine
+         pred                  <-  model_ar$coefficients \%*\% x_pred_ar[,]
+         preds_ar2[t+1, "AR"]  <-  pred
+         se_ar2[t+1, "AR"]     <-  (y_pred - pred) ** 2
+     }
 
-  # Apply Statistial-Evaluation-Function
-  eval_results  <-  eval_dsc(oos_equity_premium,
-                             oos_benchmark,
-                             oos_forecast_dsc,
-                             oos_dates,
-                             oos_chosen_para,
-                             model_names_tvc,
-                             oos_models_idx)
+     ##### TV-C Models #####
+     # Set Target Variable
+     Y  <-  dataset[,  1, drop = FALSE]
 
-  # Assign Results
-  cw_t          <-  eval_results[[1]]
-  oos_r2        <-  eval_results[[2]]
-  csed          <-  eval_results[[3]]
-  pred_pockets  <-  eval_results[[4]]
-}
+     # Set 'Simple' Signals
+     X  <-  dataset[, -1, drop = FALSE]
+
+     # Load External Point Forecasts (Koop & Korobilis 2023)
+     F  <-  get(paste0("Ext_PF_", target_var_names[p]))
+
+     # Set TV-C-Parameter
+     sample_length  <-  4 * 3
+     lambda_grid    <-  c(0.90, 0.95, 0.99, 0.999, 1)
+     kappa_grid     <-  0.98
+     n_cores        <-  1
+
+     # Apply TV-C-Function
+     results  <-  hdflex::tvc(Y,
+                              X,
+                              F,
+                              lambda_grid,
+                              kappa_grid,
+                              sample_length,
+                              n_cores)
+
+     # Assign Results
+     forecast_tvc      <-  results[[1]]
+     variance_tvc      <-  results[[2]]
+     model_names_tvc   <-  colnames(forecast_tvc)
+
+     # Define Cut Length and Trim Objects
+     sample_period_idx  <-  80:full_length
+     sub_forecast_tvc   <-  forecast_tvc[sample_period_idx, , drop = FALSE]
+     sub_variance_tvc   <-  variance_tvc[sample_period_idx, , drop = FALSE]
+     sub_Y              <-  Y[sample_period_idx, , drop = FALSE]
+     sub_dates          <-  full_dates[sample_period_idx]
+     sub_length         <-  length(sub_dates)
+
+     ##### Dynamic Subset Combination #####
+     # Set DSC-Parameter
+     nr_mods     <-  ncol(sub_forecast_tvc)
+     gamma_grid  <-  c(0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
+                       0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99,
+                       0.999, 1.00)
+     psi_grid    <-  c(1:100)
+     delta       <-  0.95
+     n_cores     <-  1
+
+     # Apply DSC-Function
+     results  <-  hdflex::dsc(gamma_grid,
+                              psi_grid,
+                              sub_Y,
+                              sub_forecast_tvc,
+                              sub_variance_tvc,
+                              delta,
+                              n_cores)
+
+     # Assign Results
+     sub_forecast_stsc    <-  results[[1]]
+     sub_variance_stsc    <-  results[[2]]
+     sub_chosen_gamma     <-  results[[3]]
+     sub_chosen_psi       <-  results[[4]]
+     sub_pred_pockets     <-  results[[5]]
+
+     # Define Evaluation Period
+     eval_date_start      <-  "1991-01-01"
+     eval_date_end        <-  "2021-12-31"
+     eval_period_idx      <-  which(sub_dates > eval_date_start &
+                                    sub_dates <= eval_date_end)
+
+     # Trim Objects
+     oos_Y                <-  sub_Y[eval_period_idx, ]
+     oos_benchmark        <-  preds_ar2[rownames(preds_ar2) > eval_date_start, "AR"]
+     oos_forecast_stsc    <-  sub_forecast_stsc[eval_period_idx]
+     oos_variance_stsc    <-  sub_variance_stsc[eval_period_idx]
+     oos_chosen_gamma     <-  sub_chosen_gamma[eval_period_idx]
+     oos_chosen_psi       <-  sub_chosen_psi[eval_period_idx]
+     oos_pred_pockets     <-  sub_pred_pockets[eval_period_idx, , drop = FALSE]
+     oos_length           <-  length(eval_period_idx)
+     oos_dates            <-  sub_dates[eval_period_idx]
+
+     # Add Dates
+     names(oos_forecast_stsc)   <-  oos_dates
+     names(oos_variance_stsc)   <-  oos_dates
+     names(oos_chosen_gamma)    <-  oos_dates
+     names(oos_chosen_psi)      <-  oos_dates
+     rownames(oos_pred_pockets) <-  oos_dates
+
+     ##### Evaluate #####
+     # Apply Statistial-Evaluation-Function
+     summary_results  <-  summary_stsc(oos_Y,
+                                       oos_benchmark,
+                                       oos_forecast_stsc)
+      # Assign MSE-Results
+     mse  <-  summary_results[[4]]
+
+     # Return
+     return(c(mse[[2]], mse[[1]]))
+     }))
+
+ # MSE-Results
+ dimnames(results)  <-  list(target_var_names, c("AR", "STSC"))
+ round(results / results[, 1], 4)
+ }
 }
