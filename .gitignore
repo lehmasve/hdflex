@@ -22,6 +22,7 @@
 
 # RStudio files
 **/.Rproj.user
+.Rproj.user
 
 # produced vignettes
 vignettes/*.html
@@ -53,3 +54,6 @@ rsconnect/
 ### R.Bookdown Stack ###
 # R package: bookdown caching files
 /*_files/
+
+*.o
+*.so
