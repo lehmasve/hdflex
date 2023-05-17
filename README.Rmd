@@ -4,7 +4,7 @@ output: github_document
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# **hdflex**
+# hdflex <a href='https://github.com/lehmasve/hdflex'><img src='man/figures/logo.png' align="right" height="180" /></a>
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
@@ -28,15 +28,32 @@ devtools::install_github("https://github.com/lehmasve/hdflex")
 ```
 
 The package compiles some C++ source code for installation, which is why you need the appropriate compilers:
+
 - On Windows you need [Rtools](https://cran.r-project.org/bin/windows/Rtools/) available from CRAN. 
-- On macOS you need the very least Xcode and a Fortran compiler - for more details see (https://mac.r-project.org/tools/).
+
+- On macOS you need the very least Xcode and a Fortran compiler - for more details see [Compiler](https://mac.r-project.org/tools/).
+
+## Main Features
+We propose a new forecasting strategy (STSC) that captures predictability patterns of high-dimensional signals, especially those that are locally concentrated in time. In each period, an aggregate density forecast is determined by a subset of candidate
+density forecasts, where each candidate is based on a state-space model. Our approach allows for several stylized features of (macro-)economic and financial returns, including time-varying predictability patterns and time-varying volatility. While the approach is capable of exploring vast model spaces, including datasets that contain mostly irrelevant predictors, it is parsimoniously parameterized, thereby reducing estimation error and maintaining transparency. Furthermore, it is very fast by using empirically reasonable approximations, online updating of model parameters, and parallel computing.
+
+The package comprises three function:
+
+- `tvc()` can be used to compute density forecasts based on univariate time-varying coefficient (TV-C) models in state-space form
+
+- `dsc()` can be used to dynamically generate forecast combinations from a subset of candidate density forecasts (dynamic subset combination).
+
+- `summary_stsc()` returns a statistical summary for the forecasting results. It provides statistical measures such as Clark-West-Statistic, OOS-R2, Mean-Squared-Error and Cumulated Sum of Squared-Error-Differences.
 
 ## Usage
-
 ```{r}
-######### Forecast quarterly U.S. inflation ##########
-### Please see Koop & Korobilis (2023) for further details regarding the dataset ###
-# Packages
+#########################################################
+######### Forecasting quarterly U.S. inflation ##########
+#### Please see Koop & Korobilis (2023) for further  ####
+#### details regarding the data & External Forecasts ####
+#########################################################
+
+# Load Packages
 library("tidyverse")
 library("hdflex")
 
