@@ -1,166 +1,234 @@
 #' @name tvc
-#' @title Compute Univariate Time-Varying Coefficient (TV-C) Regressions
+#' @title Compute density forecasts based on univariate time-varying
+#' coefficient (TV-C) models in state-space form
 #' @description `tvc()` can be used to generate density forecasts based on
-#' univariate time-varying coefficient regressions
-#' (nesting constant coefficients as a special case)
-#' with time-varying volatility. In addition to “raw” predictors,
-#' `tvc()` accommodates point forecast as predictors.
-#' @param y A matrix of dimension `T * 1` or Numeric Vector of length `T`
+#' univariate time-varying coefficient models. In each forecasting model,
+#' we include an intercept and one predictive signal. The predictive signal
+#' either represents the value of a 'simple' signal
+#' or the the value of an external point forecast.
+#' All models are estimated independently from each other and
+#' estimation and forecasting are carried out recursively.
+#' @param y A matrix of dimension `T * 1` or numeric vector of length `T`
 #' containing the observations of the target variable.
-#' @param x A matrix with `T` rows containing
-#' the lagged raw predictors in each column.
-#' Use `NULL` if no "raw" predictors shall be included.
-#' @param f A matrix with `T` rows containing
+#' @param X A matrix with `T` rows containing
+#' the lagged 'simple' signals in each column.
+#' Use NULL if no 'simple' signal shall be included.
+#' @param F A matrix with `T` rows containing
 #' point forecasts of y in each column.
 #' Use NULL if no point forecasts shall be included.
 #' @param lambda_grid A numeric vector denoting the discount factor(s)
 #' that control the dynamics of the coefficients.
-#' Each predictor in combination with each value of
-#' lambda defines a separate forecasting model.
+#' Each signal in combination with each value of
+#' lambda provides a separate candidate forecast.
 #' Constant coefficients are nested for the case `lambda = 1`.
 #' @param kappa_grid A numeric vector to accomodate time-varying volatility.
 #' The observational variance is estimated via
 #' Exponentially Weighted Moving Average.
 #' Constant variance is nested for the case `kappa = 1`.
-#' Each predictor in combination with each value of
-#' kappa defines a separate forecasting model.
-#' @param init_length Integer. Denotes the number of observations used
-#' to initialize (estimate) the the TV-C models
-#' (e.g. the observational variance).
-#' @param n_cores Integer. The number of cores to use for the estimation.
-#' @return List that contains (1) a matrix with all forecasts,
-#' (2) a matrix with all variances and (3) a vector with all model names.
+#' Each signal in combination with each value of
+#' kappa provides a separate forecast.
+#' @param init_length An integer that denotes the number of observations used
+#' to initialize the observational variance and the coefficients' variance.
+#' @param n_cores An integer that denotes the number of CPU-cores used
+#' for the computation.
+#' @return A list that contains
+#' (1) a matrix with the first moments (point forecasts)
+#' of the conditionally normal predictive distributions and
+#' (2) a matrix with the second moments (variance)
+#' of the conditionally normal predictive distributions.
 #' @export
 #' @import parallel
 #' @import checkmate
+#' @import tidyverse
 #' @importFrom stats na.omit
 #' @examples
 #' \donttest{
 #'
-#'   ### Simulate Data
-#'   set.seed(123)
+#'  # Packages
+#'  library("tidyverse")
+#'  library("hdflex")
 #'
-#'   # Set Dimensions
-#'   numb_obs   <-  500
-#'   numb_pred  <-  50
-#'   numb_forc  <-  10
+#'  # Set Target-Variables
+#'  target_var_names  <- c("GDPCTPI", "PCECTPI", "CPIAUCSL", "CPILFESL")
 #'
-#'   # Create Random Target-Variable
-#'   equity_premium  <-  rnorm(n = numb_obs, mean = 0, sd = 1)
+#'  # Load Data
+#'  data  <-  inflation_data
 #'
-#'   # Create Random Text-Variables
-#'   raw_preds            <-  replicate(numb_pred, sample(0:10,
-#'                                                        numb_obs,
-#'                                                        rep = TRUE), )
-#'   raw_names            <-  paste0("X", as.character(seq_len(numb_pred)))
-#'   colnames(raw_preds)  <-  raw_names
+#'  # Loop over Target Variables
+#'  results <-  do.call("rbind", lapply(X = seq_along(target_var_names), FUN = function(p) {
 #'
-#'   # Create Random Point Forecasts
-#'   f_preds            <-  replicate(10, rnorm(n    = numb_obs,
-#'                                              mean = 0,
-#'                                              sd   = 0.5), )
-#'   f_names            <-  paste0("F", as.character(seq_len(numb_forc)))
-#'   colnames(f_preds)  <-  f_names
+#'      # Y-Column-Name
+#'      y_target    <-  paste(target_var_names[p], "h_1", sep = "_")
+#'      y_signal    <-  target_var_names[p]
+#'      not_target  <-  setdiff(paste(target_var_names, "h_1", sep = "_"),
+#'                              y_target)
 #'
-#'   # Create Benchmark
-#'   benchmark  <-  dplyr::lag(roll::roll_mean(equity_premium,
-#'                                             width = length(equity_premium),
-#'                                             min_obs = 1), n = 1)
+#'      # Create Forecast-Dataset
+#'      dataset  <-  data                                                    %>%
+#'                    select(-any_of(c(y_signal, not_target)))               %>%
+#'                    mutate(across(all_of(y_target), .fns = list("lag_1" =
+#'                           ~dplyr::lag(., 1))), .after = 2)                %>%
+#'                    mutate(across(all_of(y_target), .fns = list("lag_2" =
+#'                           ~dplyr::lag(., 2))), .after = 3)                %>%
+#'                    mutate(across(-c(1, 2, 3, 4), dplyr::lag))             %>%
+#'                    slice(-c(1:3))                                         %>%
+#'                    column_to_rownames("Date")                             %>%
+#'                    as.matrix()
 #'
-#'   # Specify TV-C-Parameter
-#'   sample_length  <-  floor(numb_obs / 10)
-#'   lambda_grid    <-  c(0.9995, 0.9999, 1.0000)
-#'   kappa_grid     <-  c(0.94)
-#'   n_cores        <-  1
+#'      # Get Dates & Length
+#'      full_dates   <-  rownames(dataset)
+#'      full_length  <-  length(full_dates)
 #'
-#'   # Apply TV-C-Function
-#'   results  <-  hdflex::tvc(equity_premium,
-#'                            raw_preds,
-#'                            f_preds,
-#'                            lambda_grid,
-#'                            kappa_grid,
-#'                            sample_length,
-#'                            n_cores)
+#'      # Create Time-Sequence for loop
+#'      T_full      <-  full_length -1
+#'      T_sequence  <-  122:T_full
 #'
-#'   # Assign Results
-#'   forecast_tvc      <-  results[[1]]
-#'   variance_tvc      <-  results[[2]]
-#'   model_names_tvc   <-  results[[3]]
+#'      ### Benchmark Model ###
+#'      # Create Result Matrices for Predictions
+#'      preds_ar2  <-  matrix(NA, ncol = 1, nrow = full_length,
+#'                            dimnames = list(full_dates, "AR"))
 #'
-#'   # Cut Initialization-Period
-#'   nr_drp              <-  dim(forecast_tvc)[1] -
-#'                           dim(na.omit(forecast_tvc))[1] + 1
-#'   sample_period_idx   <-  (nr_drp + sample_length):numb_obs
+#'      # Create Result Matrices for Squared Errors
+#'      se_ar2     <-  matrix(NA, ncol = 1, nrow = full_length,
+#'                            dimnames = list(full_dates, "AR"))
 #'
-#'   # Trim Objects
-#'   sub_forecast_tvc    <-  forecast_tvc[sample_period_idx, , drop = FALSE]
-#'   sub_variance_tvc    <-  variance_tvc[sample_period_idx, , drop = FALSE]
-#'   sub_benchmark       <-  benchmark[sample_period_idx]
-#'   sub_equity_premium  <-  equity_premium[sample_period_idx]
+#'      # Loop over t
+#'      for(t in T_sequence) {
 #'
-#'   ##### Dynamic Subset Combination #####
-#'   # Set DSC Parameter
-#'   nr_mods     <-  length(model_names_tvc)
-#'   gamma_grid  <-  c(0.9, 0.95, 0.99, 1)
-#'   psi_grid    <-  c(1, 2, 3, 4, 5)
-#'   delta       <-  0.9992
-#'   n_cores     <-  1
+#'          ### Pre-Process Data ###
+#'          # Train Data
+#'          x_train     <-  scale(dataset[1:t, -1, drop = FALSE])
+#'          y_train     <-        dataset[1:t,  1, drop = FALSE]
 #'
-#'   # Apply DSC-Function
-#'   results  <-  hdflex::dsc(gamma_grid,
-#'                            psi_grid,
-#'                            sub_equity_premium,
-#'                            sub_forecast_tvc,
-#'                            sub_variance_tvc,
-#'                            delta,
-#'                            n_cores)
+#'          # Predict Data
+#'          x_pred      <-  scale(dataset[1:(t+1), -1, drop = FALSE])[(t+1), , drop = FALSE]
+#'          y_pred      <-        dataset[t+1, 1]
 #'
-#'   # Assign Results
-#'   sub_forecast_dsc    <-  results[[1]]
-#'   sub_variance_dsc    <-  results[[2]]
-#'   model_names_comb    <-  results[[3]]
-#'   sub_chosen_para     <-  results[[4]]
-#'   sub_models_idx      <-  results[[5]]
+#'          ### Model 1: AR(2) ###
+#'          # Train Data
+#'          x_train_ar  <-  cbind(int = 1, x_train[, c(1:2), drop = FALSE])
 #'
-#'   # Define Evaluation Period
-#'   eval_period_idx     <-  50:length(sub_equity_premium)
+#'          # Predict Data
+#'          x_pred_ar   <-  cbind(int = 1,  x_pred[, c(1:2), drop = FALSE])
 #'
-#'   # Trim Objects
-#'   oos_equity_premium  <-  sub_equity_premium[eval_period_idx]
-#'   oos_benchmark       <-  sub_benchmark[eval_period_idx]
-#'   oos_forecast_dsc    <-  sub_forecast_dsc[eval_period_idx]
-#'   oos_variance_dsc    <-  sub_variance_dsc[eval_period_idx]
-#'   oos_models_idx      <-  lapply(seq_along(model_names_comb), function(i) {
-#'                                       sub_models_idx[[i]][eval_period_idx]})
-#'   oos_chosen_para     <-  sub_chosen_para[eval_period_idx, , drop = FALSE]
-#'   oos_dates           <-  seq(as.Date("1989-12-01"),
-#'                               by = "day",
-#'                               length.out = length(eval_period_idx))
+#'          # Fit Regressions
+#'          model_ar    <-  .lm.fit(x_train_ar, y_train)
 #'
-#'   # Assign Names
-#'   names(oos_forecast_dsc)  <-  oos_dates
-#'   names(oos_variance_dsc)  <-  oos_dates
+#'          # Predict & Combine
+#'          pred                  <-  model_ar$coefficients %*% x_pred_ar[,]
+#'          preds_ar2[t+1, "AR"]  <-  pred
+#'          se_ar2[t+1, "AR"]     <-  (y_pred - pred) ** 2
+#'      }
 #'
-#'   # Apply Statistial-Evaluation-Function
-#'   eval_results  <-  eval_dsc(oos_equity_premium,
-#'                              oos_benchmark,
-#'                              oos_forecast_dsc,
-#'                              oos_dates,
-#'                              oos_chosen_para,
-#'                              model_names_tvc,
-#'                              oos_models_idx)
+#'      ##### TV-C Models #####
+#'      # Set Target Variable
+#'      Y  <-  dataset[,  1, drop = FALSE]
 #'
-#'   # Assign Results
-#'   cw_t          <-  eval_results[[1]]
-#'   oos_r2        <-  eval_results[[2]]
-#'   csed          <-  eval_results[[3]]
-#'   pred_pockets  <-  eval_results[[4]]
-#' }
+#'      # Set 'Simple' Signals
+#'      X  <-  dataset[, -1, drop = FALSE]
+#'
+#'      # Load External Point Forecasts (Koop & Korobilis 2023)
+#'      F  <-  get(paste0("Ext_PF_", target_var_names[p]))
+#'
+#'      # Set TV-C-Parameter
+#'      sample_length  <-  4 * 3
+#'      lambda_grid    <-  c(0.90, 0.95, 0.99, 0.999, 1)
+#'      kappa_grid     <-  0.98
+#'      n_cores        <-  1
+#'
+#'      # Apply TV-C-Function
+#'      results  <-  hdflex::tvc(Y,
+#'                               X,
+#'                               F,
+#'                               lambda_grid,
+#'                               kappa_grid,
+#'                               sample_length,
+#'                               n_cores)
+#'
+#'      # Assign Results
+#'      forecast_tvc      <-  results[[1]]
+#'      variance_tvc      <-  results[[2]]
+#'      model_names_tvc   <-  colnames(forecast_tvc)
+#'
+#'      # Define Cut Length and Trim Objects
+#'      sample_period_idx  <-  80:full_length
+#'      sub_forecast_tvc   <-  forecast_tvc[sample_period_idx, , drop = FALSE]
+#'      sub_variance_tvc   <-  variance_tvc[sample_period_idx, , drop = FALSE]
+#'      sub_Y              <-  Y[sample_period_idx, , drop = FALSE]
+#'      sub_dates          <-  full_dates[sample_period_idx]
+#'      sub_length         <-  length(sub_dates)
+#'
+#'      ##### Dynamic Subset Combination #####
+#'      # Set DSC-Parameter
+#'      nr_mods     <-  ncol(sub_forecast_tvc)
+#'      gamma_grid  <-  c(0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
+#'                        0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99,
+#'                        0.999, 1.00)
+#'      psi_grid    <-  c(1:100)
+#'      delta       <-  0.95
+#'      n_cores     <-  1
+#'
+#'      # Apply DSC-Function
+#'      results  <-  hdflex::dsc(gamma_grid,
+#'                               psi_grid,
+#'                               sub_Y,
+#'                               sub_forecast_tvc,
+#'                               sub_variance_tvc,
+#'                               delta,
+#'                               n_cores)
+#'
+#'      # Assign Results
+#'      sub_forecast_stsc    <-  results[[1]]
+#'      sub_variance_stsc    <-  results[[2]]
+#'      sub_chosen_gamma     <-  results[[3]]
+#'      sub_chosen_psi       <-  results[[4]]
+#'      sub_pred_pockets     <-  results[[5]]
+#'
+#'      # Define Evaluation Period
+#'      eval_date_start      <-  "1991-01-01"
+#'      eval_date_end        <-  "2021-12-31"
+#'      eval_period_idx      <-  which(sub_dates > eval_date_start &
+#'                                     sub_dates <= eval_date_end)
+#'
+#'      # Trim Objects
+#'      oos_Y                <-  sub_Y[eval_period_idx, ]
+#'      oos_benchmark        <-  preds_ar2[rownames(preds_ar2) > eval_date_start, "AR"]
+#'      oos_forecast_stsc    <-  sub_forecast_stsc[eval_period_idx]
+#'      oos_variance_stsc    <-  sub_variance_stsc[eval_period_idx]
+#'      oos_chosen_gamma     <-  sub_chosen_gamma[eval_period_idx]
+#'      oos_chosen_psi       <-  sub_chosen_psi[eval_period_idx]
+#'      oos_pred_pockets     <-  sub_pred_pockets[eval_period_idx, , drop = FALSE]
+#'      oos_length           <-  length(eval_period_idx)
+#'      oos_dates            <-  sub_dates[eval_period_idx]
+#'
+#'      # Add Dates
+#'      names(oos_forecast_stsc)   <-  oos_dates
+#'      names(oos_variance_stsc)   <-  oos_dates
+#'      names(oos_chosen_gamma)    <-  oos_dates
+#'      names(oos_chosen_psi)      <-  oos_dates
+#'      rownames(oos_pred_pockets) <-  oos_dates
+#'
+#'      ##### Evaluate #####
+#'      # Apply Statistial-Evaluation-Function
+#'      summary_results  <-  summary_stsc(oos_Y,
+#'                                        oos_benchmark,
+#'                                        oos_forecast_stsc)
+#'       # Assign MSE-Results
+#'      mse  <-  summary_results[[4]]
+#'
+#'      # Return
+#'      return(c(mse[[2]], mse[[1]]))
+#'      }))
+#'
+#'  # MSE-Results
+#'  dimnames(results)  <-  list(target_var_names, c("AR", "STSC"))
+#'  round(results / results[, 1], 4)
+#'  }
 
 ### Time-Varying Coefficient Model
 tvc  <- function(y,
-                 x,
-                 f,
+                 X,
+                 F,
                  lambda_grid,
                  kappa_grid,
                  init_length,
@@ -174,18 +242,18 @@ tvc  <- function(y,
                            finite = TRUE)
 
   # Either x or f must not be null
-  checkmate::assert(checkmate::checkMatrix(x),
-                    checkmate::checkMatrix(f),
+  checkmate::assert(checkmate::checkMatrix(X),
+                    checkmate::checkMatrix(F),
                     combine = "or")
 
   # Check if x is numeric matrix and has the same number of observations as y
-  checkmate::assertMatrix(x,
+  checkmate::assertMatrix(X,
                           mode = "numeric",
                           nrow = length(y),
                           null.ok = TRUE)
 
-  # Check if f is numeric matrix and has the same number of observations as y
-  checkmate::assertMatrix(f,
+  # Check if F is numeric matrix and has the same number of observations as y
+  checkmate::assertMatrix(F,
                           mode = "numeric",
                           nrow = length(y),
                           null.ok = TRUE)
@@ -211,27 +279,27 @@ tvc  <- function(y,
                        lower = 2,
                        upper = length(y))
 
-  # Check if n_cores is Integer bigger or equal to 1
+  # Check if n_cores is integer bigger or equal to 1
   checkmate::assertInt(n_cores,
                        lower = 1)
 
-  ### 1) TV-C-Model for 'raw' Predictors
-  if (!is.null(x)) {
+  ### 1) TV-C-Model for 'simple' Signals
+  if (!is.null(X)) {
 
     # Set Variables and Indices to Subset Matrices
-    nr_preds      <-  ncol(x)
+    nr_preds      <-  ncol(X)
     start_cols    <-  1
     end_cols      <-  nr_preds
     mu_tmp_seq    <-  seq(1, 2 * nr_preds, 2)
     var_tmp_seq   <-  seq(2, 2 * nr_preds, 2)
 
     # Set Column-Index-Grid
-    col_grid  <-  seq(1, ncol(x))
+    col_grid  <-  seq(1, nr_preds)
 
-    # Set Number Models
+    # Set number of predictive densities to create
     nr_mods   <- length(lambda_grid) * length(kappa_grid) * nr_preds
 
-    # Set up Result Matrices (for Predictive Density)
+    # Set up result matrices (for Predictive Density)
     max_length        <-  length(y)
     mu_mat_raw        <-  matrix(NA, ncol = nr_mods, nrow = max_length)
     variance_mat_raw  <-  matrix(NA, ncol = nr_mods, nrow = max_length)
@@ -241,26 +309,26 @@ tvc  <- function(y,
       for (j in seq_along(kappa_grid)) {
 
         # Set Lambda and Kappa
-        lam  <-  lambda_grid[i]
-        kap   <-  kappa_grid[j]
+        lambda  <-  lambda_grid[i]
+        kappa   <-  kappa_grid[j]
 
         # Set up Backend for Parallel Processing
         cores   <-  n_cores
         cl      <-  parallel::makeCluster(cores, type = "PSOCK")
         parallel::clusterExport(cl = cl, varlist = c("y",
-                                                     "x",
+                                                     "X",
                                                      "max_length",
                                                      "init_length",
-                                                     "lam",
-                                                     "kap"),
+                                                     "lambda",
+                                                     "kappa"),
                                   envir = environment())
         parallel::clusterEvalQ(cl, library("hdflex"))
 
         # Parallelize with parLapply
         mu_var_tmp     <-  do.call("cbind", parallel::parLapply(cl, col_grid, function(j) {
 
-          # Get Predictor Matrices and Set Lengths
-          y_x          <-  cbind(y, x[, j])
+          # Select signal-column and align lenght with target variable
+          y_x          <-  cbind(y, X[, j])
           ts_y_x       <-  stats::na.omit(y_x)
           drop_length  <-  max_length - nrow(ts_y_x)
           ts_length    <-  nrow(ts_y_x) - 1
@@ -279,11 +347,11 @@ tvc  <- function(y,
           cov_mat  <-  init_results[[2]]
           h        <-  init_results[[3]]
 
-          # Update & Predict: Recursively Apply TV-C-Model-Function
+          # Update & Predict: Recursively apply TV-C-Model-Function
           tvc_results  <-  tvc_model_loop(y_var,
                                           x_var,
-                                          lam,
-                                          kap,
+                                          lambda,
+                                          kappa,
                                           theta,
                                           cov_mat,
                                           h,
@@ -291,7 +359,7 @@ tvc  <- function(y,
                                           drop_length,
                                           max_length)
 
-          # Return Predictive Densities (Mu & Variance) for Predictor j
+          # Return Predictive Densities (Mu & Variance) for Signal j
           return(cbind(tvc_results[[1]], tvc_results[[2]]))
         }))
 
@@ -308,131 +376,136 @@ tvc  <- function(y,
       }
     }
 
-    ### Get Model Names
-    # Get / Create Predictor Names
-    if (!is.null(colnames(x))) {
-      x_names  <-  colnames(x)
+    ### Create Candidate Forecast Names
+    # Get / Create Signal Names
+    if (!is.null(colnames(X))) {
+      x_names  <-  colnames(X)
     } else {
-      x_names  <-  paste0("X", as.character(seq_len(ncol(x))))
+      x_names  <-  paste0("X", as.character(seq_len(nr_preds)))
     }
 
     # Set up Vector
     model_names_raw  <-  rep(NA, nr_mods)
                   i  <-  1
 
-    # Loop over lambda, kappa and col-grids
-    for (lam in lambda_grid) {
-      for (kap in kappa_grid)  {
+    # Loop over lambda-, kappa- and col-grids
+    for (lambda in lambda_grid) {
+      for (kappa in kappa_grid)  {
         for (col_ind in col_grid) {
 
           # Set Col-Name
           col_name    <-  x_names[col_ind]
 
           # Append
-          model_names_raw[i] <-  paste(col_name, lam, kap, sep = "-")
+          model_names_raw[i] <-  paste(col_name, lambda, kappa, sep = "-")
                           i  <-  i + 1
         }
       }
     }
 
     # Remove Objects
-    rm(list = c("mu_var_tmp", "x", "mu_tmp_seq", "var_tmp_seq"))
+    rm(list = c("mu_var_tmp", "X", "mu_tmp_seq", "var_tmp_seq"))
   }
 
   ### 2.) TV-C-Model for Point Forecasts
-  if (!is.null(f)) {
+  if (!is.null(F)) {
 
     # Set Variables and Indices to Subset Matrices mu_mat and variance_mat
-    nr_preds      <-  ncol(f)
+    nr_preds      <-  ncol(F)
     start_cols    <-  1
     end_cols      <-  nr_preds
     mu_tmp_seq    <-  seq(1, 2 * nr_preds, 2)
     var_tmp_seq   <-  seq(2, 2 * nr_preds, 2)
 
     # Set Column-Index-Grid
-    col_grid  <-  seq(1, ncol(f))
+    col_grid  <-  seq(1, nr_preds)
 
     # Number Models
-    nr_mods  <- length(kappa_grid) * nr_preds
+    nr_mods  <- length(lambda_grid) * length(kappa_grid) * nr_preds
 
     # Set up Matrices
     max_length      <-  length(y)
     mu_mat_f        <-  matrix(NA, ncol = nr_mods, nrow = max_length)
     variance_mat_f  <-  matrix(NA, ncol = nr_mods, nrow = max_length)
 
-    # Loop over Kappa Grid
-    for (j in seq_along(kappa_grid)) {
+    # Loop over Lambda- and Kappa-Grid
+    for (i in seq_along(lambda_grid)) {
+      for (j in seq_along(kappa_grid)) {
 
-      # Set Kappa
-      kap   <-  kappa_grid[j]
+        # Set Lambda and Kappa
+        lambda  <-  lambda_grid[i]
+        kappa   <-  kappa_grid[j]
 
-      # Set Up Backend for Parallel Processing
-      cores   <-  n_cores
-      cl      <-  parallel::makeCluster(cores, type = "PSOCK")
-      parallel::clusterExport(cl = cl, varlist = c("y",
-                                                   "f",
-                                                   "max_length",
-                                                   "init_length",
-                                                   "kap"),
-                              envir = environment())
-      parallel::clusterEvalQ(cl, library("hdflex"))
+        # Set Up Backend for Parallel Processing
+        cores   <-  n_cores
+        cl      <-  parallel::makeCluster(cores, type = "PSOCK")
+        parallel::clusterExport(cl = cl, varlist = c("y",
+                                                     "F",
+                                                     "max_length",
+                                                     "init_length",
+                                                     "lambda",
+                                                     "kappa"),
+                                envir = environment())
+        parallel::clusterEvalQ(cl, library("hdflex"))
 
-      # Parallelize with parLapply
-      mu_var_tmp  <-  do.call("cbind", parallel::parLapply(cl, col_grid, function(j) {
+        # Parallelize with parLapply
+        mu_var_tmp  <-  do.call("cbind", parallel::parLapply(cl, col_grid, function(j) {
 
-        # Get Predicor Matrices (->  Point Forecasts) and Set Lengths
-        y_x          <-  cbind(y, f[, j])
-        ts_y_x       <-  na.omit(y_x)
-        drop_length  <-  max_length - nrow(ts_y_x)
-        ts_length    <-  nrow(ts_y_x) - 1
+          # Get Point-Forecasts Column and align lengths
+          y_x          <-  cbind(y, F[, j])
+          ts_y_x       <-  na.omit(y_x)
+          drop_length  <-  max_length - nrow(ts_y_x)
+          ts_length    <-  nrow(ts_y_x) - 1
 
-        # Select Y-Variable
-        y_var  <-  ts_y_x[, 1]
+          # Select Y-Variable
+          y_var  <-  ts_y_x[,  1]
 
-        # Select X-Variable
-        x_var  <-  ts_y_x[, -1]
+          # Select X-Variable
+          x_var  <-  ts_y_x[, -1]
 
-        # Initialize TV-C-Model
-        init_results  <-  init_tvc_forecast(y_var, init_length)
+          # Initialize TV-C-Model
+          init_results  <-  init_tvc_forecast(y_var, x_var, init_length)
 
-        # Assign Init-Results
-        theta    <-  init_results[[1]]
-        cov_mat  <-  init_results[[2]]
-        h        <-  init_results[[3]]
+          # Assign Init-Results
+          theta    <-  init_results[[1]]
+          cov_mat  <-  init_results[[2]]
+          h        <-  init_results[[3]]
 
-        # Update & Predict: Recursively Apply TV-C-Model-Function
-        tvc_results  <-  tvc_model_loop_forecasts(y_var,
-                                                  x_var,
-                                                  kap,
-                                                  theta,
-                                                  cov_mat,
-                                                  h,
-                                                  ts_length,
-                                                  drop_length,
-                                                  max_length)
+          # Update & Predict: Recursively Apply TV-C-Model-Function
+          tvc_results  <-  tvc_model_loop(y_var,
+                                          x_var,
+                                          lambda,
+                                          kappa,
+                                          theta,
+                                          cov_mat,
+                                          h,
+                                          ts_length,
+                                          drop_length,
+                                          max_length)
 
-        # Return Predictive Densities (Mu & Variance) for Predictor j
-        return(cbind(tvc_results[[1]], tvc_results[[2]]))
-      }))
+          # Return Predictive Densities (Mu & Variance) for Predictor j
+          return(cbind(tvc_results[[1]], tvc_results[[2]]))
+        }))
 
-      # Stop Cluster
-      parallel::stopCluster(cl)
+        # Stop Cluster
+        parallel::stopCluster(cl)
 
-      # Fill Result Matrices mu_mat and variance_mat
-      mu_mat_f[, start_cols:end_cols]        <-  mu_var_tmp[, mu_tmp_seq]
-      variance_mat_f[, start_cols:end_cols]  <-  mu_var_tmp[, var_tmp_seq]
+        # Fill Result Matrices mu_mat and variance_mat
+        mu_mat_f[, start_cols:end_cols]        <-  mu_var_tmp[, mu_tmp_seq]
+        variance_mat_f[, start_cols:end_cols]  <-  mu_var_tmp[, var_tmp_seq]
 
-      # Increase Column Indexes
-      start_cols  <-  start_cols + nr_preds
-      end_cols    <-  start_cols + nr_preds - 1
+        # Increase Column Indexes
+        start_cols  <-  start_cols + nr_preds
+        end_cols    <-  start_cols + nr_preds - 1
+      }
     }
 
-    ### Get Model Names
-    # Get / Create Predictor Names
-    if (!is.null(colnames(f))) {
-      f_names  <-  colnames(f)
+    ### Get Candidate Forecast Names
+    # Get / Create Point Forecast Names
+    if (!is.null(colnames(F))) {
+      f_names  <-  colnames(F)
     } else {
-      f_names  <-  paste0("F", as.character(seq_len(ncol(f))))
+      f_names  <-  paste0("F", as.character(seq_len(nr_preds)))
     }
 
     # Set up Vector
@@ -440,20 +513,22 @@ tvc  <- function(y,
           i        <-  1
 
     # Loop over Kappa Grid
-    for (kap in kappa_grid) {
-      for (col_ind in col_grid) {
+    for (lambda in lambda_grid) {
+      for (kappa in kappa_grid) {
+        for (col_ind in col_grid) {
 
-        # Set Colname
-        col_name  <-  f_names[col_ind]
+          # Set Colname
+          col_name  <-  f_names[col_ind]
 
-        # Append
-        model_names_f[i]  <-  paste(col_name, "1", kap, sep = "-")
-                i         <-  i + 1
+          # Append
+          model_names_f[i]  <-  paste(col_name, lambda, kappa, sep = "-")
+                  i         <-  i + 1
+        }
       }
     }
 
     # Remove Objects
-    rm(list = c("mu_var_tmp", "f", "mu_tmp_seq", "var_tmp_seq"))
+    rm(list = c("mu_var_tmp", "F", "mu_tmp_seq", "var_tmp_seq"))
   }
 
   ### 3) Combine Results
@@ -469,6 +544,10 @@ tvc  <- function(y,
   model_names_tvc  <-  c(if (exists("model_names_raw")) model_names_raw,
                          if (exists("model_names_f")) model_names_f)
 
+  # Assign Model Names (-> Column Names)
+  colnames(forecast_tvc)  <-  model_names_tvc
+  colnames(variance_tvc)  <-  model_names_tvc
+
   # Return Results
-  return(list(forecast_tvc, variance_tvc, model_names_tvc))
+  return(list(forecast_tvc, variance_tvc))
 }

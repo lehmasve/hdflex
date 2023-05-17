@@ -16,10 +16,10 @@ using namespace Rcpp;
 // Function II - Re-Weight Probabilities by Forgetting Factor Gamma
 //[[Rcpp::export]]
    NumericVector forget_dsc(NumericVector weights, 
-                            double gam){
+                            double gamma){
 
     // Define Variables
-       weights = pow(weights, gam) / sum(pow(weights, gam));
+       weights = pow(weights, gamma) / sum(pow(weights, gamma));
   
     // Return Updated Probabilities
        return weights;
@@ -34,19 +34,19 @@ using namespace Rcpp;
        List ret(2);
        NumericVector active_weights(psi);
     
-    // Get index of the 'psi' highest weights
+    // (Partial) Sort Weights
        IntegerVector idx = seq(0, weights.size()-1);
        std::partial_sort(idx.begin(), idx.begin()+psi, idx.end(), 
                          [&](int i, int j) {return weights[i] > weights[j]; });
                       
-    // Assign 'Zero' Weight to lowest Weights
+    // Get index of the 'psi' highest weights
        IntegerVector idx_sub = idx[seq(0, psi-1)];
    
     // Calculate Active Weights
-        active_weights.fill(1.0 / psi); 
+       active_weights.fill(1.0 / psi); 
 
-        //   active_weights = weights[idx_sub];
-        //   active_weights = active_weights / sum(active_weights); 
+        //active_weights = weights[idx_sub];
+        //active_weights = active_weights / sum(active_weights); 
     
     // Fill list  
        ret[0] = active_weights;
@@ -80,7 +80,7 @@ using namespace Rcpp;
 // Function IV - Compute Combined Predictive Distribution
 //[[Rcpp::export]]
    List agg_density_dsc(NumericVector active_weights, 
-                        NumericVector oos_equity_premium, 
+                        NumericVector oos_target_var, 
                         NumericMatrix oos_forecast_tvp,             
                         NumericMatrix oos_variance_tvp, 
                         IntegerVector idx_sub,
@@ -100,7 +100,7 @@ using namespace Rcpp;
                           variance_agg;
 
     // Calculate Predictive Log Score
-       ln_score = R::dnorm(oos_equity_premium(t), mu_agg, pow( variance_agg, 0.5 ), true ); 
+       ln_score = R::dnorm(oos_target_var(t), mu_agg, pow( variance_agg, 0.5 ), true ); 
     
     // Fill list  
        ret[0] = mu_agg;
@@ -114,7 +114,7 @@ using namespace Rcpp;
 // Function V - Update Probabilities using Bayes' Rule
 //[[Rcpp::export]]
    NumericVector update_dsc(NumericVector weights, 
-                            NumericVector oos_equity_premium, 
+                            NumericVector oos_target_var, 
                             NumericMatrix oos_forecast_tvp,             
                             NumericMatrix oos_variance_tvp,
                             int n_models, 
@@ -122,11 +122,11 @@ using namespace Rcpp;
                                      
     // Define Variables
        NumericVector pred_lik(n_models);
-       double oos_equity_premium_t = oos_equity_premium(t);
+       double oos_target_var_t = oos_target_var(t);
 
     // Calculate Predictive Likelihood
        for( int i=0; i<n_models; i++) {
-           pred_lik(i) = R::dnorm( oos_equity_premium_t,   
+           pred_lik(i) = R::dnorm( oos_target_var_t,   
                                    oos_forecast_tvp(t, i), 
                                    pow(oos_variance_tvp(t, i), 0.5),
                                    false);
@@ -142,9 +142,9 @@ using namespace Rcpp;
 // Function VI - Loop over Predictive and Update Step
 // [[Rcpp::export]]
     List dsc_loop(NumericVector weights, 
-                  double gam, 
+                  double gamma, 
                   int psi, 
-                  NumericVector oos_equity_premium,
+                  NumericVector oos_target_var,
                   NumericMatrix oos_forecast_tvp,             
                   NumericMatrix oos_variance_tvp,
                   int len_para_grid,
@@ -160,7 +160,7 @@ using namespace Rcpp;
       for (int t = 0; t < oos_length; t++) {
 
         // Forget Weights
-           weights = forget_dsc(weights, gam);
+           weights = forget_dsc(weights, gamma);
 
         // Active Models
            active_results     = active_models_dsc(weights, psi);                                    
@@ -170,7 +170,7 @@ using namespace Rcpp;
 
         // Aggregated Predictive Density and Log Score
            agg_density = agg_density_dsc(active_weights,
-                                         oos_equity_premium,
+                                         oos_target_var,
                                          oos_forecast_tvp,
                                          oos_variance_tvp,
                                          active_results(1),
@@ -183,7 +183,7 @@ using namespace Rcpp;
 
         // Update Weights 
            weights = update_dsc(weights,
-                                oos_equity_premium,
+                                oos_target_var,
                                 oos_forecast_tvp,
                                 oos_variance_tvp,
                                 n_models,

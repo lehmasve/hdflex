@@ -5,8 +5,8 @@ init_dsc <- function(number_forecasts) {
     .Call(`_hdflex_init_dsc`, number_forecasts)
 }
 
-forget_dsc <- function(weights, gam) {
-    .Call(`_hdflex_forget_dsc`, weights, gam)
+forget_dsc <- function(weights, gamma) {
+    .Call(`_hdflex_forget_dsc`, weights, gamma)
 }
 
 active_models_dsc <- function(weights, psi) {
@@ -17,39 +17,31 @@ matrix_subset_idx <- function(mat, col_idx, t) {
     .Call(`_hdflex_matrix_subset_idx`, mat, col_idx, t)
 }
 
-agg_density_dsc <- function(active_weights, oos_equity_premium, oos_forecast_tvp, oos_variance_tvp, idx_sub, t) {
-    .Call(`_hdflex_agg_density_dsc`, active_weights, oos_equity_premium, oos_forecast_tvp, oos_variance_tvp, idx_sub, t)
+agg_density_dsc <- function(active_weights, oos_target_var, oos_forecast_tvp, oos_variance_tvp, idx_sub, t) {
+    .Call(`_hdflex_agg_density_dsc`, active_weights, oos_target_var, oos_forecast_tvp, oos_variance_tvp, idx_sub, t)
 }
 
-update_dsc <- function(weights, oos_equity_premium, oos_forecast_tvp, oos_variance_tvp, n_models, t) {
-    .Call(`_hdflex_update_dsc`, weights, oos_equity_premium, oos_forecast_tvp, oos_variance_tvp, n_models, t)
+update_dsc <- function(weights, oos_target_var, oos_forecast_tvp, oos_variance_tvp, n_models, t) {
+    .Call(`_hdflex_update_dsc`, weights, oos_target_var, oos_forecast_tvp, oos_variance_tvp, n_models, t)
 }
 
-dsc_loop <- function(weights, gam, psi, oos_equity_premium, oos_forecast_tvp, oos_variance_tvp, len_para_grid, oos_length, n_models) {
-    .Call(`_hdflex_dsc_loop`, weights, gam, psi, oos_equity_premium, oos_forecast_tvp, oos_variance_tvp, len_para_grid, oos_length, n_models)
+dsc_loop <- function(weights, gamma, psi, oos_target_var, oos_forecast_tvp, oos_variance_tvp, len_para_grid, oos_length, n_models) {
+    .Call(`_hdflex_dsc_loop`, weights, gamma, psi, oos_target_var, oos_forecast_tvp, oos_variance_tvp, len_para_grid, oos_length, n_models)
 }
 
 init_tvc <- function(y_var, x_var, sample_length) {
     .Call(`_hdflex_init_tvc`, y_var, x_var, sample_length)
 }
 
-init_tvc_forecast <- function(y_var, sample_length) {
-    .Call(`_hdflex_init_tvc_forecast`, y_var, sample_length)
+init_tvc_forecast <- function(y_var, x_var, sample_length) {
+    .Call(`_hdflex_init_tvc_forecast`, y_var, x_var, sample_length)
 }
 
 tvc_model <- function(y_var, x_var, i, lambda, kappa, theta, cov_mat, h) {
     .Call(`_hdflex_tvc_model`, y_var, x_var, i, lambda, kappa, theta, cov_mat, h)
 }
 
-tvc_model_forecasts <- function(y_var, x_var, i, kappa, theta, cov_mat, h) {
-    .Call(`_hdflex_tvc_model_forecasts`, y_var, x_var, i, kappa, theta, cov_mat, h)
-}
-
 tvc_model_loop <- function(y_var, x_var, lambda, kappa, theta, cov_mat, h, ts_length, drop_length, max_length) {
     .Call(`_hdflex_tvc_model_loop`, y_var, x_var, lambda, kappa, theta, cov_mat, h, ts_length, drop_length, max_length)
-}
-
-tvc_model_loop_forecasts <- function(y_var, x_var, kappa, theta, cov_mat, h, ts_length, drop_length, max_length) {
-    .Call(`_hdflex_tvc_model_loop_forecasts`, y_var, x_var, kappa, theta, cov_mat, h, ts_length, drop_length, max_length)
 }
 
