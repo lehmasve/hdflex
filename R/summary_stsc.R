@@ -3,7 +3,7 @@
 #' @description `summary_stsc()` returns a statistical summary
 #' of the results from dsc(). It provides statistical measures
 #' such as Clark-West-Statistic, OOS-R2, Mean-Squared-Error and
-#' Cumulated Sum of Squard-Error-Differences.
+#' Cumulated Sum of Squared-Error-Differences.
 #' @param oos_y A matrix of dimension `T * 1` or numeric vector of length `T`
 #' containing the out-of-sample observations of the target variable.
 #' @param oos_benchmark A matrix of dimension `T * 1` or
