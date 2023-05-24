@@ -3,6 +3,9 @@
 
 # hdflex <a href='https://github.com/lehmasve/hdflex'><img src='man/figures/logo.png' align="right" height="180" /></a>
 
+[![Codecov test
+coverage](https://codecov.io/gh/lehmasve/hdflex/branch/main/graph/badge.svg)](https://app.codecov.io/gh/lehmasve/hdflex?branch=main)
+
 ## About
 
 This package contains the forecasting algorithm developed by [Adämmer,
@@ -127,7 +130,8 @@ The package comprises three function:
  ### Part 2: Dynamic Subset Combination ###
  # Set DSC-Parameter
  nr_mods     <-  ncol(sub_forecast_tvc)
- gamma_grid  <-  c(0.4, 0.5, 0.6, 0.7, 0.8, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00)
+ gamma_grid  <-  c(0.40, 0.05, 0.60, 0.70, 0.80, 0.90,
+                   0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00)
  psi_grid    <-  c(1:100)
  delta       <-  0.95
  n_cores     <-  4
