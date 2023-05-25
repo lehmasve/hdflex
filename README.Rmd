@@ -6,7 +6,9 @@ output: github_document
 
 # hdflex <a href='https://github.com/lehmasve/hdflex'><img src='man/figures/logo.png' align="right" height="180" /></a>
 
-[![Codecov test coverage](https://codecov.io/gh/lehmasve/hdflex/branch/main/graph/badge.svg)](https://app.codecov.io/gh/lehmasve/hdflex?branch=main)
+⁠<!-- badges: start -->⁠
+[![codecov](https://codecov.io/gh/lehmasve/hdflex/branch/dev/graph/badge.svg?token=leKtsb0Kub)](https://codecov.io/gh/lehmasve/hdflex)
+⁠<!-- badges: end -->⁠
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = T,
