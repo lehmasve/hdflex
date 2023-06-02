@@ -18,7 +18,7 @@
 #'
 #'    \item{Column 1:4}{Transformed target variables:
 #'                      GDP deflator (GDPCTPI), PCE deflator (PCECTPI),
-#'                      Total CPI (CPIAUCS)L, Core CPI (CPILFES)L}
+#'                      Total CPI (CPIAUCSL), Core CPI (CPILFESL)}
 #'
 #'    \item{Column 5:8}{First lag of the target variables}
 #'
