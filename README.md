@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# hdflex <a href='https://github.com/lehmasve/hdflex'><img src='man/figures/logo.png' align="right" height="180" /></a>
+# hdflex <a href='https://github.com/lehmasve/hdflex'><img src='man/figures/logo.png' align="right" height="160" /></a>
 
 ⁠<!-- badges: start -->⁠
 [![R-CMD-check](https://github.com/lehmasve/hdflex/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/lehmasve/hdflex/actions/workflows/R-CMD-check.yaml)
@@ -54,7 +54,7 @@ you need the appropriate compilers:
 #########################################################
 ######### Forecasting quarterly U.S. inflation ##########
 #### Please see Koop & Korobilis (2023) for further  ####
-#### details regarding the data & External Forecasts ####
+#### details regarding the data & external forecasts ####
 #########################################################
 
  # Packages
