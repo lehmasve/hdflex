@@ -15,6 +15,19 @@ Lehmann and Schüssler
 (2023)](https://www.researchgate.net/publication/367531209_Local_Predictability_in_High_Dimensions).
 Please cite the paper when using the package.
 
+The package comprises three function:
+
+- `tvc()` can be used to compute density forecasts based on univariate
+  time-varying coefficient (TV-C) models in state-space form.
+
+- `dsc()` can be used to dynamically generate forecast combinations from
+  a subset of candidate density forecasts (dynamic subset combination).
+
+- `summary_stsc()` returns a statistical summary for the forecasting
+  results. It provides statistical measures such as
+  Clark-West-Statistic, OOS-R2, Mean-Squared-Error and Cumulated Sum of
+  Squared-Error-Differences.
+
 ## Installation
 
 You can install **hdflex** from
@@ -34,35 +47,6 @@ you need the appropriate compilers:
 
 - On macOS you need the very least Xcode and a Fortran compiler - for
   more details see [Compiler](https://mac.r-project.org/tools/).
-
-## Main Features
-
-We propose a new forecasting strategy (STSC) that captures
-predictability patterns of high-dimensional signals, especially those
-that are locally concentrated in time. In each period, an aggregate
-density forecast is determined by a subset of candidate density
-forecasts, where each candidate is based on a state-space model. Our
-approach allows for several stylized features of (macro-)economic and
-financial returns, including time-varying predictability patterns and
-time-varying volatility. While the approach is capable of exploring vast
-model spaces, including datasets that contain mostly irrelevant
-predictors, it is parsimoniously parameterized, thereby reducing
-estimation error and maintaining transparency. Furthermore, it is very
-fast by using empirically reasonable approximations, online updating of
-model parameters, and parallel computing.
-
-The package comprises three function:
-
-- `tvc()` can be used to compute density forecasts based on univariate
-  time-varying coefficient (TV-C) models in state-space form.
-
-- `dsc()` can be used to dynamically generate forecast combinations from
-  a subset of candidate density forecasts (dynamic subset combination).
-
-- `summary_stsc()` returns a statistical summary for the forecasting
-  results. It provides statistical measures such as
-  Clark-West-Statistic, OOS-R2, Mean-Squared-Error and Cumulated Sum of
-  Squared-Error-Differences.
 
 ## Usage
 
