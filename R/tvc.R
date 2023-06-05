@@ -21,7 +21,7 @@
 #' Each signal in combination with each value of
 #' lambda provides a separate candidate forecast.
 #' Constant coefficients are nested for the case `lambda = 1`.
-#' @param kappa_grid A numeric vector to accomodate time-varying volatility.
+#' @param kappa_grid A numeric vector to accommodate time-varying volatility.
 #' The observational variance is estimated via
 #' Exponentially Weighted Moving Average.
 #' Constant variance is nested for the case `kappa = 1`.
@@ -31,11 +31,14 @@
 #' to initialize the observational variance and the coefficients' variance.
 #' @param n_cores An integer that denotes the number of CPU-cores used
 #' for the computation.
-#' @return A list that contains
-#' (1) a matrix with the first moments (point forecasts)
+#' @return A list that contains:
+#'
+#' * (1) a matrix with the first moments (point forecasts)
 #' of the conditionally normal predictive distributions and
-#' (2) a matrix with the second moments (variance)
+#'
+#' * (2) a matrix with the second moments (variance)
 #' of the conditionally normal predictive distributions.
+#'
 #' @export
 #' @import parallel
 #' @import checkmate

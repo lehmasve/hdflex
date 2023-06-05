@@ -14,11 +14,11 @@
 #' or numeric vector of length `T` containing the
 #' out-of-sample forecasts of dsc().
 #' @export
-#' @return List that contains
-#' (1) the Clark-West-Statistic,
-#' (2) the Out-of-Sample R2,
-#' (3) a vector with the CSSED between the STSC-Forecast and the benchmark and
-#' (4) a list with the MSE of the STSC-Model and the benchmark.
+#' @return List that contains:
+#' * (1) the Clark-West-Statistic,
+#' * (2) the Out-of-Sample R2,
+#' * (3) a vector with the CSSED between the STSC-Forecast and the benchmark and
+#' * (4) a list with the MSE of the STSC-Model and the benchmark.
 #' @import checkmate
 #' @importFrom stats t.test
 #' @examples

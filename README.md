@@ -5,7 +5,7 @@
 
 ⁠<!-- badges: start -->⁠
 [![R-CMD-check](https://github.com/lehmasve/hdflex/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/lehmasve/hdflex/actions/workflows/R-CMD-check.yaml)
-[![codecov](https://codecov.io/gh/lehmasve/hdflex/branch/dev/graph/badge.svg?token=leKtsb0Kub)](https://codecov.io/gh/lehmasve/hdflex)
+[![codecov](https://codecov.io/gh/lehmasve/hdflex/branch/dev/graph/badge.svg?token=leKtsb0Kub)](https://app.codecov.io/gh/lehmasve/hdflex)
 ⁠<!-- badges: end -->⁠
 
 ## About

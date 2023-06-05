@@ -25,7 +25,7 @@ Each signal in combination with each value of
 lambda provides a separate candidate forecast.
 Constant coefficients are nested for the case `lambda = 1`.}
 
-\item{kappa_grid}{A numeric vector to accomodate time-varying volatility.
+\item{kappa_grid}{A numeric vector to accommodate time-varying volatility.
 The observational variance is estimated via
 Exponentially Weighted Moving Average.
 Constant variance is nested for the case `kappa = 1`.

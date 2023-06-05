@@ -65,7 +65,7 @@
 #' Welch, I. and Goyal, A. (2008) "A comprehensive look at the empirical performance of equity premium prediction."
 #' \emph{The Review of Financial Studies}, 21 (4): 1455–1508.
 #'
-#' @source \url{https://onlinelibrary.wiley.com/doi/full/10.1111/iere.12623}
+#' @source <https://doi.org/10.1111/iere.12623>
 "inflation_data"
 
 
@@ -89,7 +89,7 @@
 #' Koop, G. and Korobilis, D. (2023) "Bayesian dynamic variable selection in high dimensions."
 #' \emph{International Economic Review}.
 #'
-#' @source \url{https://onlinelibrary.wiley.com/doi/full/10.1111/iere.12623}
+#' @source <https://doi.org/10.1111/iere.12623>
 "benchmark_ar2"
 
 
