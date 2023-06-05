@@ -1,35 +1,31 @@
-Package: hdflex
 Type: Package
+Package: hdflex
 Title: High-Dimensional Density Forecast Combinations
 Version: 0.1.0
-Date: 2023-02-06
 Authors@R: c(
-             person("Sven", "Lehmann", 
-                     email   = "sven.lehmann@uni-rostock.de", 
-                     role    = c("aut", "cre")),
-             person("Philipp", "Adämmer", 
-                     email   = "philipp.adaemmer@uni-greifswald.de", 
-                     role    = "aut"),
-             person("Rainer", "Schüssler", 
-                     email   = "Rainer.schüssler@uni-rostock.de", 
-                     role    = "aut"))
+    	     person("Sven", "Lehmann", , "sven.lehmann@uni-rostock.de", role = c("aut", "cre")),
+             person("Philipp", "Adämmer", , "philipp.adaemmer@uni-greifswald.de", role = "aut"),
+             person("Rainer", "Schüssler", , "Rainer.schüssler@uni-rostock.de", role = "aut"))
 Maintainer: Sven Lehmann <sven.lehmann@uni-rostock.de>
-Description: Provides functions to estimate and evaluate density forecast combinations in a high-dimensional setting. The methods are explained in detail in Adämmer et al (2023) <http://dx.doi.org/10.2139/ssrn.4342487>.
+Description: Provides functions to estimate and evaluate density forecast
+             combinations in a high-dimensional setting. The methods are explained
+             in detail in Adaemmer et al. (2023) <doi:10.2139/ssrn.4342487>.
 License: GPL (>= 2)
-Depends: R (>= 4.1.0)
-NeedsCompilation: Yes
+Depends: 
+         R (>= 4.1.0)
 Imports: 
-	 parallel (>= 4.1.0),
-	 dplyr (>= 1.1.0),
-	 Rcpp (>= 1.0.10),
-	 roll (>= 1.1.6),
-	 stringr (>= 1.5.0),
-	 checkmate (>= 2.1.0)
-LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 7.2.3
-Encoding: UTF-8
+         checkmate (>= 2.1.0),
+         dplyr (>= 1.1.0),
+         parallel (>= 4.1.0),
+         Rcpp (>= 1.0.10),
+         roll (>= 1.1.6),
+         stats (>= 4.1.0),
+         stringr (>= 1.5.0)
 Suggests: 
-    covr,
-    testthat (>= 3.0.0)
+          testthat (>= 3.0.0)
+LinkingTo: Rcpp, RcppArmadillo
 Config/testthat/edition: 3
+Encoding: UTF-8
 LazyData: true
+NeedsCompilation: Yes
+RoxygenNote: 7.2.3

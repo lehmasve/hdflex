@@ -24,12 +24,12 @@
 #' to down-weight the past predictive performance of the subset combinations.
 #' @param n_cores An integer that denotes the number of CPU-cores
 #' used for the computational estimation.
-#' @return A list that contains
-#' (1) a vector with the first moments (point forecasts) of the STSC-Model,
-#' (2) a vector with the the second moments (variance) of the STSC-Model,
-#' (3) a vector that contains the selected values for gamma,
-#' (4) a vector that contains the selected values for psi and
-#' (5) a matrix that indicates the selected signals for every point in time.
+#' @return A list that contains:
+#' * (1) a vector with the first moments (point forecasts) of the STSC-Model,
+#' * (2) a vector with the the second moments (variance) of the STSC-Model,
+#' * (3) a vector that contains the selected values for gamma,
+#' * (4) a vector that contains the selected values for psi and
+#' * (5) a matrix that indicates the selected signals for every point in time.
 #' @export
 #' @import parallel
 #' @import checkmate
