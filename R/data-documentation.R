@@ -91,5 +91,3 @@
 #'
 #' @source <https://doi.org/10.1111/iere.12623>
 "benchmark_ar2"
-
-

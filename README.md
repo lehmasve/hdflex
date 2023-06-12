@@ -11,8 +11,7 @@
 ## About
 
 This package contains the forecasting algorithm developed by [Adämmer,
-Lehmann and Schüssler
-(2023)](https://www.researchgate.net/publication/367531209_Local_Predictability_in_High_Dimensions).
+Lehmann and Schüssler (2023)](https://dx.doi.org/10.2139/ssrn.4342487).
 Please cite the paper when using the package.
 
 The package comprises three function:
@@ -29,6 +28,13 @@ The package comprises three function:
   Squared-Error-Differences.
 
 ## Installation
+
+You can install the released version of **hdflex** from
+[CRAN](https://CRAN.R-project.org):
+
+``` r
+install.packages("hdflex")
+```
 
 You can install **hdflex** from
 [GitHub](https://github.com/lehmasve/hdflex):
@@ -219,4 +225,4 @@ Philipp Adämmer, Sven Lehmann and Rainer Schüssler
 
 ### License
 
-MIT
+GPL (\>= 2)

@@ -30,12 +30,12 @@ to down-weight the past predictive performance of the subset combinations.}
 used for the computational estimation.}
 }
 \value{
-A list that contains
-(1) a vector with the first moments (point forecasts) of the STSC-Model,
-(2) a vector with the the second moments (variance) of the STSC-Model,
-(3) a vector that contains the selected values for gamma,
-(4) a vector that contains the selected values for psi and
-(5) a matrix that indicates the selected signals for every point in time.
+A list that contains:
+* (1) a vector with the first moments (point forecasts) of the STSC-Model,
+* (2) a vector with the the second moments (variance) of the STSC-Model,
+* (3) a vector that contains the selected values for gamma,
+* (4) a vector that contains the selected values for psi and
+* (5) a matrix that indicates the selected signals for every point in time.
 }
 \description{
 `dsc()` can be used to generate forecast combinations
@@ -50,6 +50,12 @@ collapses to pure model selection.
 }
 \examples{
 \donttest{
+
+   #########################################################
+   ######### Forecasting quarterly U.S. inflation ##########
+   #### Please see Koop & Korobilis (2023) for further  ####
+   #### details regarding the data & external forecasts ####
+   #########################################################
 
    # Packages
    library("hdflex")
@@ -200,4 +206,29 @@ collapses to pure model selection.
         xlab = "Date",
         ylab = "Psi")
  }
+}
+\references{
+Beckmann, J., Koop, G., Korobilis, D., and Schüssler, R. A. (2020) "Exchange rate predictability and dynamic bayesian learning."
+\emph{Journal of Applied Econometrics}, 35 (4): 410–421.
+
+Koop, G. and Korobilis, D. (2012) "Forecasting inflation using dynamic model averaging."
+\emph{International Economic Review}, 53 (3): 867–886.
+
+Koop, G. and Korobilis, D. (2023) "Bayesian dynamic variable selection in high dimensions."
+\emph{International Economic Review}.
+
+Raftery, A. E., Kárn`y, M., and Ettler, P. (2010) "Online prediction under model uncertainty via dynamic model averaging: Application to a cold rolling mill."
+\emph{Technometrics}, 52 (1): 52–66.
+
+Del Negro, M., Hasegawa, R. B., and Schorfheide, F. (2016) "Dynamic prediction pools: An investigation of financial frictions and forecasting performance."
+\emph{Journal of Econometrics}, 192 (2): 391–405.
+
+West, M. and Harrison, J. (1997) "Bayesian forecasting and dynamic models"
+\emph{Springer}, 2nd edn.
+}
+\seealso{
+\url{https://github.com/lehmasve/hdflex#readme}
+}
+\author{
+Philipp Adämmer, Sven Lehmann, Rainer Schüssler
 }
