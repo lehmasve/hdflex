@@ -20,11 +20,11 @@ or numeric vector of length `T` containing the
 out-of-sample forecasts of dsc().}
 }
 \value{
-List that contains
-(1) the Clark-West-Statistic,
-(2) the Out-of-Sample R2,
-(3) a vector with the CSSED between the STSC-Forecast and the benchmark and
-(4) a list with the MSE of the STSC-Model and the benchmark.
+List that contains:
+* (1) the Clark-West-Statistic,
+* (2) the Out-of-Sample R2,
+* (3) a vector with the CSSED between the STSC-Forecast and the benchmark and
+* (4) a list with the MSE of the STSC-Model and the benchmark.
 }
 \description{
 `summary_stsc()` returns a statistical summary
@@ -34,6 +34,12 @@ Cumulated Sum of Squared-Error-Differences.
 }
 \examples{
 \donttest{
+
+   #########################################################
+   ######### Forecasting quarterly U.S. inflation ##########
+   #### Please see Koop & Korobilis (2023) for further  ####
+   #### details regarding the data & external forecasts ####
+   #########################################################
 
    # Packages
    library("hdflex")
@@ -184,4 +190,14 @@ Cumulated Sum of Squared-Error-Differences.
         xlab = "Date",
         ylab = "Psi")
  }
+}
+\references{
+Clark, T. E. and West, K. D. (2007) "Approximately normal tests for equal predictive accuracy in nested models."
+\emph{Journal of Econometrics}, 138 (1): 291–311.
+}
+\seealso{
+\url{https://github.com/lehmasve/hdflex#readme}
+}
+\author{
+Philipp Adämmer, Sven Lehmann, Rainer Schüssler
 }

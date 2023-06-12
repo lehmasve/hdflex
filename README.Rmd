@@ -23,7 +23,7 @@ knitr::opts_chunk$set(echo = T,
 
 
 ## About
-This package contains the forecasting algorithm developed by [Adämmer, Lehmann and Schüssler (2023) ](https://www.researchgate.net/publication/367531209_Local_Predictability_in_High_Dimensions). Please cite the paper when using the package.
+This package contains the forecasting algorithm developed by [Adämmer, Lehmann and Schüssler (2023) ](https://dx.doi.org/10.2139/ssrn.4342487). Please cite the paper when using the package.
 
 The package comprises three function:
 
@@ -34,6 +34,12 @@ The package comprises three function:
 - `summary_stsc()` returns a statistical summary for the forecasting results. It provides statistical measures such as Clark-West-Statistic, OOS-R2, Mean-Squared-Error and Cumulated Sum of Squared-Error-Differences.
 
 ## Installation
+You can install the released version of **hdflex** from [CRAN](https://CRAN.R-project.org):
+
+``` r
+install.packages("hdflex")
+```
+
 You can install **hdflex** from [GitHub](https://github.com/lehmasve/hdflex):
 
 ``` r
@@ -217,4 +223,4 @@ Philipp Adämmer, Sven Lehmann and Rainer Schüssler
 
 ### License
 
-MIT
+GPL (>= 2)

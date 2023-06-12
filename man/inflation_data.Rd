@@ -45,7 +45,7 @@ A \link{matrix} with 245 quarterly observations (rows) and 516 variables (column
 }
 }
 \source{
-\url{https://onlinelibrary.wiley.com/doi/full/10.1111/iere.12623}
+<https://doi.org/10.1111/iere.12623>
 }
 \usage{
 inflation_data

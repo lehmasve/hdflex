@@ -19,10 +19,22 @@
 #' * (2) the Out-of-Sample R2,
 #' * (3) a vector with the CSSED between the STSC-Forecast and the benchmark and
 #' * (4) a list with the MSE of the STSC-Model and the benchmark.
+#' @seealso \url{https://github.com/lehmasve/hdflex#readme}
+#' @author Philipp Adämmer, Sven Lehmann, Rainer Schüssler
+#' @references
+#' Clark, T. E. and West, K. D. (2007) "Approximately normal tests for equal predictive accuracy in nested models."
+#' \emph{Journal of Econometrics}, 138 (1): 291–311.
+#'
 #' @import checkmate
 #' @importFrom stats t.test
 #' @examples
 #' \donttest{
+#'
+#'    #########################################################
+#'    ######### Forecasting quarterly U.S. inflation ##########
+#'    #### Please see Koop & Korobilis (2023) for further  ####
+#'    #### details regarding the data & external forecasts ####
+#'    #########################################################
 #'
 #'    # Packages
 #'    library("hdflex")

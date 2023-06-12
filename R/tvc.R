@@ -39,12 +39,38 @@
 #' * (2) a matrix with the second moments (variance)
 #' of the conditionally normal predictive distributions.
 #'
+#' @seealso \url{https://github.com/lehmasve/hdflex#readme}
+#' @author Philipp Adämmer, Sven Lehmann, Rainer Schüssler
+#' @references
+#' Beckmann, J., Koop, G., Korobilis, D., and Schüssler, R. A. (2020) "Exchange rate predictability and dynamic bayesian learning."
+#' \emph{Journal of Applied Econometrics}, 35 (4): 410–421.
+#'
+#' Dangl, T. and Halling, M. (2012) "Predictive regressions with time-varying coefficients."
+#' \emph{Journal of Financial Economics}, 106 (1): 157–181.
+#'
+#' Koop, G. and Korobilis, D. (2012) "Forecasting inflation using dynamic model averaging."
+#' \emph{International Economic Review}, 53 (3): 867–886.
+#'
+#' Koop, G. and Korobilis, D. (2023) "Bayesian dynamic variable selection in high dimensions."
+#' \emph{International Economic Review}.
+#'
+#' Raftery, A. E., Kárn`y, M., and Ettler, P. (2010) "Online prediction under model uncertainty via dynamic model averaging: Application to a cold rolling mill."
+#' \emph{Technometrics}, 52 (1): 52–66.
+#'
+#' West, M. and Harrison, J. (1997) "Bayesian forecasting and dynamic models"
+#' \emph{Springer}, 2nd edn.
 #' @export
 #' @import parallel
 #' @import checkmate
 #' @importFrom stats na.omit
 #' @examples
 #' \donttest{
+#'
+#'    #########################################################
+#'    ######### Forecasting quarterly U.S. inflation ##########
+#'    #### Please see Koop & Korobilis (2023) for further  ####
+#'    #### details regarding the data & external forecasts ####
+#'    #########################################################
 #'
 #'    # Packages
 #'    library("hdflex")

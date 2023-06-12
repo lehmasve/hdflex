@@ -18,7 +18,7 @@ A \link{matrix} with 123 quarterly observations (rows) and 4 benchmarks (columns
 }
 }
 \source{
-\url{https://onlinelibrary.wiley.com/doi/full/10.1111/iere.12623}
+<https://doi.org/10.1111/iere.12623>
 }
 \usage{
 benchmark_ar2

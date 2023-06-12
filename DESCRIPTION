@@ -1,29 +1,36 @@
 Type: Package
 Package: hdflex
-Title: High-Dimensional Density Forecast Combinations
+Title: High-Dimensional Aggregate Density Forecasts
 Version: 0.1.0
 Authors@R: c(
-    	     person("Sven", "Lehmann", , "sven.lehmann@uni-rostock.de", role = c("aut", "cre")),
-             person("Philipp", "Adämmer", , "philipp.adaemmer@uni-greifswald.de", role = "aut"),
-             person("Rainer", "Schüssler", , "Rainer.schüssler@uni-rostock.de", role = "aut"))
+    person("Sven", "Lehmann", , "sven.lehmann@uni-rostock.de", role = c("aut", "cre", "cph")),
+    person("Philipp", "Adämmer", , "philipp.adaemmer@uni-greifswald.de", role = "aut"),
+    person("Rainer", "Schüssler", , "rainer.schüssler@uni-rostock.de", role = "aut")
+  )
 Maintainer: Sven Lehmann <sven.lehmann@uni-rostock.de>
-Description: Provides functions to estimate and evaluate density forecast
-             combinations in a high-dimensional setting. The methods are explained
-             in detail in Adaemmer et al. (2023) <doi:10.2139/ssrn.4342487>.
+Description: Provides a forecasting method that maps vast numbers of
+    (scalar-valued) signals of any type into an aggregate density forecast
+    in a time-varying and computationally fast manner. The method proceeds
+    in two steps: First, it transforms a predictive signal into a density
+    forecast. Second, it combines the generated candidate density
+    forecasts into an ultimate density forecast. The methods are explained
+    in detail in Adaemmer et al. (2023) <doi:10.2139/ssrn.4342487>.
 License: GPL (>= 2)
 Depends: 
-         R (>= 4.1.0)
+    R (>= 4.1.0)
 Imports: 
-         checkmate (>= 2.1.0),
-         dplyr (>= 1.1.0),
-         parallel (>= 4.1.0),
-         Rcpp (>= 1.0.10),
-         roll (>= 1.1.6),
-         stats (>= 4.1.0),
-         stringr (>= 1.5.0)
+    checkmate (>= 2.1.0),
+    dplyr (>= 1.1.0),
+    parallel (>= 4.1.0),
+    Rcpp,
+    roll (>= 1.1.6),
+    stats (>= 4.1.0),
+    stringr (>= 1.5.0)
 Suggests: 
-          testthat (>= 3.0.0)
-LinkingTo: Rcpp, RcppArmadillo
+    testthat (>= 3.0.0)
+LinkingTo: 
+    Rcpp,
+    RcppArmadillo
 Config/testthat/edition: 3
 Encoding: UTF-8
 LazyData: true
