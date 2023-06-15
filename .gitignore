@@ -58,3 +58,6 @@ rsconnect/
 
 *.o
 *.so
+
+# ...
+Build_Code.R
