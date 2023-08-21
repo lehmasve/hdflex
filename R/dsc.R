@@ -363,8 +363,8 @@ dsc  <-  function(gamma_grid,
   # Compute exponentially discounted sum of predictive log-likelihoods (DPLL)
   weights            <-  delta^(seq_len(len) - 1)
   cum_ln_scores_lag  <-  dplyr::lag(roll::roll_sum(ln_scores,
-                                                    weights = rev(weights),
-                                                    width = len, min_obs = 1), n = 1L) #nolint
+                                                   weights = rev(weights),
+                                                   width = len, min_obs = 1), n = 1L) #nolint
 
   # Select highest DPLL for each point in time
   chosen_parameter  <-  matrix(FALSE, ncol = n_combs, nrow = len, dimnames = list(NULL, model_names_comb))  #nolint
