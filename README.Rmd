@@ -10,6 +10,7 @@ output: github_document
 [![CRAN Version](https://www.r-pkg.org/badges/version/hdflex)](https://CRAN.R-project.org/package=hdflex)
 [![DOI:10.2139/ssrn.4342487](http://img.shields.io/badge/DOI-10.2139/ssrn.4342487-163870.svg)](https://dx.doi.org/10.2139/ssrn.4342487)
 [![R-CMD-check](https://github.com/lehmasve/hdflex/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/lehmasve/hdflex/actions/workflows/R-CMD-check.yaml)
+[![Total Downloads](https://cranlogs.r-pkg.org/badges/grand-total/hdflex?color=orange)](https://CRAN.R-project.org/package=hdflex)
 [![codecov](https://codecov.io/gh/lehmasve/hdflex/branch/dev/graph/badge.svg?token=leKtsb0Kub)](https://app.codecov.io/gh/lehmasve/hdflex)
 ⁠<!-- badges: end -->⁠
 
