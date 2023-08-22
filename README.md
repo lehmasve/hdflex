@@ -20,7 +20,7 @@ Please cite the paper when using the package.
 
 The package comprises four functions:
 
-- `stsc()`can be used to directly apply the
+- `stsc()` can be used to directly apply the
   “Signal-Transform-Subset-Combination” forecasting algorithm described
   in [Adämmer, Lehmann and Schüssler
   (2023)](https://dx.doi.org/10.2139/ssrn.4342487).
