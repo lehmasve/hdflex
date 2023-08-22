@@ -92,6 +92,20 @@ test_that("Test whether every input parameter is specified.", {
               "not 'NULL'.", fixed = TRUE)
 })
 
+### Test on Dimnames
+test_that("Test whether Code still works without dimnames", {
+
+  colnames(forecast_tvc)  <-  NULL
+  colnames(variance_tvc)    <-  NULL
+  testthat::expect_no_error(dsc(gamma_grid,
+                                psi_grid,
+                                target_var,
+                                forecast_tvc,
+                                variance_tvc,
+                                delta,
+                                n_cores))
+})
+
 ### Output
 test_that("Test whether the output has the right format", {
 
@@ -106,9 +120,6 @@ test_that("Test whether the output has the right format", {
 
   # List Contains Five Elements
   testthat::expect_equal(length(results), 5)
-
-  # Number of Models
-  numb_combs  <-  length(gamma_grid) * length(psi_grid)
 
   # Number of Forecasts
   checkmate::expect_numeric(results[[1]],
