@@ -304,16 +304,16 @@ using namespace Rcpp;
    // Get psi-highest values (-> indices)
       std::nth_element(idx.begin(), idx.begin()+psi_, idx.end(), 
                        [&](int i, int j) {
-                        if( isnan(dpll_cands_gamma[i]) ) return false;
-                        if( isnan(dpll_cands_gamma[j]) ) return true;
+                        if( std::isnan(dpll_cands_gamma[i]) ) return false;
+                        if( std::isnan(dpll_cands_gamma[j]) ) return true;
                         return dpll_cands_gamma[i] > dpll_cands_gamma[j];
                         });
 
    // Sort the highest Values (-> indices)
       std::sort(idx.begin(), idx.begin()+psi_,
                 [&](int i, int j) {
-                  if( isnan(dpll_cands_gamma[i]) ) return false;
-                  if( isnan(dpll_cands_gamma[j]) ) return true;
+                  if( std::isnan(dpll_cands_gamma[i]) ) return false;
+                  if( std::isnan(dpll_cands_gamma[j]) ) return true;
                   return dpll_cands_gamma[i] > dpll_cands_gamma[j];
                   });
    
