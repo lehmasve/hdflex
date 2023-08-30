@@ -167,43 +167,40 @@ First example using the `stsc()` function:
     mse    <-  summary_results[[4]]
 
     ########## Results ##########
-    # Relative MSE
-    print(paste("Relative MSE:", round(mse[[1]] / mse[[2]], 4)))
-
-    # Plot CSSED
-    plot(x    = as.Date(oos_dates),
-         y    = cssed,
-         ylim = c(-0.0008, 0.0008),
-         main = "Cumulated squared error differences",
-         type = "l",
-         lwd  = 1.5,
-         xlab = "Date",
-         ylab = "CSSED") + abline(h = 0, lty = 2, col = "darkgray")
-
-    # Plot Predictive Signals
+    # Create CSSED-Plot
+    p1  <-  plot(x    = as.Date(oos_dates),
+                 y    = cssed,
+                 ylim = c(-0.0008, 0.0008),
+                 main = "Cumulated squared error differences",
+                 type = "l",
+                 lwd  = 1.5,
+                 xlab = "Date",
+                 ylab = "CSSED") + abline(h = 0, lty = 2, col = "darkgray")
+    
+    # Create Predictive Signals-Plot
     vec  <-  seq_len(dim(oos_chosen_signals)[2])
     mat  <-  oos_chosen_signals %*% diag(vec)
     mat[mat == 0]  <- NA
-    matplot(x    = as.Date(oos_dates),
-            y    = mat,
-            cex  = 0.4,
-            pch  = 20,
-            type = "p",
-            main = "Evolution of selected signal(s)",
-            xlab = "Date",
-            ylab = "Predictive Signal")
-
-    # Plot Psi
-    plot(x    = as.Date(oos_dates),
-         y    = oos_chosen_psi,
-         ylim = c(1, 100),
-         main = "Evolution of the subset size",
-         type = "p",
-         cex  = 0.75,
-         pch  = 20,
-         xlab = "Date",
-         ylab = "Psi")
-  
+    p2  <-  matplot(x    = as.Date(oos_dates),
+                    y    = mat,
+                    cex  = 0.4,
+                    pch  = 20,
+                    type = "p",
+                    main = "Evolution of selected signal(s)",
+                    xlab = "Date",
+                    ylab = "Predictive Signal")
+    
+    # Create Psi-Plot
+    p3  <-  plot(x    = as.Date(oos_dates),
+                 y    = oos_chosen_psi,
+                 ylim = c(1, 100),
+                 main = "Evolution of the subset size",
+                 type = "p",
+                 cex  = 0.75,
+                 pch  = 20,
+                 xlab = "Date",
+                 ylab = "Psi")
+    
     # Relative MSE
     print(paste("Relative MSE:", round(mse[[1]] / mse[[2]], 4)))
     
