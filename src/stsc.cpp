@@ -45,21 +45,26 @@ using namespace Rcpp;
                // Define and prepare matrices for regression  
                   arma::vec y_sample = y.elem(index);  
                   arma::mat x_sample(x.elem(index));   
-                  x_sample_one = arma::ones<arma::mat>(x_sample.n_rows, 1); 
+                  x_sample_one = arma::ones<arma::mat>(x_sample.n_rows, 1); // muss nicht im Loop passieren
                   x_sample.insert_cols(0, x_sample_one);
+
+               // Check if all elements are equal
+                  if(arma::all(x_sample.col(1) == x_sample(0, 1))) {
+                     Rcout << "Warning: Consider increasing sample_length. Column " << j + 1 << " only contains equal values \n";
+                  }
 
                // While loop to differentiate between simple signals and point forecasts
                   if(j < n_sim_sig) {
    
                   // Initialize - Theta
-                     theta = arma::zeros<arma::mat>(2,1); 
+                     theta = arma::zeros<arma::mat>(2,1); // muss nicht im Loop passieren
 
                   // Initialize - System Covariance
                      arma::colvec coef = solve(x_sample, y_sample);
                      intercept = coef(0);
                      var_y     = arma::var(y_sample);         
                      var_x     = arma::var(x_sample.col(1));  
-                     cov_mat   = arma::zeros<arma::mat>(2, 2);
+                     cov_mat   = arma::zeros<arma::mat>(2, 2);  // muss nicht im Loop passieren
                      cov_mat(0, 0) = pow(intercept, 2) + var_y;
                      if(arma::is_finite(var_y / var_x)) {
                           cov_mat(1, 1) =  var_y / var_x; 
@@ -70,7 +75,7 @@ using namespace Rcpp;
                   } else {
 
                   // Initialize - Theta
-                     theta = arma::zeros<arma::mat>(2,1); 
+                     theta = arma::zeros<arma::mat>(2,1);  // muss nicht im Loop passieren
                      theta(1, 0) = 1;
 
                   // Initialize - System Covariance
@@ -78,7 +83,7 @@ using namespace Rcpp;
                      intercept = coef(0);
                      var_y     = arma::var(y_sample);         
                      var_x     = arma::var(x_sample.col(1));  
-                     cov_mat   = arma::zeros<arma::mat>(2, 2);
+                     cov_mat   = arma::zeros<arma::mat>(2, 2);  // muss nicht im Loop passieren
                      cov_mat(0, 0) =  pow(intercept, 2) + var_y;  // Set to Zero for Constant Intercept
                      cov_mat(1, 1) =  0;
                   }
@@ -138,10 +143,13 @@ using namespace Rcpp;
       r_t = (1 / lambda) * cov_mat;
     
    // Update Theta for Time t (Equation 7)
-      theta_new = theta + r_t * z_t.t() * inv(h + z_t * r_t * z_t.t()) * (y_t - z_t * theta);
+      double inverse = arma::as_scalar(1 / (h + z_t * r_t * z_t.t()));
+      theta_new = theta + r_t * z_t.t() * inverse * (y_t - z_t * theta);
+   // theta_new = theta + r_t * z_t.t() * inv(h + z_t * r_t * z_t.t()) * (y_t - z_t * theta);
      
    // Update Var-Cov-Matrix for Time t (Equation 8)
-      cov_mat_new = r_t - r_t * z_t.t() * inv(h + z_t * r_t * z_t.t()) * (z_t * r_t);
+      cov_mat_new = r_t - r_t * z_t.t() * inverse * (z_t * r_t);
+   // cov_mat_new = r_t - r_t * z_t.t() * inv(h + z_t * r_t * z_t.t()) * (z_t * r_t);
     
    // Update H for Time t (Equation 10)
       double z_times_theta = arma::as_scalar(z_t * theta_new);
@@ -291,38 +299,59 @@ using namespace Rcpp;
 
 // Function II - Rank and Set Active Model Set (Active Models)
 //[[Rcpp::export]]
-   List dsc_active_models_(const NumericVector& dpll_cands_gamma,  //geändert
-                           const int& psi){
-
+   IntegerVector dsc_active_models_(const NumericVector& dpll_cands_gamma,  
+                                    const int& psi){
+ 
    // Make sure Psi is equal or smaller to the number of non-na-values in dpll_cands_gamma
       int non_na_ctr = sum(!is_na(dpll_cands_gamma));  
       int psi_ = std::min(non_na_ctr, psi);
-    
+     
    // Set up Vector with Col-Indices
       IntegerVector idx = seq(0, dpll_cands_gamma.size()-1);
    
-   // Get psi-highest values (-> indices)
-      std::nth_element(idx.begin(), idx.begin()+psi_, idx.end(), 
-                       [&](int i, int j) {
-                        if( std::isnan(dpll_cands_gamma[i]) ) return false;
-                        if( std::isnan(dpll_cands_gamma[j]) ) return true;
-                        return dpll_cands_gamma[i] > dpll_cands_gamma[j];
-                        });
+   // Check if all elements are equal (without NAs)
+      NumericVector vec = dpll_cands_gamma[!is_na(dpll_cands_gamma)];
+      bool isequal = is_true(all(vec == vec[0]));
+ 
+   // If all elements are equal, return the indices from left to right
+      int i = 0;
+      if (isequal) {
+         IntegerVector indices;
+         while(indices.length() < psi_) {
+            if (!std::isnan(dpll_cands_gamma[i])) {
+               indices.push_back(i); 
+            }
+            i++;
+         }
 
-   // Sort the highest Values (-> indices)
-      std::sort(idx.begin(), idx.begin()+psi_,
-                [&](int i, int j) {
-                  if( std::isnan(dpll_cands_gamma[i]) ) return false;
-                  if( std::isnan(dpll_cands_gamma[j]) ) return true;
-                  return dpll_cands_gamma[i] > dpll_cands_gamma[j];
-                  });
-   
-   // Fill list 
-      List ret(1);
-      ret[0] = idx;
+      // Fill idx with indices
+         idx = indices;
+
+    // If the elementd are not equal, use partial sort 
+      } else {
+
+      // Get psi-highest values (-> indices)
+         std::nth_element(idx.begin(), idx.begin()+psi_, idx.end(), 
+                          [&](int i, int j) {
+                           if( std::isnan(dpll_cands_gamma[i]) ) return false;
+                           if( std::isnan(dpll_cands_gamma[j]) ) return true;
+                           return dpll_cands_gamma[i] > dpll_cands_gamma[j];
+                           });
+ 
+      // Sort the highest Values (-> indices)
+         std::sort(idx.begin(), idx.begin()+psi_,
+                   [&](int i, int j) {
+                     if( std::isnan(dpll_cands_gamma[i]) ) return false;
+                     if( std::isnan(dpll_cands_gamma[j]) ) return true;
+                     return dpll_cands_gamma[i] > dpll_cands_gamma[j];
+                     });
+      }
+
+    // Only return the first psi_ indices
+       idx = idx[seq(0, psi_ - 1)];
    
    // Return list
-      return ret;
+      return idx;
 }
 
 
@@ -413,7 +442,11 @@ using namespace Rcpp;
                   double weight = std::min(std::max(w, min_weight), max_weight);
 
                // Returns
+                  if (weight * y_t <= -1.0) {
+                     performance_score(i) = -10000;
+                  } else {
                   performance_score(i) = log(1 + weight * y_t);
+                  }
          
          // 5) Catch Error   
             } else {
@@ -486,7 +519,7 @@ using namespace Rcpp;
                                          pow( variances_comb(i), 0.5 ),
                                          true); 
 
-      // 2) MSE
+      // 2) SE
          } else if (method == 2) {
             performance_score(i) = -pow(y_t - forecasts_comb(i), 2.0);
 
@@ -564,7 +597,7 @@ using namespace Rcpp;
 
          // Compute Active Set of Candidate Models
                   int psi_max = max(psi_grid);
-            IntegerVector idx = dsc_active_models_(as<NumericVector>(dpll_cands(g)), psi_max)(0);                                    
+            IntegerVector idx = dsc_active_models_(as<NumericVector>(dpll_cands(g)), psi_max);                                    
 
          // Loop over Psi
             for (int p=0; p<psi_grid.length(); p++) {

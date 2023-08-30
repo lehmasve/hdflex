@@ -177,7 +177,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // dsc_active_models_
-List dsc_active_models_(const NumericVector& dpll_cands_gamma, const int& psi);
+IntegerVector dsc_active_models_(const NumericVector& dpll_cands_gamma, const int& psi);
 RcppExport SEXP _hdflex_dsc_active_models_(SEXP dpll_cands_gammaSEXP, SEXP psiSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
