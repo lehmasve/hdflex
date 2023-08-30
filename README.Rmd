@@ -128,19 +128,19 @@ First example using the `stsc()` function:
                               min_weight = NULL,
                               max_weight = NULL)
 
-    # Assign DSC-Results
+    # Assign STSC-Results
     forecast_stsc    <-  results[[1]]
     variance_stsc    <-  results[[2]]
     chosen_gamma     <-  results[[3]]
     chosen_psi       <-  results[[4]]
     chosen_signals   <-  results[[5]]
 
-    # Define Evaluation Period
+    # Define Evaluation Period (OOS-Period)
     eval_date_start      <-  "1991-01-01"
     eval_date_end        <-  "2021-12-31"
     eval_period_idx      <-  which(dates > eval_date_start & dates <= eval_date_end)
 
-    # Trim Objects
+    # Trim Objects to Evaluation Period (OOS-Period)
     oos_y                <-  y[eval_period_idx, ]
     oos_forecast_stsc    <-  forecast_stsc[eval_period_idx]
     oos_variance_stsc    <-  variance_stsc[eval_period_idx]
@@ -156,7 +156,7 @@ First example using the `stsc()` function:
     names(oos_chosen_psi)        <-  oos_dates
     rownames(oos_chosen_signals) <-  oos_dates
 
-    ### Part 2: Evaluation ###
+    ########## Evaluation ##########
     # Apply Summary-Function
     summary_results  <-  summary_stsc(oos_y,
                                       benchmark_ar2[, i],
@@ -166,7 +166,7 @@ First example using the `stsc()` function:
     cssed  <-  summary_results[[3]]
     mse    <-  summary_results[[4]]
 
-    ########## Results ##########
+    ########## Visualization ##########
     # Create CSSED-Plot
     p1  <-  plot(x    = as.Date(oos_dates),
                  y    = cssed,
@@ -300,12 +300,12 @@ Second example using the `tvc()` and `dsc()` functions:
  sub_chosen_psi       <-  results[[4]]
  sub_chosen_signals   <-  results[[5]]
 
- # Define Evaluation Period
+ # Define Evaluation Period (OOS-Period)
  eval_date_start      <-  "1991-01-01"
  eval_date_end        <-  "2021-12-31"
  eval_period_idx      <-  which(sub_dates > eval_date_start & sub_dates <= eval_date_end)
 
- # Trim Objects
+ # Trim Objects to Evaluation Period (OOS-Period)
  oos_y                <-  sub_y[eval_period_idx, ]
  oos_forecast_stsc    <-  sub_forecast_stsc[eval_period_idx]
  oos_variance_stsc    <-  sub_variance_stsc[eval_period_idx]
@@ -330,7 +330,7 @@ Second example using the `tvc()` and `dsc()` functions:
  cssed  <-  summary_results[[3]]
  mse    <-  summary_results[[4]]
 
- ########## Results ##########
+ ########## Visualization ##########
  # Create CSSED-Plot
  p1  <-  plot(x    = as.Date(oos_dates),
               y    = cssed,
