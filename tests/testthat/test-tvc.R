@@ -105,6 +105,18 @@ test_that("Test whether x has the same number of observations as y", {
                         "Must have exactly", fixed = TRUE)
 })
 
+test_that("Test whether exception works when cov_mat cannot be initialised", {
+
+  raw_signals[1:100, 10]  <-  0
+  testthat::expect_no_error(tvc(target_var,
+                                raw_signals,
+                                f_signals,
+                                lambda_grid,
+                                kappa_grid,
+                                sample_length,
+                                n_cores))
+})
+
 ### Tests on f
 test_that("Test whether f is matrix", {
 
@@ -148,6 +160,19 @@ test_that("Test whether either x or f is provided", {
  * checkmate::checkMatrix(X): Must be of type 'matrix', not 'NULL'
  * checkmate::checkMatrix(F): Must be of type 'matrix', not 'NULL'",
             fixed = TRUE)
+})
+
+test_that("Test whether Code still works without dimnames", {
+
+  colnames(raw_signals)  <-  NULL
+  colnames(f_signals)    <-  NULL
+  testthat::expect_no_error(tvc(target_var,
+                                raw_signals,
+                                f_signals,
+                                lambda_grid,
+                                kappa_grid,
+                                sample_length,
+                                n_cores))
 })
 
 ### Output

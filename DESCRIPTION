@@ -1,7 +1,7 @@
 Type: Package
 Package: hdflex
 Title: High-Dimensional Aggregate Density Forecasts
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: c(
     person("Sven", "Lehmann", , "sven.lehmann@uni-rostock.de", role = c("aut", "cre", "cph")),
     person("Philipp", "Adämmer", , "philipp.adaemmer@uni-greifswald.de", role = "aut"),
