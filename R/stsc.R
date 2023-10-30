@@ -55,7 +55,7 @@
 #' `method = 2` uses Squared-Error (SE) instead of DPLLs.
 #' `method = 3` uses Absolute-Error (AE) and
 #' `method = 4` uses Compouned-Returns
-#' (in this case the target variable y a time series of financial returns).
+#' (in this case the target variable y has to be a time series of financial returns).
 #' @param risk_aversion A double `>= 0` that denotes the risk aversion
 #' of an investor. A higher value indicates a risk avoiding behaviour.
 #' @param min_weight A double that denotes the lower bound

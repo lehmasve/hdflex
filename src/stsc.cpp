@@ -50,7 +50,7 @@ using namespace Rcpp;
 
                // Check if all elements are equal
                   if(arma::all(x_sample.col(1) == x_sample(0, 1))) {
-                     Rcout << "Warning: Consider increasing sample_length. Column " << j + 1 << " only contains equal values \n";
+                     Rcout << "Warning: Consider increasing sample_length - Column " << j + 1 << " only contains equal values. \n Initialization of corresponding TV-C-Model might be affected. \n";
                   }
 
                // While loop to differentiate between simple signals and point forecasts
@@ -140,7 +140,9 @@ using namespace Rcpp;
       z_pred(0, 1) = s_tplus1_j; 
    
    // Calculate R for Time t (Equation 5)
-      r_t = (1 / lambda) * cov_mat;
+      //r_t = cov_mat / lambda;
+      r_t = (1 - lambda) * cov_mat / lambda;
+
     
    // Update Theta for Time t (Equation 7)
       double inverse = arma::as_scalar(1 / (h + z_t * r_t * z_t.t()));
@@ -373,7 +375,7 @@ using namespace Rcpp;
    // Calculate Combined Predictive Density (Logarithmic Combination Rule)
       variance_comb = 1 / sum(active_weights / oos_variance_tvp_sub);
             mu_comb = sum(active_weights * oos_forecast_tvp_sub / oos_variance_tvp_sub) *
-                         variance_comb;
+                          variance_comb;
    
    // Fill list  
       ret[0] = mu_comb;
@@ -404,7 +406,7 @@ using namespace Rcpp;
       for (int i=0; i<n_cands; i++) {
 
       // Check for NA value
-         if (!NumericVector::is_na(forecast_tvc_t(i))) {  // if vllt garnicht notwendig?? Macht R::dnorm schon von alleine??
+         if (!NumericVector::is_na(forecast_tvc_t(i))) {  
 
          // Optimization-Method
          // 1) Log-Likelihood
