@@ -83,7 +83,7 @@ generated sum of discounted predictive log-likelihoods (DPLLs).
 `method = 2` uses Squared-Error (SE) instead of DPLLs.
 `method = 3` uses Absolute-Error (AE) and
 `method = 4` uses Compouned-Returns
-(in this case the target variable y a time series of financial returns).}
+(in this case the target variable y has to be a time series of financial returns).}
 
 \item{risk_aversion}{A double `>= 0` that denotes the risk aversion
 of an investor. A higher value indicates a risk avoiding behaviour.}
@@ -99,7 +99,7 @@ A value of e.g. 2 allows for a maximum leverage ratio of two.}
 \value{
 A list that contains:
 * (1) a vector with the first moments (point forecasts) of the STSC-Model,
-* (2) a vector with the the second moments (variance) of the STSC-Model,
+* (2) a vector with the second moments (variance) of the STSC-Model,
 * (3) a vector that contains the selected values for gamma,
 * (4) a vector that contains the selected values for psi and
 * (5) a matrix that indicates the selected signals for every point in time.
@@ -141,7 +141,6 @@ via dynamic subset combination (DSC).
                                    seq(453+(i-1)*16,468+(i-1)*16))]  # Ext. Point Forecasts
 
    ########## STSC ##########
-   ### Part 1: TV-C Model ###
    # Set Target Variable
    y  <-  dataset[,  1, drop = FALSE]
 
@@ -151,70 +150,57 @@ via dynamic subset combination (DSC).
    # Set External Point Forecasts (Koop & Korobilis 2023)
    F  <-  dataset[, 443:458, drop = FALSE]
 
+   # Set Dates
+   dates  <-  rownames(dataset)
+
    # Set TV-C-Parameter
    sample_length  <-  4 * 5
    lambda_grid    <-  c(0.90, 0.95, 1)
    kappa_grid     <-  0.98
-   n_cores        <-  1
 
-   # Apply TV-C-Function
-   results  <-  hdflex::tvc(y,
-                            X,
-                            F,
-                            lambda_grid,
-                            kappa_grid,
-                            sample_length,
-                            n_cores)
-
-   # Assign TV-C-Results
-   forecast_tvc      <-  results[[1]]
-   variance_tvc      <-  results[[2]]
-
-   # Define Burn-In Period
-   sample_period_idx  <-  80:nrow(dataset)
-   sub_forecast_tvc   <-  forecast_tvc[sample_period_idx, , drop = FALSE]
-   sub_variance_tvc   <-  variance_tvc[sample_period_idx, , drop = FALSE]
-   sub_y              <-  y[sample_period_idx, , drop = FALSE]
-   sub_dates          <-  rownames(dataset)[sample_period_idx]
-
-   ### Part 2: Dynamic Subset Combination ###
    # Set DSC-Parameter
-   nr_mods     <-  ncol(sub_forecast_tvc)
    gamma_grid  <-  c(0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
                      0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00)
    psi_grid    <-  c(1:100)
    delta       <-  0.95
-   n_cores     <-  1
 
-   # Apply DSC-Function
-   results  <-  hdflex::dsc(gamma_grid,
-                            psi_grid,
-                            sub_y,
-                            sub_forecast_tvc,
-                            sub_variance_tvc,
-                            delta,
-                            n_cores)
+   # Apply STSC-Function
+   results  <-  hdflex::stsc(y, 
+                             X, 
+                             F,
+                             sample_length,
+                             lambda_grid,
+                             kappa_grid,
+                             burn_in_tvc = 79,
+                             gamma_grid,
+                             psi_grid,
+                             delta,
+                             burn_in_dsc = 1,
+                             method = 1,
+                             risk_aversion = NULL,
+                             min_weight = NULL,
+                             max_weight = NULL)
 
    # Assign DSC-Results
-   sub_forecast_stsc    <-  results[[1]]
-   sub_variance_stsc    <-  results[[2]]
-   sub_chosen_gamma     <-  results[[3]]
-   sub_chosen_psi       <-  results[[4]]
-   sub_chosen_signals   <-  results[[5]]
+   forecast_stsc    <-  results[[1]]
+   variance_stsc    <-  results[[2]]
+   chosen_gamma     <-  results[[3]]
+   chosen_psi       <-  results[[4]]
+   chosen_signals   <-  results[[5]]
 
    # Define Evaluation Period
    eval_date_start      <-  "1991-01-01"
    eval_date_end        <-  "2021-12-31"
-   eval_period_idx      <-  which(sub_dates > eval_date_start & sub_dates <= eval_date_end)
+   eval_period_idx      <-  which(dates > eval_date_start & dates <= eval_date_end)
 
    # Trim Objects
-   oos_y                <-  sub_y[eval_period_idx, ]
-   oos_forecast_stsc    <-  sub_forecast_stsc[eval_period_idx]
-   oos_variance_stsc    <-  sub_variance_stsc[eval_period_idx]
-   oos_chosen_gamma     <-  sub_chosen_gamma[eval_period_idx]
-   oos_chosen_psi       <-  sub_chosen_psi[eval_period_idx]
-   oos_chosen_signals   <-  sub_chosen_signals[eval_period_idx, , drop = FALSE]
-   oos_dates            <-  sub_dates[eval_period_idx]
+   oos_y                <-  y[eval_period_idx, ]
+   oos_forecast_stsc    <-  forecast_stsc[eval_period_idx]
+   oos_variance_stsc    <-  variance_stsc[eval_period_idx]
+   oos_chosen_gamma     <-  chosen_gamma[eval_period_idx]
+   oos_chosen_psi       <-  chosen_psi[eval_period_idx]
+   oos_chosen_signals   <-  chosen_signals[eval_period_idx, , drop = FALSE]
+   oos_dates            <-  dates[eval_period_idx]
 
    # Add Dates
    names(oos_forecast_stsc)     <-  oos_dates
@@ -223,11 +209,12 @@ via dynamic subset combination (DSC).
    names(oos_chosen_psi)        <-  oos_dates
    rownames(oos_chosen_signals) <-  oos_dates
 
-   ### Part 3: Evaluation ###
+   ### Part 2: Evaluation ###
    # Apply Summary-Function
    summary_results  <-  summary_stsc(oos_y,
                                      benchmark_ar2[, i],
                                      oos_forecast_stsc)
+
    # Assign Summary-Results
    cssed  <-  summary_results[[3]]
    mse    <-  summary_results[[4]]
