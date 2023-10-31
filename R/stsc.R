@@ -47,20 +47,20 @@
 #' predictive log-likelihoods (DPLLs) of each Subset Combination
 #' (combination of gamma and psi) is resetted.
 #' `burn_in_dsc = 1` means no burn-in period is applied.
-#' @param method An integer of the set {1, 2, 3, 4} that denotes
+#' @param method An integer of the set `1, 2, 3, 4` that denotes
 #' the method used to rank the Candidate Models (TV-C models)
 #' and Subset Combinations according to their performance.
 #' Default is `method = 1` which ranks according to their
 #' generated sum of discounted predictive log-likelihoods (DPLLs).
 #' `method = 2` uses Squared-Error (SE) instead of DPLLs.
 #' `method = 3` uses Absolute-Error (AE) and
-#' `method = 4` uses Compouned-Returns
+#' `method = 4` uses Compounded-Returns
 #' (in this case the target variable y has to be a time series of financial returns).
 #' @param risk_aversion A double `>= 0` that denotes the risk aversion
 #' of an investor. A higher value indicates a risk avoiding behaviour.
 #' @param min_weight A double that denotes the lower bound
 #' for the weight placed on the market.
-#' A non-negativ value rules out short sales.
+#' A non-negative value rules out short sales.
 #' @param max_weight A double that denotes the upper bound
 #' for the weight placed on the market.
 #' A value of e.g. 2 allows for a maximum leverage ratio of two.
