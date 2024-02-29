@@ -7,16 +7,17 @@
 stsc(
   y,
   X,
-  F,
+  Ext_F,
   sample_length,
   lambda_grid,
   kappa_grid,
-  burn_in_tvc = 1,
+  burn_in_tvc,
   gamma_grid,
   psi_grid,
   delta,
-  burn_in_dsc = 1,
-  method = 1,
+  burn_in_dsc,
+  method,
+  equal_weight,
   risk_aversion = NULL,
   min_weight = NULL,
   max_weight = NULL
@@ -30,7 +31,7 @@ containing the observations of the target variable.}
 the lagged 'simple' signals in each column.
 Use NULL if no 'simple' signal shall be included.}
 
-\item{F}{A matrix with `T` rows containing
+\item{Ext_F}{A matrix with `T` rows containing
 point forecasts of y in each column.
 Use NULL if no point forecasts shall be included.}
 
@@ -38,15 +39,15 @@ Use NULL if no point forecasts shall be included.}
 to initialize the observational variance and the coefficients' variance
 in the TV-C models.}
 
-\item{lambda_grid}{A numeric vector denoting the discount factor(s)
-that control the dynamics of the time-varying coefficients.
-Each signal in combination with each value of
+\item{lambda_grid}{A numeric vector with values between 0 and 1 denoting the
+discount factor(s) that control the dynamics of the time-varying
+coefficients. Each signal in combination with each value of
 lambda provides a separate candidate forecast.
 Constant coefficients are nested for the case `lambda = 1`.}
 
-\item{kappa_grid}{A numeric vector to accommodate time-varying volatility
-in the TV-C models. The observational variance is estimated via
-Exponentially Weighted Moving Average.
+\item{kappa_grid}{A numeric vector between 0 and 1 to accommodate
+time-varying volatility in the TV-C models. The observational variance
+is estimated via Exponentially Weighted Moving Average.
 Constant variance is nested for the case `kappa = 1`.
 Each signal in combination with each value of
 kappa provides a separate forecast.}
@@ -59,14 +60,15 @@ and Subset Combination (combination of gamma and psi) is resetted.
 `burn_in_tvc = 1` means no burn-in period is applied.}
 
 \item{gamma_grid}{A numerical vector that contains discount factors
-to exponentially down-weight the past predictive performance
+between 0 and 1 to exponentially down-weight the past predictive performance
 of the candidate forecasts.}
 
 \item{psi_grid}{An integer vector that controls
 the (possible) sizes of the active subsets.}
 
-\item{delta}{A numeric value denoting the discount factor used
-to down-weight the past predictive performance of the subset combinations.}
+\item{delta}{A numeric value between 0 and 1 denoting the discount factor
+used to down-weight the past predictive performance of the
+subset combinations.}
 
 \item{burn_in_dsc}{An integer value `>= 1` that denotes the number of
 observations used to 'initialize' the Dynamic Subset Combinations.
@@ -83,7 +85,14 @@ generated sum of discounted predictive log-likelihoods (DPLLs).
 `method = 2` uses Squared-Error (SE) instead of DPLLs.
 `method = 3` uses Absolute-Error (AE) and
 `method = 4` uses Compounded-Returns
-(in this case the target variable y has to be a time series of financial returns).}
+(in this case the target variable y has to be a time series of
+financial returns).}
+
+\item{equal_weight}{A boolean that denotes whether equal weights are used to
+combine the candidate forecasts within a subset. If `FALSE`, the weights are
+calculated using the softmax-function on the predictive log-scores of
+the candidate models. The method proposed in Adaemmer et al (2023) uses
+equal weights to combine the candidate forecasts.}
 
 \item{risk_aversion}{A double `>= 0` that denotes the risk aversion
 of an investor. A higher value indicates a risk avoiding behaviour.}
@@ -148,7 +157,7 @@ via dynamic subset combination (DSC).
    X  <-  dataset[, 2:442, drop = FALSE]
 
    # Set External Point Forecasts (Koop & Korobilis 2023)
-   F  <-  dataset[, 443:458, drop = FALSE]
+   Ext_F  <-  dataset[, 443:458, drop = FALSE]
 
    # Set Dates
    dates  <-  rownames(dataset)
@@ -160,14 +169,15 @@ via dynamic subset combination (DSC).
 
    # Set DSC-Parameter
    gamma_grid  <-  c(0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
-                     0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00)
+                     0.91, 0.92, 0.93, 0.94, 0.95, 0.96,
+                     0.97, 0.98, 0.99, 1.00)
    psi_grid    <-  c(1:100)
    delta       <-  0.95
 
    # Apply STSC-Function
-   results  <-  hdflex::stsc(y, 
-                             X, 
-                             F,
+   results  <-  hdflex::stsc(y,
+                             X,
+                             Ext_F,
                              sample_length,
                              lambda_grid,
                              kappa_grid,
@@ -177,6 +187,7 @@ via dynamic subset combination (DSC).
                              delta,
                              burn_in_dsc = 1,
                              method = 1,
+                             equal_weight = TRUE,
                              risk_aversion = NULL,
                              min_weight = NULL,
                              max_weight = NULL)

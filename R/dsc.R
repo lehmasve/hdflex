@@ -209,7 +209,7 @@ dsc  <-  function(gamma_grid,
   ### 3) Compute Dynamic Subset Combination
   ### -> select subset combination for each point in time
   # Compute exponentially discounted sum of predictive log-likelihoods (DPLL)
-  weights            <-  delta^(seq_len(len) - 1)
+  weights            <-  delta^(seq_len(len)) #  - 1)
   cum_ln_scores_lag  <-  dplyr::lag(roll::roll_sum(ln_scores,
                                                    weights = rev(weights),
                                                    width = len, min_obs = 1), n = 1L) #nolint

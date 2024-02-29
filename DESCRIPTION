@@ -1,7 +1,7 @@
 Type: Package
 Package: hdflex
 Title: High-Dimensional Aggregate Density Forecasts
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: c(
     person("Sven", "Lehmann", , "sven.lehmann@uni-rostock.de", role = c("aut", "cre", "cph")),
     person("Philipp", "Adämmer", , "philipp.adaemmer@uni-greifswald.de", role = "aut"),
@@ -17,17 +17,17 @@ Description: Provides a forecasting method that maps vast numbers of
     in detail in Adaemmer et al. (2023) <doi:10.2139/ssrn.4342487>.
 License: GPL (>= 2)
 Depends: 
-    R (>= 4.1.0)
+    R (>= 4.3.0)
 Imports: 
-    checkmate (>= 2.1.0),
-    dplyr (>= 1.1.0),
-    parallel (>= 4.1.0),
+    checkmate (>= 2.3.1),
+    dplyr (>= 1.1.4),
+    parallel (>= 4.3.0),
     Rcpp,
     roll (>= 1.1.6),
-    stats (>= 4.1.0),
-    stringr (>= 1.5.0)
+    stats (>= 4.3.0),
+    stringr (>= 1.5.1)
 Suggests: 
-    testthat (>= 3.0.0)
+    testthat (>= 3.2.1)
 LinkingTo: 
     Rcpp,
     RcppArmadillo
@@ -35,4 +35,4 @@ Config/testthat/edition: 3
 Encoding: UTF-8
 LazyData: true
 NeedsCompilation: Yes
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1

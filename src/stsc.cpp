@@ -24,6 +24,9 @@ using namespace Rcpp;
          for (int l = 0; l < lambda_grid.size(); l++) {
            for (int k = 0; k < kappa_grid.size(); k++) {
                for (int j = 0; j < n_signal; j++) {
+
+               // über vkeep Col-Idx der TVP-Forecasts ermitteln
+               // vkeep - Spalten dürfen keine NA-Werte enthalten
    
                // Define Variables
                   arma::mat x_sample_one, theta, cov_mat;
@@ -45,7 +48,7 @@ using namespace Rcpp;
                // Define and prepare matrices for regression  
                   arma::vec y_sample = y.elem(index);  
                   arma::mat x_sample(x.elem(index));   
-                  x_sample_one = arma::ones<arma::mat>(x_sample.n_rows, 1); // muss nicht im Loop passieren
+                  x_sample_one = arma::ones<arma::mat>(x_sample.n_rows, 1);
                   x_sample.insert_cols(0, x_sample_one);
 
                // Check if all elements are equal
@@ -57,14 +60,14 @@ using namespace Rcpp;
                   if(j < n_sim_sig) {
    
                   // Initialize - Theta
-                     theta = arma::zeros<arma::mat>(2,1); // muss nicht im Loop passieren
+                     theta = arma::zeros<arma::mat>(2,1);
 
                   // Initialize - System Covariance
                      arma::colvec coef = solve(x_sample, y_sample);
                      intercept = coef(0);
                      var_y     = arma::var(y_sample);         
                      var_x     = arma::var(x_sample.col(1));  
-                     cov_mat   = arma::zeros<arma::mat>(2, 2);  // muss nicht im Loop passieren
+                     cov_mat   = arma::zeros<arma::mat>(2, 2); 
                      cov_mat(0, 0) = pow(intercept, 2) + var_y;
                      if(arma::is_finite(var_y / var_x)) {
                           cov_mat(1, 1) =  var_y / var_x; 
@@ -75,7 +78,7 @@ using namespace Rcpp;
                   } else {
 
                   // Initialize - Theta
-                     theta = arma::zeros<arma::mat>(2,1);  // muss nicht im Loop passieren
+                     theta = arma::zeros<arma::mat>(2,1);  
                      theta(1, 0) = 1;
 
                   // Initialize - System Covariance
@@ -83,7 +86,7 @@ using namespace Rcpp;
                      intercept = coef(0);
                      var_y     = arma::var(y_sample);         
                      var_x     = arma::var(x_sample.col(1));  
-                     cov_mat   = arma::zeros<arma::mat>(2, 2);  // muss nicht im Loop passieren
+                     cov_mat   = arma::zeros<arma::mat>(2, 2);  
                      cov_mat(0, 0) =  pow(intercept, 2) + var_y;  // Set to Zero for Constant Intercept
                      cov_mat(1, 1) =  0;
                   }
@@ -140,18 +143,14 @@ using namespace Rcpp;
       z_pred(0, 1) = s_tplus1_j; 
    
    // Calculate R for Time t (Equation 5)
-      //r_t = cov_mat / lambda;
-      r_t = (1 - lambda) * cov_mat / lambda;
-
+      r_t = cov_mat / lambda;
     
    // Update Theta for Time t (Equation 7)
       double inverse = arma::as_scalar(1 / (h + z_t * r_t * z_t.t()));
       theta_new = theta + r_t * z_t.t() * inverse * (y_t - z_t * theta);
-   // theta_new = theta + r_t * z_t.t() * inv(h + z_t * r_t * z_t.t()) * (y_t - z_t * theta);
      
    // Update Var-Cov-Matrix for Time t (Equation 8)
       cov_mat_new = r_t - r_t * z_t.t() * inverse * (z_t * r_t);
-   // cov_mat_new = r_t - r_t * z_t.t() * inv(h + z_t * r_t * z_t.t()) * (z_t * r_t);
     
    // Update H for Time t (Equation 10)
       double z_times_theta = arma::as_scalar(z_t * theta_new);
@@ -266,9 +265,9 @@ using namespace Rcpp;
          return ret;
 }
 
-
-// ################################################################
-
+// ###################################################################################
+// ###################################################################################
+// ###################################################################################
 
 // 2) Dynamic Subset Combination
 // Function I - Initialize DSC-Parameter
@@ -305,32 +304,30 @@ using namespace Rcpp;
                                     const int& psi){
  
    // Make sure Psi is equal or smaller to the number of non-na-values in dpll_cands_gamma
-      int non_na_ctr = sum(!is_na(dpll_cands_gamma));  
+      LogicalVector non_na = !is_na(dpll_cands_gamma);
+      int non_na_ctr = sum(non_na);  
       int psi_ = std::min(non_na_ctr, psi);
-     
-   // Set up Vector with Col-Indices
-      IntegerVector idx = seq(0, dpll_cands_gamma.size()-1);
-   
+        
    // Check if all elements are equal (without NAs)
-      NumericVector vec = dpll_cands_gamma[!is_na(dpll_cands_gamma)];
+      NumericVector vec = dpll_cands_gamma[non_na];
       bool isequal = is_true(all(vec == vec[0]));
  
    // If all elements are equal, return the indices from left to right
       int i = 0;
+      IntegerVector idx;
       if (isequal) {
-         IntegerVector indices;
-         while(indices.length() < psi_) {
+         while(idx.length() < psi_) {
             if (!std::isnan(dpll_cands_gamma[i])) {
-               indices.push_back(i); 
+               idx.push_back(i); 
             }
             i++;
          }
 
-      // Fill idx with indices
-         idx = indices;
-
-    // If the elementd are not equal, use partial sort 
+    // If the elements are not equal, use partial sort 
       } else {
+
+      // Set up Vector with Col-Indices
+         idx = seq(0, dpll_cands_gamma.size()-1);
 
       // Get psi-highest values (-> indices)
          std::nth_element(idx.begin(), idx.begin()+psi_, idx.end(), 
@@ -348,12 +345,9 @@ using namespace Rcpp;
                      return dpll_cands_gamma[i] > dpll_cands_gamma[j];
                      });
       }
-
-    // Only return the first psi_ indices
-       idx = idx[seq(0, psi_ - 1)];
    
    // Return list
-      return idx;
+      return idx[seq(0, psi_ - 1)];
 }
 
 
@@ -373,7 +367,7 @@ using namespace Rcpp;
       NumericVector oos_variance_tvp_sub = variance_tvc_t[idx_sub];
 
    // Calculate Combined Predictive Density (Logarithmic Combination Rule)
-      variance_comb = 1 / sum(active_weights / oos_variance_tvp_sub);
+      variance_comb = 1.0 / sum(active_weights / oos_variance_tvp_sub);
             mu_comb = sum(active_weights * oos_forecast_tvp_sub / oos_variance_tvp_sub) *
                           variance_comb;
    
@@ -388,15 +382,15 @@ using namespace Rcpp;
 
 // Function IV - Calculate (exponentially down-weighted) Log-Predictive-Likelihoods for Candidate Forecasts
 //[[Rcpp::export]]
-   NumericVector dsc_dpll_tvc_(NumericVector dpll_cands_gamma, 
-                               const double& y_t, 
-                               const NumericVector& forecast_tvc_t,             
-                               const NumericVector& variance_tvc_t,
-                               const double& gamma,
-                               const int& method = 1,
-                               Nullable<const NumericVector&> risk_aversion_ = R_NilValue,
-                               Nullable<const NumericVector&> min_weight_ = R_NilValue,
-                               Nullable<const NumericVector&> max_weight_ = R_NilValue) {
+   void dsc_dpll_cands_(NumericVector dpll_cands_gamma, 
+                        const double& y_t, 
+                        const NumericVector& forecast_tvc_t,             
+                        const NumericVector& variance_tvc_t,
+                        const double& gamma,
+                        const int& method,
+                        Nullable<const NumericVector&> risk_aversion_ = R_NilValue,
+                        Nullable<const NumericVector&> min_weight_ = R_NilValue,
+                        Nullable<const NumericVector&> max_weight_ = R_NilValue) {
                                      
    // Define Variables
       int n_cands = dpll_cands_gamma.length();
@@ -459,9 +453,6 @@ using namespace Rcpp;
 
    // Exponentially down-weighted past predictive log-likelihoods
       dpll_cands_gamma = dpll_cands_gamma * gamma + performance_score * gamma;
-     
-   // Return Updated Weights  
-      return dpll_cands_gamma;
 }
 
 
@@ -495,19 +486,18 @@ using namespace Rcpp;
 
 // Function VI - Calculate (exponentially down-weighted) Log-Predictive-Likelihoods for Combinations (Aggregated Predictive Distributions)
 //[[Rcpp::export]]
-   NumericVector dsc_dpll_comb_(NumericVector& dpll_combs, 
-                                const double& y_t, 
-                                const NumericVector& forecasts_comb,             
-                                const NumericVector& variances_comb,
-                                const double& delta,
-                                const int& method = 1,
-                                Nullable<const NumericVector&> risk_aversion_ = R_NilValue,
-                                Nullable<const NumericVector&> min_weight_ = R_NilValue,
-                                Nullable<const NumericVector&> max_weight_ = R_NilValue) {
+   void dsc_dpll_comb_(NumericVector& dpll_combs, 
+                       const double& y_t, 
+                       const NumericVector& forecasts_comb,             
+                       const NumericVector& variances_comb,
+                       const double& delta,
+                       const int& method,
+                       Nullable<const NumericVector&> risk_aversion_ = R_NilValue,
+                       Nullable<const NumericVector&> min_weight_ = R_NilValue,
+                       Nullable<const NumericVector&> max_weight_ = R_NilValue) {
                                      
    // Define Variables
       int n_combs = dpll_combs.length();
-      NumericVector dpll_combs_new(n_combs);
       NumericVector performance_score(n_combs);
 
    // Calculate Performance
@@ -516,10 +506,10 @@ using namespace Rcpp;
       // Optimization-Method
       // 1) Log-Likelihood
          if (method == 1) {
-         performance_score(i) = R::dnorm(y_t,
-                                         forecasts_comb(i),
-                                         pow( variances_comb(i), 0.5 ),
-                                         true); 
+             performance_score(i) = R::dnorm(y_t,
+                                             forecasts_comb(i),
+                                             pow( variances_comb(i), 0.5 ),
+                                             true); 
 
       // 2) SE
          } else if (method == 2) {
@@ -562,10 +552,7 @@ using namespace Rcpp;
       }
     
    // Exponentially down-weighted Past Predictive Log-Likelihoods
-      dpll_combs_new = delta * dpll_combs + performance_score;
-
-    // Return list
-       return dpll_combs_new;
+      dpll_combs = delta * dpll_combs + performance_score * delta;
 }
 
 
@@ -579,7 +566,8 @@ using namespace Rcpp;
                   const NumericVector& forecast_tvc_t,             
                   const NumericVector& variance_tvc_t,
                   const double& delta,
-                  const int& method = 1,
+                  const int& method,
+                  const bool& equal_weight,
                   Nullable<const NumericVector&> risk_aversion_ = R_NilValue,
                   Nullable<const NumericVector&> min_weight_ = R_NilValue,
                   Nullable<const NumericVector&> max_weight_ = R_NilValue) { 
@@ -588,7 +576,7 @@ using namespace Rcpp;
       int n_combs = dpll_combs.length();
       List chosen_cands(n_combs);
       NumericVector forecasts_comb(n_combs), variances_comb(n_combs);
-      List stsc_results(1);
+      List stsc_results(3);
     
    // Loop over Gamma and Psi
       int ctr = 0;
@@ -599,7 +587,10 @@ using namespace Rcpp;
 
          // Compute Active Set of Candidate Models
                   int psi_max = max(psi_grid);
-            IntegerVector idx = dsc_active_models_(as<NumericVector>(dpll_cands(g)), psi_max);                                    
+            IntegerVector idx = dsc_active_models_(as<NumericVector>(dpll_cands(g)), psi_max);     
+
+         // vkeep vorne zu idx ergänzen und duplicate entfernen -> Länge muss bei |psi| bleiben 
+         // psi um |vkeep| erhöhen?                              
 
          // Loop over Psi
             for (int p=0; p<psi_grid.length(); p++) {
@@ -609,12 +600,22 @@ using namespace Rcpp;
                int psi = std::min(non_na_ctr, psi_grid(p));
 
             // Define Variables
-               List agg_density(1);
+               List agg_density(2);
    
             // Get the Active Set of Candidate Models
-               NumericVector active_weights(psi, 1.0 / psi);
                chosen_cands(ctr) = idx[seq(0, psi - 1)];
-   
+               NumericVector active_weights(psi);
+            
+            // Set Active Weights
+               if (equal_weight == true) {
+                  active_weights = NumericVector(psi, 1.0 / psi);
+               } else if (equal_weight == false) {
+                  NumericVector raw_weights = as<NumericVector>(dpll_cands(g))[idx[seq(0, psi - 1)]];
+                  active_weights = exp(raw_weights) / sum(exp(raw_weights)); 
+               } else {
+                  throw std::invalid_argument("Error: Equal Weight argument wrong");
+               }
+
             // Calculate Aggregated Predictive Density
                agg_density = dsc_agg_density_(active_weights,
                                               forecast_tvc_t,
@@ -628,15 +629,15 @@ using namespace Rcpp;
             }
 
          // Update DPLL for Candidate Models
-            dpll_cands(g) = dsc_dpll_tvc_(dpll_cands(g), 
-                                          y_t, 
-                                          forecast_tvc_t,             
-                                          variance_tvc_t,
-                                          gamma,
-                                          method,
-                                          risk_aversion_,
-                                          min_weight_,
-                                          max_weight_);
+            dsc_dpll_cands_(dpll_cands(g), 
+                          y_t, 
+                          forecast_tvc_t,             
+                          variance_tvc_t,
+                          gamma,
+                          method,
+                          risk_aversion_,
+                          min_weight_,
+                          max_weight_);
       }
 
       // Select Aggregated Forecast
@@ -650,15 +651,15 @@ using namespace Rcpp;
          int stsc_idx = stsc_results(2);
 
       // Update DPLL for Combinations (Aggregated Predictive Distributions)
-         dpll_combs = dsc_dpll_comb_(dpll_combs, 
-                                     y_t, 
-                                     forecasts_comb,             
-                                     variances_comb,
-                                     delta,
-                                     method,
-                                     risk_aversion_,
-                                     min_weight_,
-                                     max_weight_);
+         dsc_dpll_comb_(dpll_combs, 
+                        y_t, 
+                        forecasts_comb,             
+                        variances_comb,
+                        delta,
+                        method,
+                        risk_aversion_,
+                        min_weight_,
+                        max_weight_);
    
       // Fill list   
          List ret(4); 
@@ -677,7 +678,7 @@ using namespace Rcpp;
 // [[Rcpp::export]]
    List stsc_loop(const arma::vec& y, 
                   Nullable<const NumericMatrix&> X_, 
-                  Nullable<const NumericMatrix&> F_, 
+                  Nullable<const NumericMatrix&> Ext_F_, 
                   const int& sample_length,
                   const arma::vec& lambda_grid,
                   const arma::vec& kappa_grid,
@@ -686,7 +687,8 @@ using namespace Rcpp;
                   const IntegerVector& psi_grid,
                   const double& delta,
                   const int& burn_in_dsc,
-                  const int& method = 1,
+                  const int& method,
+                  const bool& equal_weight,
                   Nullable<const NumericVector&> risk_aversion_ = R_NilValue,
                   Nullable<const NumericVector&> min_weight_ = R_NilValue,
                   Nullable<const NumericVector&> max_weight_ = R_NilValue) { 
@@ -697,15 +699,15 @@ using namespace Rcpp;
       arma::mat S;
       int n_sim_sig, n_point_f, n_signal, n_cands;
      
-      if (X_.isNull() && F_.isNull()) {
+      if (X_.isNull() && Ext_F_.isNull()) {
          throw std::invalid_argument("Error: No signals provided");
-      } else if (X_.isNotNull() && F_.isNotNull()) {
+      } else if (X_.isNotNull() && Ext_F_.isNotNull()) {
          n_sim_sig = as<arma::mat>(X_).n_cols;
-         n_point_f = as<arma::mat>(F_).n_cols;
+         n_point_f = as<arma::mat>(Ext_F_).n_cols;
          n_signal  = n_sim_sig + n_point_f;
          n_cands   = n_signal * lambda_grid.size() * kappa_grid.size();
-         S = arma::join_rows(as<arma::mat>(X_), as<arma::mat>(F_));
-      } else if (F_.isNull()) {
+         S = arma::join_rows(as<arma::mat>(X_), as<arma::mat>(Ext_F_));
+      } else if (Ext_F_.isNull()) {
          n_sim_sig = as<arma::mat>(X_).n_cols;
          n_point_f = 0;
          n_signal  = n_sim_sig + n_point_f;
@@ -713,10 +715,10 @@ using namespace Rcpp;
          S = as<arma::mat>(X_);
       } else {
          n_sim_sig = 0;
-         n_point_f = as<arma::mat>(F_).n_cols;
+         n_point_f = as<arma::mat>(Ext_F_).n_cols;
          n_signal  = n_sim_sig + n_point_f;
          n_cands   = n_signal * lambda_grid.size() * kappa_grid.size();
-         S = as<arma::mat>(F_);
+         S = as<arma::mat>(Ext_F_);
       }
    
    // Define Variables for TV-C-Models
@@ -817,7 +819,7 @@ using namespace Rcpp;
          }
 
       // Apply TV-C-Function
-         List tvc_model_cand_results(1);
+         List tvc_model_cand_results(2);
          tvc_model_cand_results = tvc_model_cand_(y_t, 
                                                   s_t,
                                                   s_tplus1, 
@@ -832,7 +834,7 @@ using namespace Rcpp;
          variance_tvc_tplus1 = tvc_model_cand_results(1);
 
       // Apply DSC-Function
-         List dsc_results(1);
+         List dsc_results(4);
          dsc_results = dsc_loop_(dpll_cands,
                                  dpll_combs, 
                                  gamma_grid, 
@@ -842,6 +844,7 @@ using namespace Rcpp;
                                  variance_tvc_tplus1,
                                  delta,
                                  method,
+                                 equal_weight,
                                  risk_aversion_,
                                  min_weight_,
                                  max_weight_); 

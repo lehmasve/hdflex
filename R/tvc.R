@@ -13,7 +13,7 @@
 #' @param X A matrix with `T` rows containing
 #' the lagged 'simple' signals in each column.
 #' Use NULL if no 'simple' signal shall be included.
-#' @param F A matrix with `T` rows containing
+#' @param Ext_F A matrix with `T` rows containing
 #' point forecasts of y in each column.
 #' Use NULL if no point forecasts shall be included.
 #' @param lambda_grid A numeric vector denoting the discount factor(s)
@@ -100,7 +100,7 @@
 #'    X  <-  dataset[, 2:442, drop = FALSE]
 #'
 #'    # Set External Point Forecasts (Koop & Korobilis 2023)
-#'    F  <-  dataset[, 443:458, drop = FALSE]
+#'    Ext_F  <-  dataset[, 443:458, drop = FALSE]
 #'
 #'    # Set TV-C-Parameter
 #'    sample_length  <-  4 * 5
@@ -111,7 +111,7 @@
 #'    # Apply TV-C-Function
 #'    results  <-  hdflex::tvc(y,
 #'                             X,
-#'                             F,
+#'                             Ext_F,
 #'                             lambda_grid,
 #'                             kappa_grid,
 #'                             sample_length,
@@ -225,7 +225,7 @@
 ### Time-Varying Coefficient Model
 tvc  <- function(y,
                  X,
-                 F,
+                 Ext_F,
                  lambda_grid,
                  kappa_grid,
                  init_length,
@@ -240,7 +240,7 @@ tvc  <- function(y,
 
   # Either x or f must not be null
   checkmate::assert(checkmate::checkMatrix(X),
-                    checkmate::checkMatrix(F),
+                    checkmate::checkMatrix(Ext_F),
                     combine = "or")
 
   # Check if x is numeric matrix and has the same number of observations as y
@@ -250,7 +250,7 @@ tvc  <- function(y,
                           null.ok = TRUE)
 
   # Check if F is numeric matrix and has the same number of observations as y
-  checkmate::assertMatrix(F,
+  checkmate::assertMatrix(Ext_F,
                           mode = "numeric",
                           nrow = length(y),
                           null.ok = TRUE)
@@ -405,10 +405,10 @@ tvc  <- function(y,
   }
 
   ### 2.) TV-C-Model for Point Forecasts
-  if (!is.null(F)) {
+  if (!is.null(Ext_F)) {
 
     # Set Variables and Indices to Subset Matrices mu_mat and variance_mat
-    nr_preds      <-  ncol(F)
+    nr_preds      <-  ncol(Ext_F)
     start_cols    <-  1
     end_cols      <-  nr_preds
     mu_tmp_seq    <-  seq(1, 2 * nr_preds, 2)
@@ -437,7 +437,7 @@ tvc  <- function(y,
         cores   <-  n_cores
         cl      <-  parallel::makeCluster(cores, type = "PSOCK")
         parallel::clusterExport(cl = cl, varlist = c("y",
-                                                     "F",
+                                                     "Ext_F",
                                                      "max_length",
                                                      "init_length",
                                                      "lambda",
@@ -449,7 +449,7 @@ tvc  <- function(y,
         mu_var_tmp  <-  do.call("cbind", parallel::parLapply(cl, col_grid, function(j) {
 
           # Get Point-Forecasts Column and align lengths
-          y_x          <-  cbind(y, F[, j])
+          y_x          <-  cbind(y, Ext_F[, j])
           ts_y_x       <-  na.omit(y_x)
           drop_length  <-  max_length - nrow(ts_y_x)
           ts_length    <-  nrow(ts_y_x) - 1
@@ -499,10 +499,10 @@ tvc  <- function(y,
 
     ### Get Candidate Forecast Names
     # Get / Create Point Forecast Names
-    if (!is.null(colnames(F))) {
-      f_names  <-  colnames(F)
+    if (!is.null(colnames(Ext_F))) {
+      f_names  <-  colnames(Ext_F)
     } else {
-      f_names  <-  paste0("F", as.character(seq_len(nr_preds)))
+      f_names  <-  paste0("Ext_F", as.character(seq_len(nr_preds)))
     }
 
     # Set up Vector
