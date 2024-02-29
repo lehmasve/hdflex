@@ -416,7 +416,7 @@ using namespace Rcpp;
 
          // 3) AE
             } else if (method == 3) {
-               performance_score(i) = -abs(y_t - forecast_tvc_t(i));
+               performance_score(i) = -std::abs(y_t - forecast_tvc_t(i));
          
          // 4) Compounded Returns
             } else if (method == 4) {
@@ -517,7 +517,7 @@ using namespace Rcpp;
 
       // 3) AE
          } else if (method == 3) {
-            performance_score(i) = -abs(y_t - forecasts_comb(i));
+            performance_score(i) = -std::abs(y_t - forecasts_comb(i));
 
       // 4) Compounded Returns
          } else if (method == 4) {
