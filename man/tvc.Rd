@@ -5,7 +5,7 @@
 \title{Compute density forecasts based on univariate time-varying
 coefficient (TV-C) models in state-space form}
 \usage{
-tvc(y, X, F, lambda_grid, kappa_grid, init_length, n_cores)
+tvc(y, X, Ext_F, lambda_grid, kappa_grid, init_length, n_cores)
 }
 \arguments{
 \item{y}{A matrix of dimension `T * 1` or numeric vector of length `T`
@@ -15,7 +15,7 @@ containing the observations of the target variable.}
 the lagged 'simple' signals in each column.
 Use NULL if no 'simple' signal shall be included.}
 
-\item{F}{A matrix with `T` rows containing
+\item{Ext_F}{A matrix with `T` rows containing
 point forecasts of y in each column.
 Use NULL if no point forecasts shall be included.}
 
@@ -93,7 +93,7 @@ estimation and forecasting are carried out recursively.
    X  <-  dataset[, 2:442, drop = FALSE]
 
    # Set External Point Forecasts (Koop & Korobilis 2023)
-   F  <-  dataset[, 443:458, drop = FALSE]
+   Ext_F  <-  dataset[, 443:458, drop = FALSE]
 
    # Set TV-C-Parameter
    sample_length  <-  4 * 5
@@ -104,7 +104,7 @@ estimation and forecasting are carried out recursively.
    # Apply TV-C-Function
    results  <-  hdflex::tvc(y,
                             X,
-                            F,
+                            Ext_F,
                             lambda_grid,
                             kappa_grid,
                             sample_length,

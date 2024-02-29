@@ -53,6 +53,7 @@ delta       <-  0.95
 burn_in_tvc   <-  5
 burn_in_dsc   <-  5
 method        <-  1
+equal_weight  <-  TRUE
 
 # Set Portfolio-Parameter
 risk_aversion <-  3
@@ -78,6 +79,7 @@ test_that("Test whether y is Numeric Vector", {
                               delta,
                               burn_in_dsc,
                               method,
+                              equal_weight,
                               risk_aversion,
                               min_weight,
                               max_weight),
@@ -99,6 +101,7 @@ test_that("Test whether y is not NULL", {
                               delta,
                               burn_in_dsc,
                               method,
+                              equal_weight,
                               risk_aversion,
                               min_weight,
                               max_weight),
@@ -120,10 +123,11 @@ test_that("Test whether y has only numeric values", {
                               delta,
                               burn_in_dsc,
                               method,
+                              equal_weight,
                               risk_aversion,
                               min_weight,
                               max_weight),
-              "Must be of type 'numeric', not 'character'.", fixed = TRUE)
+                           "Must be of type 'numeric', not 'character'.", fixed = TRUE)
 })
 
 test_that("Test whether y has no NA-Values", {
@@ -141,10 +145,11 @@ test_that("Test whether y has no NA-Values", {
                               delta,
                               burn_in_dsc,
                               method,
+                              equal_weight,
                               risk_aversion,
                               min_weight,
                               max_weight),
-              "Contains missing values", fixed = TRUE)
+                         "Contains missing values", fixed = TRUE)
 })
 
 ### Tests on X
@@ -163,10 +168,11 @@ test_that("Test whether x is matrix", {
                               delta,
                               burn_in_dsc,
                               method,
+                              equal_weight,
                               risk_aversion,
                               min_weight,
                               max_weight),
-              "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
+                         "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
 })
 
 test_that("Test whether x has the same number of observations as y", {
@@ -184,10 +190,11 @@ test_that("Test whether x has the same number of observations as y", {
                               delta,
                               burn_in_dsc,
                               method,
+                              equal_weight,
                               risk_aversion,
                               min_weight,
                               max_weight),
-                        "Must have exactly", fixed = TRUE)
+                         "Must have exactly", fixed = TRUE)
 })
 
 test_that("Test whether exception works when cov_mat cannot be initialised", {
@@ -205,6 +212,7 @@ test_that("Test whether exception works when cov_mat cannot be initialised", {
                                  delta,
                                  burn_in_dsc,
                                  method,
+                                 equal_weight,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -226,10 +234,11 @@ test_that("Test whether f is matrix", {
                               delta,
                               burn_in_dsc,
                               method,
+                              equal_weight,
                               risk_aversion,
                               min_weight,
                               max_weight),
-                        "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
+                         "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
 })
 
 test_that("Test whether f has the same number of observations as y", {
@@ -247,10 +256,11 @@ test_that("Test whether f has the same number of observations as y", {
                               delta,
                               burn_in_dsc,
                               method,
+                              equal_weight,
                               risk_aversion,
                               min_weight,
                               max_weight),
-                        "Must have exactly", fixed = TRUE)
+                         "Must have exactly", fixed = TRUE)
 })
 
 ### Tests on x and f
@@ -258,6 +268,25 @@ test_that("Test whether either x or f is provided", {
 
   raw_signals  <-  NULL
   f_signals    <-  NULL
+  testthat::expect_error(stsc_loop(y,
+                                   raw_signals,
+                                   f_signals,
+                                   sample_length,
+                                   lambda_grid,
+                                   kappa_grid,
+                                   burn_in_tvc,
+                                   gamma_grid,
+                                   psi_grid,
+                                   delta,
+                                   burn_in_dsc,
+                                   method,
+                                   equal_weight,
+                                   risk_aversion,
+                                   min_weight,
+                                   max_weight),
+                         "Error: No signals provided",
+                         fixed = TRUE)
+
   testthat::expect_error(stsc(y,
                               raw_signals,
                               f_signals,
@@ -270,13 +299,14 @@ test_that("Test whether either x or f is provided", {
                               delta,
                               burn_in_dsc,
                               method,
+                              equal_weight,
                               risk_aversion,
                               min_weight,
                               max_weight),
-            "Assertion failed. One of the following must apply:
+                         "Assertion failed. One of the following must apply:
  * checkmate::checkMatrix(X): Must be of type 'matrix', not 'NULL'
- * checkmate::checkMatrix(F): Must be of type 'matrix', not 'NULL'",
-            fixed = TRUE)
+ * checkmate::checkMatrix(Ext_F): Must be of type 'matrix', not 'NULL'",
+                         fixed = TRUE)
 })
 
 test_that("Test whether Code still works with only raw signals / only point forecasts", {
@@ -293,6 +323,7 @@ test_that("Test whether Code still works with only raw signals / only point fore
                                  delta,
                                  burn_in_dsc,
                                  method,
+                                 equal_weight,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -309,6 +340,7 @@ test_that("Test whether Code still works with only raw signals / only point fore
                                  delta,
                                  burn_in_dsc,
                                  method,
+                                 equal_weight,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -329,6 +361,7 @@ test_that("Test whether Code still works with NA-values", {
                                  delta,
                                  burn_in_dsc,
                                  method,
+                                 equal_weight,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -350,6 +383,7 @@ test_that("Test whether Code still works without dimnames", {
                                  delta,
                                  burn_in_dsc,
                                  method,
+                                 equal_weight,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -370,6 +404,7 @@ test_that("Test whether Code still works with different methods", {
                                  delta,
                                  burn_in_dsc,
                                  method = 2,
+                                 equal_weight,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -386,6 +421,7 @@ test_that("Test whether Code still works with different methods", {
                                  delta,
                                  burn_in_dsc,
                                  method = 3,
+                                 equal_weight,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -402,6 +438,7 @@ test_that("Test whether Code still works with different methods", {
                                  delta,
                                  burn_in_dsc,
                                  method = 4,
+                                 equal_weight,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -423,11 +460,71 @@ test_that("Test whether method is of given set", {
                               delta,
                               burn_in_dsc,
                               method,
+                              equal_weight,
                               risk_aversion,
                               min_weight,
                               max_weight),
-                        "Must be element of set {'1','2','3','4'}",
-                        fixed = TRUE)
+                         "Must be element of set {'1','2','3','4'}",
+                         fixed = TRUE)
+
+  testthat::expect_error(stsc_loop(y,
+                                   raw_signals,
+                                   f_signals,
+                                   sample_length,
+                                   lambda_grid,
+                                   kappa_grid,
+                                   burn_in_tvc,
+                                   gamma_grid,
+                                   psi_grid,
+                                   delta,
+                                   burn_in_dsc,
+                                   method,
+                                   equal_weight,
+                                   risk_aversion,
+                                   min_weight,
+                                   max_weight),
+                         "Error: Method not available", fixed = TRUE)
+})
+
+### Tests on Equal_weight
+test_that("Tests on equal_weight", {
+
+  equal_weight  <-  "True"
+  testthat::expect_error(stsc(y,
+                              raw_signals,
+                              f_signals,
+                              sample_length,
+                              lambda_grid,
+                              kappa_grid,
+                              burn_in_tvc,
+                              gamma_grid,
+                              psi_grid,
+                              delta,
+                              burn_in_dsc,
+                              method,
+                              equal_weight,
+                              risk_aversion,
+                              min_weight,
+                              max_weight),
+                         "Must be of type 'logical'", fixed = TRUE)
+
+  equal_weight  <-  FALSE
+  testthat::expect_no_error(stsc(y,
+                                 raw_signals,
+                                 f_signals,
+                                 sample_length,
+                                 lambda_grid,
+                                 kappa_grid,
+                                 burn_in_tvc,
+                                 gamma_grid,
+                                 psi_grid,
+                                 delta,
+                                 burn_in_dsc,
+                                 method,
+                                 equal_weight,
+                                 risk_aversion,
+                                 min_weight,
+                                 max_weight))
 })
 
 ### Tests on Return Parameter
@@ -449,13 +546,32 @@ test_that("Test whether relevant parameter are provided", {
                               delta,
                               burn_in_dsc,
                               method,
+                              equal_weight,
                               risk_aversion,
                               min_weight,
                               max_weight),
-        "Must be of type 'number', not 'NULL'",
-            fixed = TRUE)
-})
+                         "Must be of type 'number', not 'NULL'",
+                         fixed = TRUE)
 
+  testthat::expect_error(stsc_loop(y,
+                                   raw_signals,
+                                   f_signals,
+                                   sample_length,
+                                   lambda_grid,
+                                   kappa_grid,
+                                   burn_in_tvc,
+                                   gamma_grid,
+                                   psi_grid,
+                                   delta,
+                                   burn_in_dsc,
+                                   method,
+                                   equal_weight,
+                                   risk_aversion,
+                                   min_weight,
+                                   max_weight),
+                         "Error: Relevant parameter not provided!",
+                         fixed = TRUE)
+})
 
 ### Output
 test_that("Test whether the output has the right format", {
@@ -473,6 +589,7 @@ test_that("Test whether the output has the right format", {
                     delta,
                     burn_in_dsc,
                     method,
+                    equal_weight,
                     risk_aversion,
                     min_weight,
                     max_weight)
@@ -506,4 +623,72 @@ test_that("Test whether the output has the right format", {
                            mode = "integerish",
                            nrows = numb_obs,
                            ncols = (ncol(raw_signals) + ncol(f_signals)))
+})
+
+
+### Guarantee same results between tvc() & dsc() vs. stsc()
+test_that("Test whether the different implementations give same results", {
+
+  # Apply STSC-Function
+  stsc_results <- hdflex::stsc(y,
+                               raw_signals,
+                               f_signals,
+                               sample_length,
+                               lambda_grid,
+                               kappa_grid,
+                               burn_in_tvc,
+                               gamma_grid,
+                               psi_grid,
+                               delta,
+                               burn_in_dsc,
+                               method,
+                               equal_weight,
+                               risk_aversion,
+                               min_weight,
+                               max_weight)
+
+  # Apply TVC-Function
+  tvc_results  <-  hdflex::tvc(y,
+                               raw_signals,
+                               f_signals,
+                               lambda_grid,
+                               kappa_grid,
+                               sample_length,
+                               1)
+
+  # Assign Results
+  forecast_tvc      <-  tvc_results[[1]]
+  variance_tvc      <-  tvc_results[[2]]
+
+  # Cut Initialization-Period
+  sample_period_idx   <-  (burn_in_tvc+1):numb_obs
+  sub_forecast_tvc    <-  forecast_tvc[sample_period_idx, , drop = FALSE]
+  sub_variance_tvc    <-  variance_tvc[sample_period_idx, , drop = FALSE]
+  sub_y               <-  y[sample_period_idx]
+
+  # Apply DSC-Function
+  dsc_results  <-  hdflex::dsc(gamma_grid,
+                               psi_grid,
+                               sub_y,
+                               sub_forecast_tvc,
+                               sub_variance_tvc,
+                               delta,
+                               1)
+
+  # Compare Forecasts
+  testthat::expect_equal(round(sum(na.omit(stsc_results[[1]])[-1]), 20),
+                         round(sum(         dsc_results[[1]][-1]), 20))
+
+  # Compare Variances
+  testthat::expect_equal(round(sum(na.omit(stsc_results[[2]])[-1]), 20),
+                         round(sum(         dsc_results[[2]][-1]), 20))
+
+  # Compare Gammas
+  testthat::expect_equal(na.omit(stsc_results[[3]])[-1],
+                                  dsc_results[[3]][-1])
+
+  # Compare Psis
+  testthat::expect_equal(na.omit(stsc_results[[4]])[-1],
+                                  dsc_results[[4]][-1])
+
 })

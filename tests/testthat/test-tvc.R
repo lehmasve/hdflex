@@ -158,7 +158,7 @@ test_that("Test whether either x or f is provided", {
                              n_cores),
             "Assertion failed. One of the following must apply:
  * checkmate::checkMatrix(X): Must be of type 'matrix', not 'NULL'
- * checkmate::checkMatrix(F): Must be of type 'matrix', not 'NULL'",
+ * checkmate::checkMatrix(Ext_F): Must be of type 'matrix', not 'NULL'",
             fixed = TRUE)
 })
 

@@ -132,6 +132,7 @@ First example using the `stsc()` function:
                               delta,
                               burn_in_dsc = 1,
                               method = 1,
+                              equal_weight = TRUE,
                               risk_aversion = NULL,
                               min_weight = NULL,
                               max_weight = NULL)

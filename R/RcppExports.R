@@ -53,24 +53,24 @@ dsc_agg_density_ <- function(active_weights, forecast_tvc_t, variance_tvc_t, idx
     .Call(`_hdflex_dsc_agg_density_`, active_weights, forecast_tvc_t, variance_tvc_t, idx_sub)
 }
 
-dsc_dpll_tvc_ <- function(dpll_cands_gamma, y_t, forecast_tvc_t, variance_tvc_t, gamma, method = 1L, risk_aversion_ = NULL, min_weight_ = NULL, max_weight_ = NULL) {
-    .Call(`_hdflex_dsc_dpll_tvc_`, dpll_cands_gamma, y_t, forecast_tvc_t, variance_tvc_t, gamma, method, risk_aversion_, min_weight_, max_weight_)
+dsc_dpll_cands_ <- function(dpll_cands_gamma, y_t, forecast_tvc_t, variance_tvc_t, gamma, method, risk_aversion_ = NULL, min_weight_ = NULL, max_weight_ = NULL) {
+    invisible(.Call(`_hdflex_dsc_dpll_cands_`, dpll_cands_gamma, y_t, forecast_tvc_t, variance_tvc_t, gamma, method, risk_aversion_, min_weight_, max_weight_))
 }
 
 rank_comb_ <- function(dpll_combs, mu_comb_vec, variance_comb_vec) {
     .Call(`_hdflex_rank_comb_`, dpll_combs, mu_comb_vec, variance_comb_vec)
 }
 
-dsc_dpll_comb_ <- function(dpll_combs, y_t, forecasts_comb, variances_comb, delta, method = 1L, risk_aversion_ = NULL, min_weight_ = NULL, max_weight_ = NULL) {
-    .Call(`_hdflex_dsc_dpll_comb_`, dpll_combs, y_t, forecasts_comb, variances_comb, delta, method, risk_aversion_, min_weight_, max_weight_)
+dsc_dpll_comb_ <- function(dpll_combs, y_t, forecasts_comb, variances_comb, delta, method, risk_aversion_ = NULL, min_weight_ = NULL, max_weight_ = NULL) {
+    invisible(.Call(`_hdflex_dsc_dpll_comb_`, dpll_combs, y_t, forecasts_comb, variances_comb, delta, method, risk_aversion_, min_weight_, max_weight_))
 }
 
-dsc_loop_ <- function(dpll_cands, dpll_combs, gamma_grid, psi_grid, y_t, forecast_tvc_t, variance_tvc_t, delta, method = 1L, risk_aversion_ = NULL, min_weight_ = NULL, max_weight_ = NULL) {
-    .Call(`_hdflex_dsc_loop_`, dpll_cands, dpll_combs, gamma_grid, psi_grid, y_t, forecast_tvc_t, variance_tvc_t, delta, method, risk_aversion_, min_weight_, max_weight_)
+dsc_loop_ <- function(dpll_cands, dpll_combs, gamma_grid, psi_grid, y_t, forecast_tvc_t, variance_tvc_t, delta, method, equal_weight, risk_aversion_ = NULL, min_weight_ = NULL, max_weight_ = NULL) {
+    .Call(`_hdflex_dsc_loop_`, dpll_cands, dpll_combs, gamma_grid, psi_grid, y_t, forecast_tvc_t, variance_tvc_t, delta, method, equal_weight, risk_aversion_, min_weight_, max_weight_)
 }
 
-stsc_loop <- function(y, X_, F_, sample_length, lambda_grid, kappa_grid, burn_in_tvc, gamma_grid, psi_grid, delta, burn_in_dsc, method = 1L, risk_aversion_ = NULL, min_weight_ = NULL, max_weight_ = NULL) {
-    .Call(`_hdflex_stsc_loop`, y, X_, F_, sample_length, lambda_grid, kappa_grid, burn_in_tvc, gamma_grid, psi_grid, delta, burn_in_dsc, method, risk_aversion_, min_weight_, max_weight_)
+stsc_loop <- function(y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid, burn_in_tvc, gamma_grid, psi_grid, delta, burn_in_dsc, method, equal_weight, risk_aversion_ = NULL, min_weight_ = NULL, max_weight_ = NULL) {
+    .Call(`_hdflex_stsc_loop`, y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid, burn_in_tvc, gamma_grid, psi_grid, delta, burn_in_dsc, method, equal_weight, risk_aversion_, min_weight_, max_weight_)
 }
 
 init_tvc <- function(y_var, x_var, sample_length) {
