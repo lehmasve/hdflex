@@ -525,7 +525,7 @@ tvc  <- function(y,
     }
 
     # Remove Objects
-    rm(list = c("mu_var_tmp", "F", "mu_tmp_seq", "var_tmp_seq"))
+    rm(list = c("mu_var_tmp", "Ext_F", "mu_tmp_seq", "var_tmp_seq"))
   }
 
   ### 3) Combine Results

@@ -21,9 +21,9 @@ using namespace Rcpp;
    
    // Loop over all candidates
       int counter = 0;
-         for (int l = 0; l < lambda_grid.size(); l++) {
-           for (int k = 0; k < kappa_grid.size(); k++) {
-               for (int j = 0; j < n_signal; j++) {
+         for (unsigned int l = 0; l < lambda_grid.size(); l++) {
+           for (unsigned int k = 0; k < kappa_grid.size(); k++) {
+               for (unsigned int j = 0; j < n_signal; j++) {
 
                // über vkeep Col-Idx der TVP-Forecasts ermitteln
                // vkeep - Spalten dürfen keine NA-Werte enthalten
@@ -193,19 +193,19 @@ using namespace Rcpp;
     
    // Loop over Lambda
       int counter = 0;
-      for (int l = 0; l < lambda_grid.size(); l++) {
+      for (unsigned int l = 0; l < lambda_grid.size(); l++) {
 
       // Set Lambda
          double lambda = lambda_grid(l);
 
       // Loop over Kappa
-         for (int k = 0; k < kappa_grid.size(); k++) {
+         for (unsigned int k = 0; k < kappa_grid.size(); k++) {
 
          // Set Kappa
             double kappa =  kappa_grid(k);
 
          // Loop over all candidates
-            for (int j = 0; j < s_t.size(); j++) {
+            for (unsigned int j = 0; j < s_t.size(); j++) {
         
             // Set Signals
                double      s_t_j = s_t(j);
@@ -282,7 +282,7 @@ using namespace Rcpp;
    
    // Initialize List for Discounted-Log-Likelihood-Score (Candidate Models)  
       List dpll_cands(n_gamma);
-      for (int g=0; g<n_gamma; g++) {
+      for (unsigned int g=0; g<n_gamma; g++) {
           NumericVector vec(n_cands, 0.0);
           vec[na_idx] = NA_REAL;
           dpll_cands(g) = vec; 
@@ -397,7 +397,7 @@ using namespace Rcpp;
       NumericVector performance_score(n_cands, NA_REAL);
 
    // Calculate Performance
-      for (int i=0; i<n_cands; i++) {
+      for (unsigned int i=0; i<n_cands; i++) {
 
       // Check for NA value
          if (!NumericVector::is_na(forecast_tvc_t(i))) {  
@@ -501,7 +501,7 @@ using namespace Rcpp;
       NumericVector performance_score(n_combs);
 
    // Calculate Performance
-      for( int i=0; i<n_combs; i++) {
+      for (unsigned int i=0; i<n_combs; i++) {
 
       // Optimization-Method
       // 1) Log-Likelihood
@@ -580,7 +580,7 @@ using namespace Rcpp;
     
    // Loop over Gamma and Psi
       int ctr = 0;
-      for (int g=0; g<gamma_grid.length(); g++) {
+      for (unsigned int g=0; g<gamma_grid.length(); g++) {
 
          // Set Gamma
             double gamma = gamma_grid(g);
@@ -593,7 +593,7 @@ using namespace Rcpp;
          // psi um |vkeep| erhöhen?                              
 
          // Loop over Psi
-            for (int p=0; p<psi_grid.length(); p++) {
+            for (unsigned int p=0; p<psi_grid.length(); p++) {
 
             // Set Psi
                int non_na_ctr =sum(!is_na(as<NumericVector>(dpll_cands(g))));
@@ -764,7 +764,7 @@ using namespace Rcpp;
     
    // --- 
    // Loop over t
-      for ( int t=0; t<(tlength-1); t++ ) {
+      for (unsigned int t=0; t<(tlength-1); t++ ) {
 
       // Subset Data
          double             y_t = y[t];
@@ -775,9 +775,9 @@ using namespace Rcpp;
       // Check for NA-Values in Candidate Models in t  !! Muss nur gemacht werden, wenn NA-Werte in Candidate Models !!
          IntegerVector na_idx_t;
          int ctr = 0;
-            for (int l = 0; l < lambda_grid.size(); l++) {
-               for (int k = 0; k < kappa_grid.size(); k++) {
-                  for (int j = 0; j < S.n_cols; j++) {
+            for (unsigned int l = 0; l < lambda_grid.size(); l++) {
+               for (unsigned int k = 0; k < kappa_grid.size(); k++) {
+                  for (unsigned int j = 0; j < S.n_cols; j++) {
 
                      // Check and Count for NA-Values
                         if (NumericVector::is_na(s_t(j))) {
@@ -794,7 +794,7 @@ using namespace Rcpp;
             // Get the Index for the Signals that are not NA anymore
                IntegerVector vec_diff = setdiff(na_idx, na_idx_t);
                                na_idx = clone(na_idx_t);              
-               for ( int g=0; g<gamma_grid.length(); g++ ) {
+               for (unsigned int g=0; g<gamma_grid.length(); g++ ) {
                    as<NumericVector>(dpll_cands(g))[vec_diff] = 0.0; }
          }
 
