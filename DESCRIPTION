@@ -36,3 +36,5 @@ Encoding: UTF-8
 LazyData: true
 NeedsCompilation: Yes
 RoxygenNote: 7.3.1
+URL: https://github.com/lehmasve/hdflex
+BugReports: https://github.com/lehmasve/hdflex/issues
