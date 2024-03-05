@@ -127,38 +127,38 @@ BEGIN_RCPP
 END_RCPP
 }
 // tvc_model_
-List tvc_model_(const double& y_t, const double& s_t_j, const double& s_tplus1_j, const double& lambda, const double& kappa, const arma::mat& theta, const arma::mat& cov_mat, const double& h);
-RcppExport SEXP _hdflex_tvc_model_(SEXP y_tSEXP, SEXP s_t_jSEXP, SEXP s_tplus1_jSEXP, SEXP lambdaSEXP, SEXP kappaSEXP, SEXP thetaSEXP, SEXP cov_matSEXP, SEXP hSEXP) {
+List tvc_model_(const double& y_t, const double& s_t_j, const double& s_pred_j, const double& lambda, const double& kappa, const arma::mat& theta, const arma::mat& cov_mat, const double& h);
+RcppExport SEXP _hdflex_tvc_model_(SEXP y_tSEXP, SEXP s_t_jSEXP, SEXP s_pred_jSEXP, SEXP lambdaSEXP, SEXP kappaSEXP, SEXP thetaSEXP, SEXP cov_matSEXP, SEXP hSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const double& >::type y_t(y_tSEXP);
     Rcpp::traits::input_parameter< const double& >::type s_t_j(s_t_jSEXP);
-    Rcpp::traits::input_parameter< const double& >::type s_tplus1_j(s_tplus1_jSEXP);
+    Rcpp::traits::input_parameter< const double& >::type s_pred_j(s_pred_jSEXP);
     Rcpp::traits::input_parameter< const double& >::type lambda(lambdaSEXP);
     Rcpp::traits::input_parameter< const double& >::type kappa(kappaSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type theta(thetaSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type cov_mat(cov_matSEXP);
     Rcpp::traits::input_parameter< const double& >::type h(hSEXP);
-    rcpp_result_gen = Rcpp::wrap(tvc_model_(y_t, s_t_j, s_tplus1_j, lambda, kappa, theta, cov_mat, h));
+    rcpp_result_gen = Rcpp::wrap(tvc_model_(y_t, s_t_j, s_pred_j, lambda, kappa, theta, cov_mat, h));
     return rcpp_result_gen;
 END_RCPP
 }
 // tvc_model_cand_
-List tvc_model_cand_(const double& y_t, const arma::rowvec& s_t, const arma::rowvec& s_tplus1, const arma::vec& lambda_grid, const arma::vec& kappa_grid, List& theta_all, List& cov_mat_all, List& h_all);
-RcppExport SEXP _hdflex_tvc_model_cand_(SEXP y_tSEXP, SEXP s_tSEXP, SEXP s_tplus1SEXP, SEXP lambda_gridSEXP, SEXP kappa_gridSEXP, SEXP theta_allSEXP, SEXP cov_mat_allSEXP, SEXP h_allSEXP) {
+List tvc_model_cand_(const double& y_t, const arma::rowvec& s_t, const arma::rowvec& s_pred, const arma::vec& lambda_grid, const arma::vec& kappa_grid, List& theta_all, List& cov_mat_all, List& h_all);
+RcppExport SEXP _hdflex_tvc_model_cand_(SEXP y_tSEXP, SEXP s_tSEXP, SEXP s_predSEXP, SEXP lambda_gridSEXP, SEXP kappa_gridSEXP, SEXP theta_allSEXP, SEXP cov_mat_allSEXP, SEXP h_allSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const double& >::type y_t(y_tSEXP);
     Rcpp::traits::input_parameter< const arma::rowvec& >::type s_t(s_tSEXP);
-    Rcpp::traits::input_parameter< const arma::rowvec& >::type s_tplus1(s_tplus1SEXP);
+    Rcpp::traits::input_parameter< const arma::rowvec& >::type s_pred(s_predSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type lambda_grid(lambda_gridSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type kappa_grid(kappa_gridSEXP);
     Rcpp::traits::input_parameter< List& >::type theta_all(theta_allSEXP);
     Rcpp::traits::input_parameter< List& >::type cov_mat_all(cov_mat_allSEXP);
     Rcpp::traits::input_parameter< List& >::type h_all(h_allSEXP);
-    rcpp_result_gen = Rcpp::wrap(tvc_model_cand_(y_t, s_t, s_tplus1, lambda_grid, kappa_grid, theta_all, cov_mat_all, h_all));
+    rcpp_result_gen = Rcpp::wrap(tvc_model_cand_(y_t, s_t, s_pred, lambda_grid, kappa_grid, theta_all, cov_mat_all, h_all));
     return rcpp_result_gen;
 END_RCPP
 }

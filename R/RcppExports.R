@@ -33,12 +33,12 @@ init_tvc_ <- function(y, S, n_sim_sig, sample_length, lambda_grid, kappa_grid) {
     .Call(`_hdflex_init_tvc_`, y, S, n_sim_sig, sample_length, lambda_grid, kappa_grid)
 }
 
-tvc_model_ <- function(y_t, s_t_j, s_tplus1_j, lambda, kappa, theta, cov_mat, h) {
-    .Call(`_hdflex_tvc_model_`, y_t, s_t_j, s_tplus1_j, lambda, kappa, theta, cov_mat, h)
+tvc_model_ <- function(y_t, s_t_j, s_pred_j, lambda, kappa, theta, cov_mat, h) {
+    .Call(`_hdflex_tvc_model_`, y_t, s_t_j, s_pred_j, lambda, kappa, theta, cov_mat, h)
 }
 
-tvc_model_cand_ <- function(y_t, s_t, s_tplus1, lambda_grid, kappa_grid, theta_all, cov_mat_all, h_all) {
-    .Call(`_hdflex_tvc_model_cand_`, y_t, s_t, s_tplus1, lambda_grid, kappa_grid, theta_all, cov_mat_all, h_all)
+tvc_model_cand_ <- function(y_t, s_t, s_pred, lambda_grid, kappa_grid, theta_all, cov_mat_all, h_all) {
+    .Call(`_hdflex_tvc_model_cand_`, y_t, s_t, s_pred, lambda_grid, kappa_grid, theta_all, cov_mat_all, h_all)
 }
 
 dsc_init_ <- function(n_cands, n_combs, n_gamma, na_idx) {
