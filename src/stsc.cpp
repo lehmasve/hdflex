@@ -121,7 +121,7 @@ using namespace Rcpp;
 // [[Rcpp::export]]
    List tvc_model_(const double& y_t, 
                    const double& s_t_j, 
-                   const double& s_tplus1_j,
+                   const double& s_pred_j,
                    const double& lambda, 
                    const double& kappa, 
                    const arma::mat& theta, 
@@ -129,42 +129,44 @@ using namespace Rcpp;
                    const double& h) { 
   
    // Define Variables
-      arma::mat z_t, z_pred, r_t, theta_new, cov_mat_new;
-      double mu, variance, h_new;
+      arma::mat z_t, z_pred, r_upt, theta_upt, cov_mat_upt;
+      double mu, variance, inv_tvar, e_t, h_upt;
   
    // Get Predictor for Time t
       z_t  = arma::zeros<arma::mat>(1, 2);  
-      z_t(0, 0) = 1;
+      z_t(0, 0) = 1.0;
       z_t(0, 1) = s_t_j; 
    
    // Get Predictor for Predicting t + 1
       z_pred = arma::zeros<arma::mat>(1, 2);  
-      z_pred(0, 0) = 1;
-      z_pred(0, 1) = s_tplus1_j; 
+      z_pred(0, 0) = 1.0;
+      z_pred(0, 1) = s_pred_j; 
    
-   // Calculate R for Time t (Equation 5)
-      r_t = cov_mat / lambda;
+   // Add noise to uncertainty of Coefficients in time t (Equation 5)
+      r_upt = cov_mat / lambda;
+
+   // Calculate (OOS) Forecast Error for time t (see Equation 7)
+      e_t = arma::as_scalar(y_t - z_t * theta);
+
+   // Update Observational Variance in time t (Equation 10 and 11)
+      h_upt = arma::as_scalar(kappa * h + (1 - kappa) * pow(e_t, 2));
     
-   // Update Theta for Time t (Equation 7)
-      double inverse = arma::as_scalar(1 / (h + z_t * r_t * z_t.t()));
-      theta_new = theta + r_t * z_t.t() * inverse * (y_t - z_t * theta);
+   // Update Coefficients in time t (Equation 7)
+      inv_tvar  = arma::as_scalar(1.0 / (h_upt + z_t * r_upt * z_t.t()));
+      theta_upt = theta + r_upt * z_t.t() * inv_tvar * e_t;
      
-   // Update Var-Cov-Matrix for Time t (Equation 8)
-      cov_mat_new = r_t - r_t * z_t.t() * inverse * (z_t * r_t);
-    
-   // Update H for Time t (Equation 10)
-      double z_times_theta = arma::as_scalar(z_t * theta_new);
-                     h_new = arma::as_scalar(kappa * h + (1 - kappa) * pow(y_t - z_times_theta, 2));
+   // Update Uncertainty of Coefficients in time t (Equation 8)
+      cov_mat_upt = r_upt - r_upt * z_t.t() * inv_tvar * (z_t * r_upt);
        
    // Get Predictive Density for Predicting t + 1 (Equation 9)
-            mu = arma::as_scalar(z_pred * theta_new);
-      variance = arma::as_scalar(h_new + z_pred * ((1 / lambda) * cov_mat_new) * z_pred.t());
+            mu = arma::as_scalar(z_pred * theta_upt);
+      variance = arma::as_scalar(h_upt + z_pred * ((1.0 / lambda) * cov_mat_upt) * z_pred.t());
       
    // Fill Return-List  
       List ret(5); 
-      ret[0] = theta_new;
-      ret[1] = cov_mat_new;
-      ret[2] = h_new;
+      ret[0] = theta_upt;
+      ret[1] = cov_mat_upt;
+      ret[2] = h_upt;
       ret[3] = mu;
       ret[4] = variance;
    
@@ -178,7 +180,7 @@ using namespace Rcpp;
 // [[Rcpp::export]]
    List tvc_model_cand_(const double& y_t, 
                         const arma::rowvec& s_t,
-                        const arma::rowvec& s_tplus1, 
+                        const arma::rowvec& s_pred, 
                         const arma::vec& lambda_grid, 
                         const arma::vec& kappa_grid, 
                         List& theta_all, 
@@ -208,8 +210,8 @@ using namespace Rcpp;
             for (unsigned int j = 0; j < s_t.size(); j++) {
         
             // Set Signals
-               double      s_t_j = s_t(j);
-               double s_tplus1_j = s_tplus1(j);
+               double    s_t_j = s_t(j);
+               double s_pred_j = s_pred(j);
 
             // Set Theta, Coefficient Variance, Observational Variance
                arma::mat theta;
@@ -224,7 +226,7 @@ using namespace Rcpp;
                // Apply TV-C-Function
                   tvc_results = tvc_model_(y_t,
                                            s_t_j,
-                                           s_tplus1_j, 
+                                           s_pred_j, 
                                            lambda,
                                            kappa,
                                            theta ,
@@ -724,7 +726,7 @@ using namespace Rcpp;
    // Define Variables for TV-C-Models
       List theta_all(n_cands), cov_mat_all(n_cands), h_all(n_cands);
       IntegerVector na_idx;
-      NumericVector forecast_tvc_tplus1(n_cands, 0.0), variance_tvc_tplus1(n_cands, 0.0);
+      NumericVector forecast_tvc_pred(n_cands, 0.0), variance_tvc_pred(n_cands, 0.0);
 
    // Define Variables for Dynamic Subset Combinations
       int tlength = y.size();
@@ -767,10 +769,10 @@ using namespace Rcpp;
       for (unsigned int t=0; t<(tlength-1); t++ ) {
 
       // Subset Data
-         double             y_t = y[t];
-         double        y_tplus1 = y[t+1];
-         arma::rowvec       s_t = S.row(t);
-         arma::rowvec  s_tplus1 = S.row(t+1);
+         double           y_t = y[t];
+         double        y_pred = y[t+1];
+         arma::rowvec     s_t = S.row(t);
+         arma::rowvec  s_pred = S.row(t+1);
 
       // Check for NA-Values in Candidate Models in t  !! Muss nur gemacht werden, wenn NA-Werte in Candidate Models !!
          IntegerVector na_idx_t;
@@ -822,7 +824,7 @@ using namespace Rcpp;
          List tvc_model_cand_results(2);
          tvc_model_cand_results = tvc_model_cand_(y_t, 
                                                   s_t,
-                                                  s_tplus1, 
+                                                  s_pred, 
                                                   lambda_grid, 
                                                   kappa_grid, 
                                                   theta_all, 
@@ -830,8 +832,8 @@ using namespace Rcpp;
                                                   h_all); 
 
       // Assign Results
-         forecast_tvc_tplus1 = tvc_model_cand_results(0);
-         variance_tvc_tplus1 = tvc_model_cand_results(1);
+         forecast_tvc_pred = tvc_model_cand_results(0);
+         variance_tvc_pred = tvc_model_cand_results(1);
 
       // Apply DSC-Function
          List dsc_results(4);
@@ -839,9 +841,9 @@ using namespace Rcpp;
                                  dpll_combs, 
                                  gamma_grid, 
                                  psi_grid, 
-                                 y_tplus1,
-                                 forecast_tvc_tplus1,             
-                                 variance_tvc_tplus1,
+                                 y_pred,
+                                 forecast_tvc_pred,             
+                                 variance_tvc_pred,
                                  delta,
                                  method,
                                  equal_weight,

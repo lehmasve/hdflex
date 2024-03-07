@@ -108,43 +108,45 @@ using namespace Rcpp;
   
   // Define Variables
     List ret(5);
-    arma::mat z_t, z_pred, r_t, theta_new, cov_mat_new;
-    double mu, variance, y_t, h_new;
+    arma::mat z_t, z_pred, r_upt, theta_upt, cov_mat_upt;
+    double mu, variance, y_t, e_t, h_upt;
   
   // Get Equity Premium for Time t
     y_t = y_var(i - 1);
  
   // Get Predictor for Time t
     z_t  = arma::zeros<arma::mat>(1, 2);  
-    z_t(0, 0) = 1;
+    z_t(0, 0) = 1.0;
     z_t(0, 1) = x_var(i - 1); 
   
   // Get Predictor for Predicting t + 1
     z_pred = arma::zeros<arma::mat>(1, 2);  
-    z_pred(0, 0) = 1;
+    z_pred(0, 0) = 1.0;
     z_pred(0, 1) = x_var(i); 
   
-  // Calculate R for Time t (Equation 5)
-     r_t = (1 / lambda) * cov_mat;
+  // Add noise to uncertainty of Coefficients in time t (Equation 5)
+     r_upt = cov_mat / lambda;
+
+  // Calculate (OOS) Forecast Error for time t (Equation 7)
+      e_t = arma::as_scalar(y_t - z_t * theta);
+
+  // Update Observational Variance in time t (Equation 10 and 11)
+     h_upt = arma::as_scalar(kappa * h + (1.0 - kappa) * pow(e_t, 2));
    
-  // Update Theta for Time t (Equation 7)
-     theta_new = theta + r_t * z_t.t() * inv(h + z_t * r_t * z_t.t()) * (y_t - z_t * theta);
+   // Update Coefficients in time t (Equation 7)
+     theta_upt = theta + r_upt * z_t.t() * inv(h_upt + z_t * r_upt * z_t.t()) * e_t;
     
-  // Update Var-Cov-Matrix for Time t (Equation 8)
-     cov_mat_new = r_t - r_t * z_t.t() * inv(h + z_t * r_t * z_t.t()) * (z_t * r_t);
-   
-  // Update H for Time t (Equation 10)
-     double z_times_theta = arma::as_scalar(z_t * theta_new);
-     h_new = arma::as_scalar(kappa * h + (1 - kappa) * pow(y_t - z_times_theta, 2));
+   // Update Uncertainty of Coefficients in time t (Equation 8)
+     cov_mat_upt = r_upt - r_upt * z_t.t() * inv(h_upt + z_t * r_upt * z_t.t()) * (z_t * r_upt);
       
   // Get Predictive Density for Predicting t + 1 (Equation 9)
-     mu = arma::as_scalar(z_pred * theta_new);
-     variance = arma::as_scalar(h_new + z_pred * ((1 / lambda) * cov_mat_new) * z_pred.t());
+           mu = arma::as_scalar(z_pred * theta_upt);
+     variance = arma::as_scalar(h_upt + z_pred * ((1.0 / lambda) * cov_mat_upt) * z_pred.t());
      
   // Fill List   
-     ret[0] = theta_new;
-     ret[1] = cov_mat_new;
-     ret[2] = h_new;
+     ret[0] = theta_upt;
+     ret[1] = cov_mat_upt;
+     ret[2] = h_upt;
      ret[3] = mu;
      ret[4] = variance;
   
