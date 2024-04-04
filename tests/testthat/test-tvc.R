@@ -23,7 +23,6 @@ colnames(f_signals)  <-  f_names
 sample_length  <-  100
 lambda_grid    <-  c(0.99, 0.999, 1.000)
 kappa_grid     <-  c(0.94)
-n_cores        <-  1
 
 ### Tests on Y
 test_that("Test whether y is Numeric Vector", {
@@ -34,8 +33,7 @@ test_that("Test whether y is Numeric Vector", {
                              f_signals,
                              lambda_grid,
                              kappa_grid,
-                             sample_length,
-                             n_cores),
+                             sample_length),
               "Must be of type 'numeric', not 'data.frame'.", fixed = TRUE)
 })
 
@@ -47,8 +45,7 @@ test_that("Test whether y is not NULL", {
                              f_signals,
                              lambda_grid,
                              kappa_grid,
-                             sample_length,
-                             n_cores),
+                             sample_length),
               "Must be of type 'numeric', not 'NULL'.", fixed = TRUE)
 })
 
@@ -60,8 +57,7 @@ test_that("Test whether y has only numeric values", {
                              f_signals,
                              lambda_grid,
                              kappa_grid,
-                             sample_length,
-                             n_cores),
+                             sample_length),
               "Must be of type 'numeric', not 'character'.", fixed = TRUE)
 })
 
@@ -73,8 +69,7 @@ test_that("Test whether y has no NA-Values", {
                              f_signals,
                              lambda_grid,
                              kappa_grid,
-                             sample_length,
-                             n_cores),
+                             sample_length),
               "Contains missing values", fixed = TRUE)
 })
 
@@ -87,8 +82,7 @@ test_that("Test whether x is matrix", {
                              f_signals,
                              lambda_grid,
                              kappa_grid,
-                             sample_length,
-                             n_cores),
+                             sample_length),
               "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
 })
 
@@ -100,8 +94,7 @@ test_that("Test whether x has the same number of observations as y", {
                              f_signals,
                              lambda_grid,
                              kappa_grid,
-                             sample_length,
-                             n_cores),
+                             sample_length),
                         "Must have exactly", fixed = TRUE)
 })
 
@@ -113,8 +106,7 @@ test_that("Test whether exception works when cov_mat cannot be initialised", {
                                 f_signals,
                                 lambda_grid,
                                 kappa_grid,
-                                sample_length,
-                                n_cores))
+                                sample_length))
 })
 
 ### Tests on f
@@ -126,8 +118,7 @@ test_that("Test whether f is matrix", {
                              f_signals,
                              lambda_grid,
                              kappa_grid,
-                             sample_length,
-                             n_cores),
+                             sample_length),
                         "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
 })
 
@@ -139,8 +130,7 @@ test_that("Test whether f has the same number of observations as y", {
                              f_signals,
                              lambda_grid,
                              kappa_grid,
-                             sample_length,
-                             n_cores),
+                             sample_length),
                         "Must have exactly", fixed = TRUE)
 })
 
@@ -154,8 +144,7 @@ test_that("Test whether either x or f is provided", {
                              f_signals,
                              lambda_grid,
                              kappa_grid,
-                             sample_length,
-                             n_cores),
+                             sample_length),
             "Assertion failed. One of the following must apply:
  * checkmate::checkMatrix(X): Must be of type 'matrix', not 'NULL'
  * checkmate::checkMatrix(Ext_F): Must be of type 'matrix', not 'NULL'",
@@ -171,8 +160,7 @@ test_that("Test whether Code still works without dimnames", {
                                 f_signals,
                                 lambda_grid,
                                 kappa_grid,
-                                sample_length,
-                                n_cores))
+                                sample_length))
 })
 
 ### Output
@@ -184,8 +172,7 @@ test_that("Test whether the output has the right format", {
                    f_signals,
                    lambda_grid,
                    kappa_grid,
-                   sample_length,
-                   n_cores)
+                   sample_length)
 
   # List Contains Two Elements
   testthat::expect_equal(length(results), 2)

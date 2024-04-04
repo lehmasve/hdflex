@@ -262,7 +262,6 @@ Second example using the `tvc()` and `dsc()` functions:
  sample_length  <-  4 * 5
  lambda_grid    <-  c(0.90, 0.95, 1)
  kappa_grid     <-  0.98
- n_cores        <-  4
 
  # Apply TV-C-Function
  results  <-  hdflex::tvc(y,
@@ -270,8 +269,7 @@ Second example using the `tvc()` and `dsc()` functions:
                           F,
                           lambda_grid,
                           kappa_grid,
-                          sample_length,
-                          n_cores)
+                          sample_length)
 
  # Assign TV-C-Results
  forecast_tvc      <-  results[[1]]

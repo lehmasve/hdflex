@@ -5,7 +5,7 @@
 \title{Compute density forecasts based on univariate time-varying
 coefficient (TV-C) models in state-space form}
 \usage{
-tvc(y, X, Ext_F, lambda_grid, kappa_grid, init_length, n_cores)
+tvc(y, X, Ext_F, lambda_grid, kappa_grid, sample_length)
 }
 \arguments{
 \item{y}{A matrix of dimension `T * 1` or numeric vector of length `T`
@@ -32,11 +32,8 @@ Constant variance is nested for the case `kappa = 1`.
 Each signal in combination with each value of
 kappa provides a separate forecast.}
 
-\item{init_length}{An integer that denotes the number of observations used
+\item{sample_length}{An integer that denotes the number of observations used
 to initialize the observational variance and the coefficients' variance.}
-
-\item{n_cores}{An integer that denotes the number of CPU-cores used
-for the computation.}
 }
 \value{
 A list that contains:
@@ -99,7 +96,6 @@ estimation and forecasting are carried out recursively.
    sample_length  <-  4 * 5
    lambda_grid    <-  c(0.90, 0.95, 1)
    kappa_grid     <-  0.98
-   n_cores        <-  1
 
    # Apply TV-C-Function
    results  <-  hdflex::tvc(y,
@@ -107,8 +103,7 @@ estimation and forecasting are carried out recursively.
                             Ext_F,
                             lambda_grid,
                             kappa_grid,
-                            sample_length,
-                            n_cores)
+                            sample_length)
 
    # Assign TV-C-Results
    forecast_tvc      <-  results[[1]]

@@ -28,7 +28,6 @@ benchmark  <-  dplyr::lag(roll::roll_mean(target_var,
 sample_length  <-  floor(numb_obs / 10)
 lambda_grid    <-  c(0.99, 0.999, 1.000)
 kappa_grid     <-  c(0.94)
-n_cores        <-  1
 
 # Apply TVP-Function
 results  <-  hdflex::tvc(target_var,
@@ -36,8 +35,7 @@ results  <-  hdflex::tvc(target_var,
                          f_signals,
                          lambda_grid,
                          kappa_grid,
-                         sample_length,
-                         n_cores)
+                         sample_length)
 
 # Assign Results
 forecast_tvc      <-  results[[1]]

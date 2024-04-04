@@ -414,34 +414,51 @@ stsc  <-  function(y,
                                     sum(abs(diff(x))) > 1 |
                                     sum(diff(x)) == 1 }))
   checkmate::assertFALSE(non_consec_na)
+
+  # Check if any column in X is constant for the first observations
+  if (!is.null(X)) {
+    if (any(apply(X[1:sample_length, ], 2, function(x) length(unique(x)) == 1))) {
+      print("One or more columns in X are constant for the first 1:sample_length observations.")
+    }
+  }
+
+  # Check if any column in Ext_F is constant for the first observations
+  if (!is.null(Ext_F)) {
+    if (any(apply(Ext_F[1:sample_length, ], 2, function(x) length(unique(x)) == 1))) {
+      print("One or more columns in Ext_F are constant for the first 1:sample_length observations.")
+    }
+  }
   ########################################################
 
   # Convert y to matrix
-  y  <-  as.matrix(y)
+  y  <-  as.matrix(y, ncol = 1)
 
   # Apply Rcpp-Function
-  stsc_results  <-  stsc_loop(y,
-                              X,
-                              Ext_F,
-                              sample_length,
-                              lambda_grid,
-                              kappa_grid,
-                              burn_in_tvc,
-                              gamma_grid,
-                              psi_grid,
-                              delta,
-                              burn_in_dsc,
-                              method,
-                              equal_weight,
-                              risk_aversion,
-                              min_weight,
-                              max_weight)
+  stsc_results  <-  stsc_loop_(y,
+                               X,
+                               Ext_F,
+                               sample_length,
+                               lambda_grid,
+                               kappa_grid,
+                               burn_in_tvc,
+                               gamma_grid,
+                               psi_grid,
+                               delta,
+                               burn_in_dsc,
+                               method,
+                               equal_weight,
+                               risk_aversion,
+                               min_weight,
+                               max_weight)
 
   # Assign Results
-  stsc_forecast  <-  stsc_results[[1]]
-  stsc_variance  <-  stsc_results[[2]]
-  stsc_comb_mod  <-  stsc_results[[3]]
+  stsc_forecast  <-  as.numeric(stsc_results[[1]])
+  stsc_variance  <-  as.numeric(stsc_results[[2]])
+  stsc_comb_mod  <-  as.integer(stsc_results[[3]])
   stsc_cand_mod  <-  stsc_results[[4]]
+
+  # Remove
+  rm(list = c("stsc_results"))
 
   # Get Values for Gamma & Psi
   para_grid     <-  expand.grid(psi_grid, gamma_grid)

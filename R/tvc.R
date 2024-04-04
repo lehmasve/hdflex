@@ -27,10 +27,8 @@
 #' Constant variance is nested for the case `kappa = 1`.
 #' Each signal in combination with each value of
 #' kappa provides a separate forecast.
-#' @param init_length An integer that denotes the number of observations used
+#' @param sample_length An integer that denotes the number of observations used
 #' to initialize the observational variance and the coefficients' variance.
-#' @param n_cores An integer that denotes the number of CPU-cores used
-#' for the computation.
 #' @return A list that contains:
 #'
 #' * (1) a matrix with the first moments (point forecasts)
@@ -106,7 +104,6 @@
 #'    sample_length  <-  4 * 5
 #'    lambda_grid    <-  c(0.90, 0.95, 1)
 #'    kappa_grid     <-  0.98
-#'    n_cores        <-  1
 #'
 #'    # Apply TV-C-Function
 #'    results  <-  hdflex::tvc(y,
@@ -114,8 +111,7 @@
 #'                             Ext_F,
 #'                             lambda_grid,
 #'                             kappa_grid,
-#'                             sample_length,
-#'                             n_cores)
+#'                             sample_length)
 #'
 #'    # Assign TV-C-Results
 #'    forecast_tvc      <-  results[[1]]
@@ -228,9 +224,9 @@ tvc  <- function(y,
                  Ext_F,
                  lambda_grid,
                  kappa_grid,
-                 init_length,
-                 n_cores) {
-
+                 sample_length) {
+                  
+  ########################################################
   ### Checkmate
   # Check if y is numeric vector without missing / infinite values
   checkmate::assertNumeric(y,
@@ -271,275 +267,98 @@ tvc  <- function(y,
                            any.missing = FALSE,
                            finite = TRUE)
 
-  # Check if init_length is Integer between 2 and N
-  checkmate::assertInt(init_length,
+  # Check if sample_length is Integer between 2 and N
+  checkmate::assertInt(sample_length,
                        lower = 2,
                        upper = length(y))
 
-  # Check if n_cores is integer bigger or equal to 1
-  checkmate::assertInt(n_cores,
-                       lower = 1)
-
-  ### 1) TV-C-Model for 'simple' Signals
+  # Check if any column in X is constant for the first observations
   if (!is.null(X)) {
-
-    # Set Variables and Indices to Subset Matrices
-    nr_preds      <-  ncol(X)
-    start_cols    <-  1
-    end_cols      <-  nr_preds
-    mu_tmp_seq    <-  seq(1, 2 * nr_preds, 2)
-    var_tmp_seq   <-  seq(2, 2 * nr_preds, 2)
-
-    # Set Column-Index-Grid
-    col_grid  <-  seq(1, nr_preds)
-
-    # Set number of predictive densities to create
-    nr_mods   <- length(lambda_grid) * length(kappa_grid) * nr_preds
-
-    # Set up result matrices (for Predictive Density)
-    max_length        <-  length(y)
-    mu_mat_raw        <-  matrix(NA, ncol = nr_mods, nrow = max_length)
-    variance_mat_raw  <-  matrix(NA, ncol = nr_mods, nrow = max_length)
-
-    # Loop over Lambda- and Kappa-Grid
-    for (i in seq_along(lambda_grid)) {
-      for (j in seq_along(kappa_grid)) {
-
-        # Set Lambda and Kappa
-        lambda  <-  lambda_grid[i]
-        kappa   <-  kappa_grid[j]
-
-        # Set up Backend for Parallel Processing
-        cores   <-  n_cores
-        cl      <-  parallel::makeCluster(cores, type = "PSOCK")
-        parallel::clusterExport(cl = cl, varlist = c("y",
-                                                     "X",
-                                                     "max_length",
-                                                     "init_length",
-                                                     "lambda",
-                                                     "kappa"),
-                                  envir = environment())
-        parallel::clusterEvalQ(cl, library("hdflex"))
-
-        # Parallelize with parLapply
-        mu_var_tmp     <-  do.call("cbind", parallel::parLapply(cl, col_grid, function(j) {
-
-          # Select signal-column and align lenght with target variable
-          y_x          <-  cbind(y, X[, j])
-          ts_y_x       <-  stats::na.omit(y_x)
-          drop_length  <-  max_length - nrow(ts_y_x)
-          ts_length    <-  nrow(ts_y_x) - 1
-
-          # Select Y-Variable
-          y_var  <-  ts_y_x[, 1]
-
-          # Select X-Variable
-          x_var  <-  ts_y_x[, -1]
-
-          # Initialize TV-C Model
-          init_results  <-  init_tvc(y_var, x_var, init_length)
-
-          # Assign Init-Results
-          theta    <-  init_results[[1]]
-          cov_mat  <-  init_results[[2]]
-          h        <-  init_results[[3]]
-
-          # Update & Predict: Recursively apply TV-C-Model-Function
-          tvc_results  <-  tvc_model_loop(y_var,
-                                          x_var,
-                                          lambda,
-                                          kappa,
-                                          theta,
-                                          cov_mat,
-                                          h,
-                                          ts_length,
-                                          drop_length,
-                                          max_length)
-
-          # Return Predictive Densities (Mu & Variance) for Signal j
-          return(cbind(tvc_results[[1]], tvc_results[[2]]))
-        }))
-
-        # Stop Cluster
-        parallel::stopCluster(cl)
-
-        # Fill Result Matrices mu_mat and variance_mat
-        mu_mat_raw[, start_cols:end_cols]        <-  mu_var_tmp[, mu_tmp_seq]
-        variance_mat_raw[, start_cols:end_cols]  <-  mu_var_tmp[, var_tmp_seq]
-
-        # Increase Column Indices
-        start_cols  <-  start_cols + nr_preds
-        end_cols    <-  start_cols + nr_preds - 1
-      }
+    if (any(apply(X[1:sample_length, ], 2, function(x) length(unique(x)) == 1))) {
+      print("One or more columns in X are constant for the first 1:sample_length observations.")
     }
+  }
 
-    ### Create Candidate Forecast Names
-    # Get / Create Signal Names
+  # Check if any column in Ext_F is constant for the first observations
+  if (!is.null(Ext_F)) {
+    if (any(apply(Ext_F[1:sample_length, ], 2, function(x) length(unique(x)) == 1))) {
+      print("One or more columns in Ext_F are constant for the first 1:sample_length observations.")
+    }
+  }
+  ########################################################
+
+  ### Apply Rcpp-Function
+  tvc_results <- tvc_(y,
+                      X,
+                      Ext_F,
+                      sample_length,
+                      lambda_grid,
+                      kappa_grid)
+
+  ### Assign Results
+  forecast_tvc <- tvc_results[[1]]
+  variance_tvc <- tvc_results[[2]]
+
+  ### Remove
+  rm(list = c("tvc_results"))
+
+  ### Create / Get Raw-Signal Names
+  x_names <- if (!is.null(X)) {
     if (!is.null(colnames(X))) {
-      x_names  <-  colnames(X)
+      colnames(X)
     } else {
-      x_names  <-  paste0("X", as.character(seq_len(nr_preds)))
+      paste0("X", as.character(seq_len(ncol(X))))
     }
+  }
 
-    # Set up Vector
-    model_names_raw  <-  rep(NA, nr_mods)
-                  i  <-  1
+  if (!is.null(X)) {
+    
+    # Preallocate TVC-Model Names
+    tvc_x_name <- vector("character", length(lambda_grid) * length(kappa_grid) * ncol(X))
 
-    # Loop over lambda-, kappa- and col-grids
-    for (lambda in lambda_grid) {
-      for (kappa in kappa_grid)  {
-        for (col_ind in col_grid) {
-
-          # Set Col-Name
-          col_name    <-  x_names[col_ind]
-
-          # Append
-          model_names_raw[i] <-  paste(col_name, lambda, kappa, sep = "-")
-                          i  <-  i + 1
+    # Create TVC-Model Names
+    i <- 1
+    for (l in lambda_grid) {
+      for (k in kappa_grid) {
+        for (j in seq_len(ncol(X))) {
+          # Create TVC-Model Name
+          tvc_x_name[i] <- paste(x_names[j], l, k, sep = "_")
+          i <- i + 1
         }
       }
     }
-
-    # Remove Objects
-    rm(list = c("mu_var_tmp", "X", "mu_tmp_seq", "var_tmp_seq"))
   }
 
-  ### 2.) TV-C-Model for Point Forecasts
+  ### Create / Get Point-Forecast Names
+  f_names <- if (!is.null(Ext_F)) {
+    if (!is.null(colnames(Ext_F))) {
+      colnames(Ext_F)
+    } else {
+      paste0("Ext_F", as.character(seq_len(ncol(Ext_F))))
+    }
+  }
+
   if (!is.null(Ext_F)) {
 
-    # Set Variables and Indices to Subset Matrices mu_mat and variance_mat
-    nr_preds      <-  ncol(Ext_F)
-    start_cols    <-  1
-    end_cols      <-  nr_preds
-    mu_tmp_seq    <-  seq(1, 2 * nr_preds, 2)
-    var_tmp_seq   <-  seq(2, 2 * nr_preds, 2)
+    # Preallocate TVC-Model Names
+    tvc_f_name <- vector("character", length(lambda_grid) * length(kappa_grid) * ncol(Ext_F))
 
-    # Set Column-Index-Grid
-    col_grid  <-  seq(1, nr_preds)
-
-    # Number Models
-    nr_mods  <- length(lambda_grid) * length(kappa_grid) * nr_preds
-
-    # Set up Matrices
-    max_length      <-  length(y)
-    mu_mat_f        <-  matrix(NA, ncol = nr_mods, nrow = max_length)
-    variance_mat_f  <-  matrix(NA, ncol = nr_mods, nrow = max_length)
-
-    # Loop over Lambda- and Kappa-Grid
-    for (i in seq_along(lambda_grid)) {
-      for (j in seq_along(kappa_grid)) {
-
-        # Set Lambda and Kappa
-        lambda  <-  lambda_grid[i]
-        kappa   <-  kappa_grid[j]
-
-        # Set Up Backend for Parallel Processing
-        cores   <-  n_cores
-        cl      <-  parallel::makeCluster(cores, type = "PSOCK")
-        parallel::clusterExport(cl = cl, varlist = c("y",
-                                                     "Ext_F",
-                                                     "max_length",
-                                                     "init_length",
-                                                     "lambda",
-                                                     "kappa"),
-                                envir = environment())
-        parallel::clusterEvalQ(cl, library("hdflex"))
-
-        # Parallelize with parLapply
-        mu_var_tmp  <-  do.call("cbind", parallel::parLapply(cl, col_grid, function(j) {
-
-          # Get Point-Forecasts Column and align lengths
-          y_x          <-  cbind(y, Ext_F[, j])
-          ts_y_x       <-  na.omit(y_x)
-          drop_length  <-  max_length - nrow(ts_y_x)
-          ts_length    <-  nrow(ts_y_x) - 1
-
-          # Select Y-Variable
-          y_var  <-  ts_y_x[,  1]
-
-          # Select X-Variable
-          x_var  <-  ts_y_x[, -1]
-
-          # Initialize TV-C-Model
-          init_results  <-  init_tvc_forecast(y_var, x_var, init_length)
-
-          # Assign Init-Results
-          theta    <-  init_results[[1]]
-          cov_mat  <-  init_results[[2]]
-          h        <-  init_results[[3]]
-
-          # Update & Predict: Recursively Apply TV-C-Model-Function
-          tvc_results  <-  tvc_model_loop(y_var,
-                                          x_var,
-                                          lambda,
-                                          kappa,
-                                          theta,
-                                          cov_mat,
-                                          h,
-                                          ts_length,
-                                          drop_length,
-                                          max_length)
-
-          # Return Predictive Densities (Mu & Variance) for Predictor j
-          return(cbind(tvc_results[[1]], tvc_results[[2]]))
-        }))
-
-        # Stop Cluster
-        parallel::stopCluster(cl)
-
-        # Fill Result Matrices mu_mat and variance_mat
-        mu_mat_f[, start_cols:end_cols]        <-  mu_var_tmp[, mu_tmp_seq]
-        variance_mat_f[, start_cols:end_cols]  <-  mu_var_tmp[, var_tmp_seq]
-
-        # Increase Column Indexes
-        start_cols  <-  start_cols + nr_preds
-        end_cols    <-  start_cols + nr_preds - 1
-      }
-    }
-
-    ### Get Candidate Forecast Names
-    # Get / Create Point Forecast Names
-    if (!is.null(colnames(Ext_F))) {
-      f_names  <-  colnames(Ext_F)
-    } else {
-      f_names  <-  paste0("Ext_F", as.character(seq_len(nr_preds)))
-    }
-
-    # Set up Vector
-    model_names_f  <-  rep(NA, nr_mods)
-          i        <-  1
-
-    # Loop over Kappa Grid
-    for (lambda in lambda_grid) {
-      for (kappa in kappa_grid) {
-        for (col_ind in col_grid) {
-
-          # Set Colname
-          col_name  <-  f_names[col_ind]
-
-          # Append
-          model_names_f[i]  <-  paste(col_name, lambda, kappa, sep = "-")
-                  i         <-  i + 1
+    # Create TVC-Model Names
+    i <- 1
+    for (l in lambda_grid) {
+      for (k in kappa_grid) {
+        for (j in seq_len(ncol(Ext_F))) {
+          # Create TVC-Model Name
+          tvc_f_name[i] <- paste(f_names[j], l, k, sep = "_")
+          i <- i + 1
         }
       }
     }
-
-    # Remove Objects
-    rm(list = c("mu_var_tmp", "Ext_F", "mu_tmp_seq", "var_tmp_seq"))
   }
 
-  ### 3) Combine Results
-  # Combine Forecasts
-  forecast_tvc     <-  cbind(if (exists("mu_mat_raw")) mu_mat_raw,
-                             if (exists("mu_mat_f")) mu_mat_f)
-
-  # Combine Variances
-  variance_tvc     <-  cbind(if (exists("variance_mat_raw")) variance_mat_raw,
-                             if (exists("variance_mat_f")) variance_mat_f)
-
-  # Get / Save TVc Model Names
-  model_names_tvc  <-  c(if (exists("model_names_raw")) model_names_raw,
-                         if (exists("model_names_f")) model_names_f)
+  # Combine Signal Names
+  model_names_tvc  <-  c(if (exists("tvc_x_name")) tvc_x_name,
+                         if (exists("tvc_f_name")) tvc_f_name)
 
   # Assign Model Names (-> Column Names)
   colnames(forecast_tvc)  <-  model_names_tvc
