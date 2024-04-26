@@ -15,10 +15,10 @@ theta  <-  matrix(NA, nrow = numb_obs, ncol = numb_signals)
 # Loop over Time
 for (t in seq_len(numb_obs)) {
 
-   ### Theta: Abrupt Change
+  ### Theta: Abrupt Change
   theta[t, 1]  <-  ifelse((t > 200 & t < 450), -0.30, 0.30)
 
-   ### Noise Predictors
+  ### Noise Predictors
   theta[t, -1] <-  0
 }
 
@@ -54,6 +54,8 @@ burn_in_tvc   <-  5
 burn_in_dsc   <-  5
 method        <-  1
 equal_weight  <-  TRUE
+parallel      <-  FALSE
+n_threads     <-  NULL
 
 # Set Portfolio-Parameter
 risk_aversion <-  3
@@ -80,6 +82,8 @@ test_that("Test whether y is Numeric Vector", {
                               burn_in_dsc,
                               method,
                               equal_weight,
+                              parallel,
+                              n_threads,
                               risk_aversion,
                               min_weight,
                               max_weight),
@@ -102,6 +106,8 @@ test_that("Test whether y is not NULL", {
                               burn_in_dsc,
                               method,
                               equal_weight,
+                              parallel,
+                              n_threads,
                               risk_aversion,
                               min_weight,
                               max_weight),
@@ -124,6 +130,8 @@ test_that("Test whether y has only numeric values", {
                               burn_in_dsc,
                               method,
                               equal_weight,
+                              parallel,
+                              n_threads,
                               risk_aversion,
                               min_weight,
                               max_weight),
@@ -146,6 +154,8 @@ test_that("Test whether y has no NA-Values", {
                               burn_in_dsc,
                               method,
                               equal_weight,
+                              parallel,
+                              n_threads,
                               risk_aversion,
                               min_weight,
                               max_weight),
@@ -169,6 +179,8 @@ test_that("Test whether x is matrix", {
                               burn_in_dsc,
                               method,
                               equal_weight,
+                              parallel,
+                              n_threads,
                               risk_aversion,
                               min_weight,
                               max_weight),
@@ -191,6 +203,8 @@ test_that("Test whether x has the same number of observations as y", {
                               burn_in_dsc,
                               method,
                               equal_weight,
+                              parallel,
+                              n_threads,
                               risk_aversion,
                               min_weight,
                               max_weight),
@@ -213,6 +227,28 @@ test_that("Test whether exception works when cov_mat cannot be initialised", {
                                  burn_in_dsc,
                                  method,
                                  equal_weight,
+                                 parallel,
+                                 n_threads,
+                                 risk_aversion,
+                                 min_weight,
+                                 max_weight))
+
+  f_signals[1:100, 10]  <-  0
+  testthat::expect_no_error(stsc(y,
+                                 raw_signals,
+                                 f_signals,
+                                 sample_length,
+                                 lambda_grid,
+                                 kappa_grid,
+                                 burn_in_tvc,
+                                 gamma_grid,
+                                 psi_grid,
+                                 delta,
+                                 burn_in_dsc,
+                                 method,
+                                 equal_weight,
+                                 parallel,
+                                 n_threads,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -235,6 +271,8 @@ test_that("Test whether f is matrix", {
                               burn_in_dsc,
                               method,
                               equal_weight,
+                              parallel,
+                              n_threads,
                               risk_aversion,
                               min_weight,
                               max_weight),
@@ -257,6 +295,8 @@ test_that("Test whether f has the same number of observations as y", {
                               burn_in_dsc,
                               method,
                               equal_weight,
+                              parallel,
+                              n_threads,
                               risk_aversion,
                               min_weight,
                               max_weight),
@@ -300,6 +340,8 @@ test_that("Test whether either x or f is provided", {
                               burn_in_dsc,
                               method,
                               equal_weight,
+                              parallel,
+                              n_threads,
                               risk_aversion,
                               min_weight,
                               max_weight),
@@ -324,6 +366,8 @@ test_that("Test whether Code still works with only raw signals / only point fore
                                  burn_in_dsc,
                                  method,
                                  equal_weight,
+                                 parallel,
+                                 n_threads,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -341,6 +385,8 @@ test_that("Test whether Code still works with only raw signals / only point fore
                                  burn_in_dsc,
                                  method,
                                  equal_weight,
+                                 parallel,
+                                n_threads,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -362,6 +408,8 @@ test_that("Test whether Code still works with NA-values", {
                                  burn_in_dsc,
                                  method,
                                  equal_weight,
+                                 parallel,
+                                 n_threads,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -384,6 +432,8 @@ test_that("Test whether Code still works without dimnames", {
                                  burn_in_dsc,
                                  method,
                                  equal_weight,
+                                 parallel,
+                                 n_threads,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -405,6 +455,8 @@ test_that("Test whether Code still works with different methods", {
                                  burn_in_dsc,
                                  method = 2,
                                  equal_weight,
+                                 parallel,
+                                 n_threads,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -422,6 +474,8 @@ test_that("Test whether Code still works with different methods", {
                                  burn_in_dsc,
                                  method = 3,
                                  equal_weight,
+                                 parallel,
+                                 n_threads,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -439,6 +493,8 @@ test_that("Test whether Code still works with different methods", {
                                  burn_in_dsc,
                                  method = 4,
                                  equal_weight,
+                                 parallel,
+                                 n_threads,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -461,6 +517,8 @@ test_that("Test whether method is of given set", {
                               burn_in_dsc,
                               method,
                               equal_weight,
+                              parallel,
+                              n_threads,
                               risk_aversion,
                               min_weight,
                               max_weight),
@@ -503,6 +561,8 @@ test_that("Tests on equal_weight", {
                               burn_in_dsc,
                               method,
                               equal_weight,
+                              parallel,
+                              n_threads,
                               risk_aversion,
                               min_weight,
                               max_weight),
@@ -522,6 +582,8 @@ test_that("Tests on equal_weight", {
                                  burn_in_dsc,
                                  method,
                                  equal_weight,
+                                 parallel,
+                                 n_threads,
                                  risk_aversion,
                                  min_weight,
                                  max_weight))
@@ -547,6 +609,8 @@ test_that("Test whether relevant parameter are provided", {
                               burn_in_dsc,
                               method,
                               equal_weight,
+                              parallel,
+                              n_threads,
                               risk_aversion,
                               min_weight,
                               max_weight),
@@ -573,10 +637,186 @@ test_that("Test whether relevant parameter are provided", {
                          fixed = TRUE)
 })
 
+### Test STSC-Parallel
+test_that("Test parallel function", {
+
+  parallel   <- TRUE
+  n_threads  <- NULL
+  testthat::expect_no_error(stsc(y,
+                                 raw_signals,
+                                 f_signals,
+                                 sample_length,
+                                 lambda_grid,
+                                 kappa_grid,
+                                 burn_in_tvc,
+                                 gamma_grid,
+                                 psi_grid,
+                                 delta,
+                                 burn_in_dsc,
+                                 method,
+                                 equal_weight,
+                                 parallel,
+                                 n_threads,
+                                 risk_aversion,
+                                 min_weight,
+                                 max_weight))
+
+  parallel   <- TRUE
+  n_threads  <- NULL
+  testthat::expect_no_error(stsc(y,
+                                 raw_signals,
+                                 f_signals,
+                                 sample_length,
+                                 lambda_grid,
+                                 kappa_grid,
+                                 burn_in_tvc,
+                                 gamma_grid,
+                                 psi_grid,
+                                 delta,
+                                 burn_in_dsc,
+                                 2,
+                                 equal_weight,
+                                 parallel,
+                                 n_threads,
+                                 risk_aversion,
+                                 min_weight,
+                                 max_weight))
+
+  parallel   <- TRUE
+  n_threads  <- NULL
+  testthat::expect_no_error(stsc(y,
+                                 raw_signals,
+                                 f_signals,
+                                 sample_length,
+                                 lambda_grid,
+                                 kappa_grid,
+                                 burn_in_tvc,
+                                 gamma_grid,
+                                 psi_grid,
+                                 delta,
+                                 burn_in_dsc,
+                                 3,
+                                 equal_weight,
+                                 parallel,
+                                 n_threads,
+                                 risk_aversion,
+                                 min_weight,
+                                 max_weight))
+
+  parallel   <- TRUE
+  n_threads  <- NULL
+  testthat::expect_no_error(stsc(y,
+                                 raw_signals,
+                                 f_signals,
+                                 sample_length,
+                                 lambda_grid,
+                                 kappa_grid,
+                                 burn_in_tvc,
+                                 gamma_grid,
+                                 psi_grid,
+                                 delta,
+                                 burn_in_dsc,
+                                 4,
+                                 equal_weight,
+                                 parallel,
+                                 n_threads,
+                                 3,
+                                 0,
+                                 2))
+
+  # Apply Parallel-STSC-Function
+  parallel   <- TRUE
+  n_threads  <- 1
+  stsc_par_results <- stsc(y,
+                           raw_signals,
+                           f_signals,
+                           sample_length,
+                           lambda_grid,
+                           kappa_grid,
+                           burn_in_tvc,
+                           gamma_grid,
+                           psi_grid,
+                           delta,
+                           burn_in_dsc,
+                           method,
+                           equal_weight,
+                           parallel,
+                           n_threads,
+                           risk_aversion,
+                           min_weight,
+                           max_weight)
+
+  # Apply Parallel-STSC-Function
+  parallel   <- FALSE
+  n_threads  <- NULL
+  stsc_results <- stsc(y,
+                       raw_signals,
+                       f_signals,
+                       sample_length,
+                       lambda_grid,
+                       kappa_grid,
+                       burn_in_tvc,
+                       gamma_grid,
+                       psi_grid,
+                       delta,
+                       burn_in_dsc,
+                       method,
+                       equal_weight,
+                       parallel,
+                       n_threads,
+                       risk_aversion,
+                       min_weight,
+                       max_weight)
+
+  # Compare Forecasts
+  testthat::expect_equal(round(sum(na.omit(stsc_results[[1]])), 20),
+                         round(sum(na.omit(stsc_par_results[[1]])), 20))
+
+  # Compare Variances
+  testthat::expect_equal(round(sum(na.omit(stsc_results[[2]])), 20),
+                         round(sum(na.omit(stsc_par_results[[2]])), 20))
+
+  # Compare Gammas
+  testthat::expect_equal(na.omit(stsc_results[[3]]),
+                         na.omit(stsc_par_results[[3]]))
+
+  # Compare Psis
+  testthat::expect_equal(na.omit(stsc_results[[4]]),
+                         na.omit(stsc_par_results[[4]]))
+})
+
+test_that("Test parallel function", {
+
+  parallel  <- TRUE
+  n_threads <- 1
+  raw_signals[1:10, 1] <-  0
+  raw_signals[1:100, 3] <-  0
+  raw_signals[1:20, c(2, 5, 7)] <-  NA
+  f_signals[1:30, 1] <-  NA
+  testthat::expect_no_error(stsc(y,
+                                 raw_signals,
+                                 f_signals,
+                                 sample_length,
+                                 lambda_grid,
+                                 kappa_grid,
+                                 burn_in_tvc,
+                                 gamma_grid,
+                                 psi_grid,
+                                 delta,
+                                 burn_in_dsc,
+                                 method,
+                                 equal_weight,
+                                 parallel,
+                                 n_threads,
+                                 risk_aversion,
+                                 min_weight,
+                                 max_weight))
+})
+
 ### Output
 test_that("Test whether the output has the right format", {
 
-  # Apply TVP-Function
+  # Apply STSC-Function
   results  <-  stsc(y,
                     raw_signals,
                     f_signals,
@@ -590,6 +830,8 @@ test_that("Test whether the output has the right format", {
                     burn_in_dsc,
                     method,
                     equal_weight,
+                    parallel,
+                    n_threads,
                     risk_aversion,
                     min_weight,
                     max_weight)
@@ -643,6 +885,8 @@ test_that("Test whether the different implementations give same results", {
                                burn_in_dsc,
                                method,
                                equal_weight,
+                               parallel,
+                               n_threads,
                                risk_aversion,
                                min_weight,
                                max_weight)

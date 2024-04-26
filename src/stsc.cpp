@@ -53,11 +53,6 @@ using namespace Rcpp;
                   x_sample_one = arma::ones<arma::mat>(x_sample.n_rows, 1);
                   x_sample.insert_cols(0, x_sample_one);
 
-               // // Check if all elements are equal
-               //    if(arma::all(x_sample.col(1) == x_sample(0, 1))) {
-               //       Rcout << "Warning: Consider increasing sample_length - Column " << j + 1 << " only contains equal values. \n Initialization of corresponding TV-C-Model might be affected. \n";
-               //    }
-
                // Initialize - Theta
                   theta = arma::zeros<arma::mat>(2,1);
 
@@ -238,9 +233,9 @@ using namespace Rcpp;
 // 2) Dynamic Subset Combination
 // Function I - Initialize DSC-Parameter
    arma::field<arma::field<arma::rowvec>> dsc_init_(int n_cands,
-                                                   int n_combs,
-                                                   int n_gamma,
-                                                   arma::uvec na_idx) {
+                                                    int n_combs,
+                                                    int n_gamma,
+                                                    arma::uvec na_idx) {
 
    // Define Variables
       arma::field<arma::field<arma::rowvec>> ret(2); 
@@ -662,10 +657,10 @@ using namespace Rcpp;
             max_weight    = as<double>(max_weight_.get());
       }
 
-   // Check Parameter
-      if (equal_weight != true && equal_weight != false) {
-      throw std::invalid_argument("Error: Equal Weight argument wrong");
-   }
+   //// Check Parameter
+   //   if (equal_weight != true && equal_weight != false) {
+   //   throw std::invalid_argument("Error: Equal Weight argument wrong");
+   //}
       
    // Number of Candiate Models and Signals
       const int n_signal = n_raw_sig + n_point_f;
@@ -678,9 +673,6 @@ using namespace Rcpp;
       arma::cube   theta_cube(2, 1, n_cands), cov_mat_cube(2, 2, n_cands);
       arma::rowvec h_vec(n_cands);
       arma::uvec   current_na_cm, new_na_cm;
-
-      //arma::mat forecast_tvc_mat(tlength, n_cands); forecast_tvc_mat.fill(arma::datum::nan);
-      //arma::mat variance_tvc_mat(tlength, n_cands); variance_tvc_mat.fill(arma::datum::nan);
 
    // Define Variables for Dynamic Subset Combinations
       const int n_combs = gamma_grid.n_elem * psi_grid.n_elem;
@@ -716,8 +708,8 @@ using namespace Rcpp;
                                    current_na_cm); 
 
    // Assign Results
-      dpll_cands = init_dsc_results(0); //as<arma::field<arma::rowvec>>(init_dsc_results(0));   
-      dpll_combs = init_dsc_results(1)(0); //as<arma::rowvec>(init_dsc_results(1));    
+      dpll_cands = init_dsc_results(0); 
+      dpll_combs = init_dsc_results(1)(0); 
 
    // --- 
    // Loop over t
@@ -796,9 +788,6 @@ using namespace Rcpp;
       // Assign Results
          forecast_tvc_pred = tvc_model_cand_results(0); 
          variance_tvc_pred = tvc_model_cand_results(1); 
-
-         //forecast_tvc_mat.row(t+1) = as<arma::rowvec>(tvc_model_cand_results(0));
-         //variance_tvc_mat.row(t+1) = as<arma::rowvec>(tvc_model_cand_results(1));
 
       // Apply DSC-Function
          arma::field<arma::rowvec> dsc_results(4);

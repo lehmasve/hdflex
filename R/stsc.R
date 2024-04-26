@@ -63,6 +63,10 @@
 #' calculated using the softmax-function on the predictive log-scores of
 #' the candidate models. The method proposed in Adaemmer et al (2023) uses
 #' equal weights to combine the candidate forecasts.
+#' @param parallel A boolean that denotes whether the function should
+#' be parallelized.
+#' @param n_threads An integer that denotes the number of cores used
+#' for parallelization.
 #' @param risk_aversion A double `>= 0` that denotes the risk aversion
 #' of an investor. A higher value indicates a risk avoiding behaviour.
 #' @param min_weight A double that denotes the lower bound
@@ -171,6 +175,8 @@
 #'                              burn_in_dsc = 1,
 #'                              method = 1,
 #'                              equal_weight = TRUE,
+#'                              parallel = FALSE,
+#'                              n_threads = NULL,
 #'                              risk_aversion = NULL,
 #'                              min_weight = NULL,
 #'                              max_weight = NULL)
@@ -266,6 +272,8 @@ stsc  <-  function(y,
                    burn_in_dsc,
                    method,
                    equal_weight,
+                   parallel = FALSE,
+                   n_threads = parallel::detectCores() - 2,
                    risk_aversion = NULL,
                    min_weight = NULL,
                    max_weight = NULL) {
@@ -433,23 +441,49 @@ stsc  <-  function(y,
   # Convert y to matrix
   y  <-  as.matrix(y, ncol = 1)
 
-  # Apply Rcpp-Function
-  stsc_results  <-  stsc_loop_(y,
-                               X,
-                               Ext_F,
-                               sample_length,
-                               lambda_grid,
-                               kappa_grid,
-                               burn_in_tvc,
-                               gamma_grid,
-                               psi_grid,
-                               delta,
-                               burn_in_dsc,
-                               method,
-                               equal_weight,
-                               risk_aversion,
-                               min_weight,
-                               max_weight)
+  # Parallel or Single Core
+  if (parallel) {
+    if (is.null(n_threads)) {
+      n_threads <- parallel::detectCores() - 2
+    }
+    # Apply Multi-Core-Rcpp-Function
+    stsc_results  <-  stsc_loop_par_(y,
+                                     X,
+                                     Ext_F,
+                                     sample_length,
+                                     lambda_grid,
+                                     kappa_grid,
+                                     burn_in_tvc,
+                                     gamma_grid,
+                                     psi_grid,
+                                     delta,
+                                     burn_in_dsc,
+                                     method,
+                                     n_threads,
+                                     equal_weight,
+                                     risk_aversion,
+                                     min_weight,
+                                     max_weight)
+
+  } else {
+    # Apply Single-Core-Rcpp-Function
+    stsc_results  <-  stsc_loop_(y,
+                                 X,
+                                 Ext_F,
+                                 sample_length,
+                                 lambda_grid,
+                                 kappa_grid,
+                                 burn_in_tvc,
+                                 gamma_grid,
+                                 psi_grid,
+                                 delta,
+                                 burn_in_dsc,
+                                 method,
+                                 equal_weight,
+                                 risk_aversion,
+                                 min_weight,
+                                 max_weight)
+  }
 
   # Assign Results
   stsc_forecast  <-  as.numeric(stsc_results[[1]])

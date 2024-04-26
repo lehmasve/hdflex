@@ -18,6 +18,8 @@ stsc(
   burn_in_dsc,
   method,
   equal_weight,
+  parallel = FALSE,
+  n_threads = parallel::detectCores() - 2,
   risk_aversion = NULL,
   min_weight = NULL,
   max_weight = NULL
@@ -93,6 +95,12 @@ combine the candidate forecasts within a subset. If `FALSE`, the weights are
 calculated using the softmax-function on the predictive log-scores of
 the candidate models. The method proposed in Adaemmer et al (2023) uses
 equal weights to combine the candidate forecasts.}
+
+\item{parallel}{A boolean that denotes whether the function should
+be parallelized.}
+
+\item{n_threads}{An integer that denotes the number of cores used
+for parallelization.}
 
 \item{risk_aversion}{A double `>= 0` that denotes the risk aversion
 of an investor. A higher value indicates a risk avoiding behaviour.}
@@ -188,6 +196,8 @@ via dynamic subset combination (DSC).
                              burn_in_dsc = 1,
                              method = 1,
                              equal_weight = TRUE,
+                             parallel = FALSE,
+                             n_threads = NULL,
                              risk_aversion = NULL,
                              min_weight = NULL,
                              max_weight = NULL)

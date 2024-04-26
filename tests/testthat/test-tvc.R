@@ -86,6 +86,16 @@ test_that("Test whether x is matrix", {
               "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
 })
 
+test_that("Test with only X-Matrix", {
+
+  testthat::expect_no_error(tvc(target_var,
+                                raw_signals,
+                                NULL,
+                                lambda_grid,
+                                kappa_grid,
+                                sample_length))
+})
+
 test_that("Test whether x has the same number of observations as y", {
 
   raw_signals  <-  raw_signals[1:10, ]
@@ -107,6 +117,14 @@ test_that("Test whether exception works when cov_mat cannot be initialised", {
                                 lambda_grid,
                                 kappa_grid,
                                 sample_length))
+
+  f_signals[1:100, 10]  <-  0
+  testthat::expect_no_error(tvc(target_var,
+                                raw_signals,
+                                f_signals,
+                                lambda_grid,
+                                kappa_grid,
+                                sample_length))
 })
 
 ### Tests on f
@@ -120,6 +138,16 @@ test_that("Test whether f is matrix", {
                              kappa_grid,
                              sample_length),
                         "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
+})
+
+test_that("Test with only F-Matrix", {
+
+  testthat::expect_no_error(tvc(target_var,
+                                NULL,
+                                f_signals,
+                                lambda_grid,
+                                kappa_grid,
+                                sample_length))
 })
 
 test_that("Test whether f has the same number of observations as y", {
