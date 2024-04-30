@@ -92,7 +92,7 @@ List init_tvc_par_(const arma::vec& y,
                       if(arma::is_finite(var_y / var_x)) {
                         cov_mat(1, 1) =  var_y / var_x; 
                       } else {
-                        cov_mat(1, 1) = 0;
+                        cov_mat(1, 1) = var_y;
                       }
                     } else {
                       theta(1, 0) = 1;

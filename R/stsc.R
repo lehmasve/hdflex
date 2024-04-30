@@ -425,14 +425,14 @@ stsc  <-  function(y,
 
   # Check if any column in X is constant for the first observations
   if (!is.null(X)) {
-    if (any(apply(X[1:sample_length, , drop = FALSE], 2, function(x) length(unique(x)) == 1))) {
+    if (any(apply(X, 2, function(x) length(unique(na.omit(x)[1:sample_length])) == 1))) {
       print("One or more columns in X are constant for the first 1:sample_length observations.")
     }
   }
 
   # Check if any column in Ext_F is constant for the first observations
   if (!is.null(Ext_F)) {
-    if (any(apply(Ext_F[1:sample_length, , drop = FALSE], 2, function(x) length(unique(x)) == 1))) {
+    if (any(apply(Ext_F, 2, function(x) length(unique(na.omit(x)[1:sample_length])) == 1))) {
       print("One or more columns in Ext_F are constant for the first 1:sample_length observations.")
     }
   }
