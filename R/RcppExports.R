@@ -29,15 +29,15 @@ dsc_loop <- function(weights, gamma, psi, oos_target_var, oos_forecast_tvp, oos_
     .Call(`_hdflex_dsc_loop`, weights, gamma, psi, oos_target_var, oos_forecast_tvp, oos_variance_tvp, len_para_grid, oos_length, n_models)
 }
 
-stsc_loop_ <- function(y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid, burn_in_tvc, gamma_grid, psi_grid, delta, burn_in_dsc, method, equal_weight, risk_aversion_ = NULL, min_weight_ = NULL, max_weight_ = NULL) {
-    .Call(`_hdflex_stsc_loop_`, y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid, burn_in_tvc, gamma_grid, psi_grid, delta, burn_in_dsc, method, equal_weight, risk_aversion_, min_weight_, max_weight_)
+stsc_loop_ <- function(y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid, burn_in_tvc, bias, gamma_grid, psi_grid, delta, burn_in_dsc, method, equal_weight, incl_, risk_aversion_, min_weight_, max_weight_) {
+    .Call(`_hdflex_stsc_loop_`, y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid, burn_in_tvc, bias, gamma_grid, psi_grid, delta, burn_in_dsc, method, equal_weight, incl_, risk_aversion_, min_weight_, max_weight_)
 }
 
-stsc_loop_par_ <- function(y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid, burn_in_tvc, gamma_grid, psi_grid, delta, burn_in_dsc, method, equal_weight, n_threads, risk_aversion_ = NULL, min_weight_ = NULL, max_weight_ = NULL) {
-    .Call(`_hdflex_stsc_loop_par_`, y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid, burn_in_tvc, gamma_grid, psi_grid, delta, burn_in_dsc, method, equal_weight, n_threads, risk_aversion_, min_weight_, max_weight_)
+stsc_loop_par_ <- function(y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid, burn_in_tvc, bias, gamma_grid, psi_grid, delta, burn_in_dsc, method, equal_weight, incl_, n_threads, risk_aversion_, min_weight_, max_weight_) {
+    .Call(`_hdflex_stsc_loop_par_`, y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid, burn_in_tvc, bias, gamma_grid, psi_grid, delta, burn_in_dsc, method, equal_weight, incl_, n_threads, risk_aversion_, min_weight_, max_weight_)
 }
 
-tvc_ <- function(y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid) {
-    .Call(`_hdflex_tvc_`, y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid)
+tvc_ <- function(y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid, bias) {
+    .Call(`_hdflex_tvc_`, y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid, bias)
 }
 

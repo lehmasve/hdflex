@@ -1,14 +1,15 @@
 #include <RcppArmadillo.h>
 using namespace Rcpp;
 
-// 1) TV-C Regressions
-// Function I - Initialize TV-C-Parameter
+// 1) TVC Regressions
+// Function I - Initialize TVC-Parameter
    List init_tvc_(const arma::vec& y, 
                   const arma::mat& S,
                   int n_raw_sig,
                   int sample_length,
                   arma::vec lambda_grid,
-                  arma::vec kappa_grid) {
+                  arma::vec kappa_grid,
+                  bool bias) {
 
    // Get Dimensions   
       const int n_signal = S.n_cols;
@@ -31,20 +32,17 @@ using namespace Rcpp;
            for (unsigned int k = 0; k < kappa_grid.n_elem; k++) {
                for (unsigned int j = 0; j < n_signal; j++) {
 
-               // über vkeep Col-Idx der TVP-Forecasts ermitteln
-               // vkeep - Spalten dürfen keine NA-Werte enthalten
-
                // Select Signal
                   x = S.col(j);
 
-               // Check and Count for NA-Values
+               // Check and Count NA-Values
                   non_finite = arma::find_nonfinite(x);
                   int na_ctr = non_finite.n_elem;
                   if (na_ctr > 0) {
                      cm_na_idx(ctr) = ctr;
                   }
    
-               // Index for subsetting the Initialisation Sample
+               // Index for subsetting the initialisation sample
                   init_idx = arma::regspace<arma::uvec>(0 + na_ctr, na_ctr + sample_length - 1);
    
                // Define and prepare matrices for regression  
@@ -57,23 +55,26 @@ using namespace Rcpp;
                   theta = arma::zeros<arma::mat>(2,1);
 
                // Initialize - System Covariance
-                  coef      = solve(x_sample, y_sample);
+                  coef = solve(x_sample, y_sample);
                   intercept = coef(0);
-                  var_y     = arma::var(y_sample);         
-                  var_x     = arma::var(x_sample.col(1));  
-                  cov_mat   = arma::zeros<arma::mat>(2, 2); 
+                  var_y = arma::var(y_sample);         
+                  var_x = arma::var(x_sample.col(1));  
+                  cov_mat = arma::zeros<arma::mat>(2, 2); 
                   cov_mat(0, 0) = pow(intercept, 2) + var_y; // Set to Zero for Constant Intercept
 
                // Distinguish between raw and processed signals
                   if(j < n_raw_sig) {
-                     if(arma::is_finite(var_y / var_x)) {
-                          cov_mat(1, 1) =  var_y / var_x; 
+                     if(var_x != 0.0) {
+                          cov_mat(1, 1) = var_y / var_x; 
                      } else {
                           cov_mat(1, 1) = var_y;
                      }
                   } else {
-                     theta(1, 0) = 1;
-                     cov_mat(1, 1) = 0;
+                     theta(1, 0) = 1.0;   // -> Slope Coefficient 1.0
+                     cov_mat(1, 1) = 0.0; // -> Constant Slope Coefficient
+                     if(!bias) {
+                        cov_mat(0, 0) = 0.0; // -> Constant Intercept
+                     }
                   }
 
                // Initialize - Observational Variance
@@ -100,7 +101,7 @@ using namespace Rcpp;
 // ----------
 
 
-// 1) TV-C Regressions
+// 1) TVC Regressions
 // Function II - Predictive and Update Step for Signal j and time t
    arma::field<double> tvc_model_(double y_t, 
                                   double s_t_j, 
@@ -113,43 +114,41 @@ using namespace Rcpp;
   
    // Define Variables
       arma::field<double> ret(2);
-      //arma::mat r_upt;
-      //double mu, variance, inv_tvar, e_t;
 
-   // Get Predictor for Time t and Predicting t + 1
+   // Get Signal for time t and t + 1
       const arma::mat z_t = {1.0, s_t_j};
       const arma::mat z_pred = {1.0, s_pred_j};
    
-   // Add noise to uncertainty of Coefficients in time t (Equation 5)
+   // Add noise to uncertainty of coefficients in time t (see Equation 5)
       const arma::mat r_upt = cov_mat / lambda;
 
    // Calculate (OOS) Forecast Error for time t (see Equation 7)
       const double e_t = arma::as_scalar(y_t - z_t * theta);
 
-   // Update Observational Variance in time t (Equation 10 and 11)
+   // Update Observational Variance in time t (see Equation 10 and 11)
       h = arma::as_scalar(kappa * h + (1 - kappa) * pow(e_t, 2));
     
-   // Update Coefficients in time t (Equation 7)
+   // Update Coefficients in time t (see Equation 7)
       const double inv_tvar = arma::as_scalar(1.0 / (h + z_t * r_upt * z_t.t()));
       theta = theta + r_upt * z_t.t() * inv_tvar * e_t;
      
-   // Update Uncertainty of Coefficients in time t (Equation 8)
+   // Update Uncertainty of Coefficients in time t (see Equation 8)
       cov_mat = r_upt - r_upt * z_t.t() * inv_tvar * (z_t * r_upt);
        
-   // Get Predictive Density for Predicting t + 1 (Equation 9)
+   // Get Predictive Density for Predicting t + 1 (see Equation 9)
       const double       mu = arma::as_scalar(z_pred * theta);
       const double variance = arma::as_scalar(h + z_pred * ((1.0 / lambda) * cov_mat) * z_pred.t());
       
-   // Fill Return-List  
+   // Fill Return-Field  
       ret(0) = mu;
       ret(1) = variance;
    
-   // Return List  
+   // Return  
       return ret;
 }
 
 
-// 1) TV-C Regressions
+// 1) TVC Regressions
 // Function III - Loop over Signals, Lambda and Kappa
    arma::field<arma::rowvec> tvc_model_cand_(double y_t, 
                                              const arma::rowvec& s_t,
@@ -192,7 +191,7 @@ using namespace Rcpp;
                const bool is_na = !arma::is_finite(s_t_j);
                if(!is_na) {
    
-               // Apply TV-C-Function
+               // Apply TVC-Function
                   const arma::field<double> tvc_results = tvc_model_(y_t,
                                                                      s_t_j,
                                                                      s_pred_j, 
@@ -201,15 +200,15 @@ using namespace Rcpp;
                                                                      theta_cube.slice(counter), 
                                                                      cov_mat_cube.slice(counter), 
                                                                      h_vec(counter)); 
-               // Assign TV-C-Model-Results 
-                  mu_vec(counter)             = tvc_results(0); 
-                  variance_vec(counter)       = tvc_results(1);
+               // Assign TVC-Model-Results 
+                  mu_vec(counter)       = tvc_results(0); 
+                  variance_vec(counter) = tvc_results(1);
 
                } else {
 
-               // Assign TV-C-Model-Results 
-                  mu_vec(counter)             = arma::datum::nan; 
-                  variance_vec(counter)       = arma::datum::nan;
+               // Assign TVC-Model-Results 
+                  mu_vec(counter)       = arma::datum::nan; 
+                  variance_vec(counter) = arma::datum::nan;
                }
 
                // Update Counter
@@ -218,11 +217,11 @@ using namespace Rcpp;
          }
       }
       
-      // Fill list 
+      // Fill Field 
          ret(0) = mu_vec;
          ret(1) = variance_vec;
      
-      // Return list
+      // Return
          return ret;
 }
 
@@ -240,40 +239,43 @@ using namespace Rcpp;
    // Define Variables
       arma::field<arma::field<arma::rowvec>> ret(2); 
 
-   // Initialize Vector for Discounted-Log-Likelihood-Score (Subset Combinations)  
-      arma::rowvec dpll_combs(n_combs, arma::fill::zeros);
+   // Initialize Vector for Performance-Score (Subset Combinations) -> Ranking
+      arma::rowvec score_combs(n_combs, arma::fill::zeros);
    
-   // Initialize Vector for Discounted-Log-Likelihood-Score (Candidate Models)  
+   // Initialize Vector for Performance-Score (Candidate Models) -> Ranking 
       arma::rowvec vec(n_cands, arma::fill::zeros);
                    vec.elem(na_idx).fill(arma::datum::nan);
 
    // Fill Field for Candidate Models
-      arma::field<arma::rowvec> dpll_cands(n_gamma);
+      arma::field<arma::rowvec> score_cands(n_gamma);
       for (unsigned int i = 0; i < n_gamma; ++i) {
-          dpll_cands(i) = vec;
+          score_cands(i) = vec;
       }
   
-   // Fill Return-List 
-      ret(0) = dpll_cands;
+   // Fill Return-Field 
+      ret(0) = score_cands;
       ret(1) = arma::field<arma::rowvec>(1);
-      ret(1)(0) = dpll_combs;
+      ret(1)(0) = score_combs;
 
-   // Return Vector
+   // Return
       return ret;
 }
 
 
 // Function II - Rank and Set Active Model Set (Active Models)
-   arma::field<arma::uvec> dsc_active_models_(const arma::rowvec& dpll_cands_gamma,  
-                                 int psi) {
+   arma::field<arma::uvec> dsc_active_models_(const arma::rowvec& score_cands_gamma,  
+                                              int psi) {
+
+   // Define Variables
+      arma::field<arma::uvec> ret(2);
 
    // Get indices of Non-NaN values
-      const arma::uvec non_na = arma::find_finite(dpll_cands_gamma);
+      const arma::uvec non_na = arma::find_finite(score_cands_gamma);
       const int non_na_ctr = non_na.n_elem;
       const int psi_ = std::min(non_na_ctr, psi);
 
    // Check if all elements are equal (without NAs)
-      const arma::vec vec = dpll_cands_gamma.elem(non_na);
+      const arma::vec vec = score_cands_gamma.elem(non_na);
       const bool isequal = arma::all(vec == vec(0));
 
    // If all elements are equal, return the indices from left to right
@@ -281,18 +283,17 @@ using namespace Rcpp;
      if (isequal) {
          idx = non_na.head(psi_);
      } else {
-         // Get psi-highest values (-> indices)
+      // Get psi-highest values (-> indices)
          const arma::uvec sorted_idx = arma::sort_index(vec, "descend");
          idx = non_na.elem(sorted_idx.head(psi_));
      }
 
-   // Create field to return
-      arma::field<arma::uvec> ret(2);
+   // Fill Return-Field
       ret(0) = idx;
       ret(1) = arma::uvec(1).fill(non_na_ctr);
 
    // Return
-     return ret;
+      return ret;
 }
 
 // Function III - Compute Aggregated Predictive Distribution
@@ -313,88 +314,118 @@ using namespace Rcpp;
       const double       mu_comb = accu(active_weights % oos_forecast_tvp_sub / oos_variance_tvp_sub) *
                                    variance_comb;
    
-   // Fill list  
+   // Fill Field  
       ret(0) = mu_comb;
       ret(1) = variance_comb;
 
-   // Return list
+   // Return
       return ret;
 }
 
 
-// Function IV - Calculate (exponentially down-weighted) Log-Predictive-Likelihoods for Candidate Forecasts
-   void dsc_dpll_cands_(arma::rowvec& dpll_cands_gamma, 
-                        double y_t, 
-                        const arma::rowvec& forecast_tvc_t,             
-                        const arma::rowvec& variance_tvc_t,
-                        double gamma,
-                        int method,
-                        double risk_aversion,
-                        double min_weight,
-                        double max_weight) {
+// Function IV - Calculate (exponentially down-weighted) Performance Scores (-> Ranking) for Candidate Forecasts
+   void dsc_score_cands_(arma::rowvec& score_cands_gamma, 
+                         double y_t, 
+                         const arma::rowvec& forecast_tvc_t,             
+                         const arma::rowvec& variance_tvc_t,
+                         double gamma,
+                         int method,
+                         double risk_aversion,
+                         double min_weight,
+                         double max_weight) {
                                      
    // Define Variables
-      const int n_cands = dpll_cands_gamma.n_elem;
+      const int n_cands = score_cands_gamma.n_elem;
       arma::rowvec performance_score(n_cands); performance_score.fill(arma::datum::nan);
 
    // Calculate Performance
       for (unsigned int i=0; i<n_cands; i++) {
 
       // Check for NA value
-         if (arma::is_finite(forecast_tvc_t(i))) {  
+         if (arma::is_finite(forecast_tvc_t(i))) {
 
             // Optimization-Method
-            switch (method) {
-               case 1: { // Log-Likelihood
-                  performance_score(i) = arma::log_normpdf(y_t,   
-                                                           forecast_tvc_t(i),
-                                                           pow(variance_tvc_t(i), 0.5));
-                  break;
-               }
-               case 2: { // MSE
-                  performance_score(i) = -pow(y_t - forecast_tvc_t(i), 2.0);
-                  break;
-               }
-               case 3: { // AE
-                  performance_score(i) = -std::abs(y_t - forecast_tvc_t(i));
-                  break;
-               }
-               case 4: { // Compounded Returns
-                  // Calculate Market Weight
-                     double w = (1.0 / risk_aversion) * (forecast_tvc_t(i) / variance_tvc_t(i));
-
-                  // Restrict Market Weight
-                     double weight = std::min(std::max(w, min_weight), max_weight);
-
-                  // Returns
-                     if (weight * y_t <= -1.0) {
-                        performance_score(i) = -10000;
-                     } else {
-                        performance_score(i) = log(1 + weight * y_t);
-                     }
+               switch (method) {
+                  case 1: {
+                     // Predictive-Log-Likelihoods
+                     performance_score(i) = arma::log_normpdf(y_t,   
+                                                              forecast_tvc_t(i),
+                                                              pow(variance_tvc_t(i), 0.5));
                      break;
+                  }
+                  case 2: {
+                     // Squared-Errors
+                     performance_score(i) = -pow(y_t - forecast_tvc_t(i), 2.0);
+                     break;
+                  }
+                  case 3: {
+                     // Absolute-Errors
+                     performance_score(i) = -std::abs(y_t - forecast_tvc_t(i));
+                     break;
+                  }
+                  case 4: {
+                     // Compounded Returns
+                     // Calculate Market Weight
+                        double w = (1.0 / risk_aversion) * (forecast_tvc_t(i) / variance_tvc_t(i));
+   
+                     // Restrict Market Weight
+                        double weight = std::min(std::max(w, min_weight), max_weight);
+   
+                     // Returns
+                        if (weight * y_t <= -1.0) {
+                           performance_score(i) = -10000;
+                        } else {
+                           performance_score(i) = log(1.0 + weight * y_t);
+                        }
+                        break;
+                  }
+                  case 5: {
+                     // Continuous-Ranked-Probability-Scores
+                     // Convert
+                        double obs = y_t;
+                        double mu = forecast_tvc_t(i);
+                        double sig = pow(variance_tvc_t(i), 0.5);
+   
+                     // Standardize Prediction Error
+                        double z = (obs - mu) / sig;
+   
+                     // PDF evaluated at normalized Prediction Error
+                        double pdf = arma::normpdf(z);
+   
+                     // CDF evaluated at normalized Prediction Error
+                        double cdf = arma::normcdf(z);
+   
+                     // Inverse of pi
+                        double pi_inv = 1.0 / pow(arma::datum::pi, 0.5);
+   
+                     // Compute Continuous Ranked Probability Score
+                        double crps = sig * (z * (2.0 * cdf - 1.0) + 2.0 * pdf - pi_inv);
+   
+                     // Assign
+                        performance_score(i) = -crps;
+                        break;
+                  }
+                  default:
+                     throw std::invalid_argument("Error: Method not available");
                }
-               default:
-                  throw std::invalid_argument("Error: Method not available");
-            }
          }
       }
 
-   // Exponentially down-weighted past predictive log-likelihoods
-      dpll_cands_gamma = dpll_cands_gamma * gamma + performance_score * gamma;
+   // Exponentially down-weighted past performance scores
+      score_cands_gamma = score_cands_gamma * gamma + performance_score * gamma;
 }
 
 
 // Function V - Rank and Select Aggregated Forecast
-   arma::field<double> rank_comb_(const arma::rowvec& dpll_combs, 
+   arma::field<double> rank_comb_(const arma::rowvec& score_combs, 
                                   const arma::rowvec& mu_comb_vec,
                                   const arma::rowvec& variance_comb_vec) {
                               
    // Define Variables
       arma::field<double> ret(3);
     
-   // Get Index of highest Rank
-      const arma::uword best_idx = index_max(dpll_combs);
+   // Get index of highest performance score
+      const arma::uword best_idx = index_max(score_combs);
    
    // Select STSC-Forecast
       auto it_mu  = mu_comb_vec.begin() + best_idx;
@@ -402,18 +433,18 @@ using namespace Rcpp;
       const double forecast_stsc = *it_mu;
       const double variance_stsc = *it_var;
 
-   // Fill list  
+   // Fill Field  
       ret(0) = forecast_stsc;
       ret(1) = variance_stsc;
       ret(2) = best_idx;
 
-   // Return list
+   // Return
       return ret;
-}
+   }
 
 
-// Function VI - Calculate (exponentially down-weighted) Log-Predictive-Likelihoods for Combinations (Aggregated Predictive Distributions)
-   void dsc_dpll_comb_(arma::rowvec& dpll_combs, 
+// Function VI - Calculate (exponentially down-weighted) performance scores (-> ranking) for combinations (Aggregated Predictive Distributions)
+   void dsc_score_comb_(arma::rowvec& score_combs, 
                        double y_t, 
                        const arma::rowvec& forecasts_comb,             
                        const arma::rowvec& variances_comb,
@@ -424,7 +455,7 @@ using namespace Rcpp;
                        double max_weight) {
                                      
    // Define Variables
-      const int n_combs = dpll_combs.n_cols;
+      const int n_combs = score_combs.n_cols;
       arma::rowvec performance_score(n_combs);
 
    // Calculate Performance
@@ -432,21 +463,25 @@ using namespace Rcpp;
 
       // Optimization-Method
          switch(method) {
-            case 1: { // Log-Likelihood
+            case 1: { 
+               // Predictive-Log-Likelihoods
                performance_score(i) = arma::log_normpdf(y_t,   
                                                         forecasts_comb(i),
                                                         pow(variances_comb(i), 0.5));
                break;
             }
-            case 2: { // SE
+            case 2: { 
+               // Squared-Errors
                performance_score(i) = -pow(y_t - forecasts_comb(i), 2.0);
                break;
             }
-            case 3: { // AE
+            case 3: {
+               // Absolute-Errors
                performance_score(i) = -std::abs(y_t - forecasts_comb(i));
                break;
             }
-            case 4: { // Compounded Returns
+            case 4: {
+               // Compounded Returns
                // Calculate Market Weight
                   double w = (1.0 / risk_aversion) * (forecasts_comb(i) / variances_comb(i));
 
@@ -461,19 +496,72 @@ using namespace Rcpp;
                   }
                   break;
             }
+            case 5: {
+               // Continuous-Ranked-Probability-Scores
+               // Convert
+                  double obs = y_t;
+                  double mu = forecasts_comb(i);
+                  double sig = pow(variances_comb(i), 0.5);
+
+               // Standardize Prediction Error
+                  double z = (obs - mu) / sig;
+
+               // PDF evaluated at normalized Prediction Error
+                  double pdf = arma::normpdf(z);
+
+               // CDF evaluated at normalized Prediction Error
+                  double cdf = arma::normcdf(z);
+
+               // Inverse of pi
+                  double pi_inv = 1.0 / pow(arma::datum::pi, 0.5);
+
+               // Compute Continuous Ranked Probability Score
+                  double crps = sig * (z * (2.0 * cdf - 1.0) + 2.0 * pdf - pi_inv);
+
+               // Assign
+                  performance_score(i) = -crps;
+                  break;
+               }
             default:
                throw std::invalid_argument("Error: Method not available");
             }
       }
     
-   // Exponentially down-weighted Past Predictive Log-Likelihoods
-      dpll_combs = delta * dpll_combs + performance_score * delta;
-}
+   // Exponentially down-weighted past performance scores
+      score_combs = delta * score_combs + performance_score * delta;
+   }
 
+// Helper Function to remove duplicates between arma::uvec and include_idx
+   arma::uvec remove_duplicates(const arma::uvec& vec,
+                                const arma::uvec& values) {
+
+      // Define variables
+         std::unordered_set<arma::uword> seen;
+         std::unordered_set<arma::uword> target_values(values.begin(), values.end());
+         std::vector<arma::uword> result;
+ 
+      // Remove duplicates for specified values
+         for (arma::uword i = 0; i < vec.n_elem; ++i) {
+           arma::uword val = vec[i];
+           if (target_values.find(val) != target_values.end()) {
+             // Only check for duplicates for specified values
+             if (seen.find(val) == seen.end()) {
+               seen.insert(val);
+               result.push_back(val);
+             }
+           } else {
+             // Directly add other values
+             result.push_back(val);
+           }
+         }
+ 
+      // Convert std::vector to arma::uvec and return
+         return arma::uvec(result);
+   }
 
 // Function VII - Loop over Gamma and Psi
-   arma::field<arma::rowvec> dsc_loop_(arma::field<arma::rowvec>& dpll_cands,
-                                       arma::rowvec& dpll_combs, 
+   arma::field<arma::rowvec> dsc_loop_(arma::field<arma::rowvec>& score_cands,
+                                       arma::rowvec& score_combs, 
                                        arma::rowvec gamma_grid, 
                                        arma::irowvec psi_grid, 
                                        double y_t,
@@ -482,12 +570,13 @@ using namespace Rcpp;
                                        double delta,
                                        int method,
                                        bool equal_weight,
+                                       arma::uvec incl_idx,
                                        double risk_aversion,
                                        double min_weight,
-                                       double max_weight) { 
+                                       double max_weight) {
 
    // Define Variables
-      const int n_combs = dpll_combs.n_cols;
+      const int n_combs = score_combs.n_cols;
       arma::rowvec forecasts_comb(n_combs); forecasts_comb.fill(arma::datum::nan);
       arma::rowvec variances_comb(n_combs); variances_comb.fill(arma::datum::nan);
       arma::field<arma::rowvec> chosen_cands(n_combs); 
@@ -495,7 +584,10 @@ using namespace Rcpp;
       arma::field<double> agg_density(2);
       arma::field<double> stsc_results(3);
       arma::field<arma::rowvec> ret(4); 
-    
+
+   // Set highest value for psi
+      const int psi_max = max(psi_grid);
+
    // Loop over Gamma and Psi
       int ctr = 0;
       for (unsigned int g=0; g<gamma_grid.n_elem; g++) {
@@ -503,32 +595,41 @@ using namespace Rcpp;
          // Set Gamma
             const double gamma = gamma_grid(g);
 
-         // Compute Active Set of Candidate Models
-            const int psi_max = max(psi_grid);
-            active_models = dsc_active_models_(dpll_cands(g), psi_max);
-            const arma::uvec active_idx = active_models(0);
+         // Compute Maximum Set of Active Candidate Models
+            active_models = dsc_active_models_(score_cands(g), psi_max);
+            arma::uvec active_idx = active_models(0);
             const int non_na_ctr = active_models(1)(0);
 
-         // vkeep vorne zu active_idx ergänzen und duplicate entfernen -> Länge muss bei |psi| bleiben 
-         // psi um |vkeep| erhöhen?  
+         // Check
+            if (active_idx.n_elem > psi_max) {
+              throw std::invalid_argument("Error in Active Models Selection");
+            } 
+
+         // Add Keep-Index & Remove Duplicates
+            if (incl_idx.n_elem > 0) {
+               active_idx = arma::join_cols(incl_idx, active_idx); // -> Keep must be empty arma::uvec if no keep
+               active_idx = remove_duplicates(active_idx, incl_idx);
+            }
 
          // Loop over Psi
             for (unsigned int p=0; p<psi_grid.n_elem; p++) {
 
             // Set Psi
                const int psi = std::min(non_na_ctr, psi_grid(p));
-   
-            // Get the Active Set of Candidate Models
                const arma::uvec seq_psi = arma::regspace<arma::uvec>(0, psi - 1);
+
+            // Select Active Set of Candidate Models
                const arma::uvec active_idx_uvec = arma::conv_to<arma::uvec>::from(active_idx.elem(seq_psi));
+
+            // Save Active Set of Candidate Models
                chosen_cands(ctr) = arma::conv_to<arma::rowvec>::from(active_idx_uvec);
+
+            // Create Active Weight Vector
                arma::rowvec active_weights(psi);
-            
-            // Set Active Weights
                if (equal_weight) {
                   active_weights.fill(1.0 / psi);
                } else {
-                  const arma::rowvec raw_weights = arma::conv_to<arma::rowvec>::from(dpll_cands(g).elem(active_idx.elem(seq_psi))); 
+                  const arma::rowvec raw_weights = arma::conv_to<arma::rowvec>::from(score_cands(g).elem(active_idx.elem(seq_psi))); 
                   const arma::rowvec exp_raw_weights = exp(raw_weights);
                   active_weights = exp_raw_weights / accu(exp_raw_weights); 
                }
@@ -545,47 +646,47 @@ using namespace Rcpp;
                ctr++;
             }
 
-         // Update DPLL for Candidate Models
-            dsc_dpll_cands_(dpll_cands(g), 
-                            y_t, 
-                            forecast_tvc_t,             
-                            variance_tvc_t,
-                            gamma,
-                            method,
-                            risk_aversion,
-                            min_weight,
-                            max_weight);
+         // Update score for Candidate Models
+            dsc_score_cands_(score_cands(g), 
+                             y_t, 
+                             forecast_tvc_t,             
+                             variance_tvc_t,
+                             gamma,
+                             method,
+                             risk_aversion,
+                             min_weight,
+                             max_weight);
       }
 
-      // Select Aggregated Forecast
-         stsc_results = rank_comb_(dpll_combs, 
-                                   forecasts_comb,
-                                   variances_comb);
+   // Select Aggregated Forecast
+      stsc_results = rank_comb_(score_combs, 
+                                forecasts_comb,
+                                variances_comb);
 
-      // Assign Results
-         const double stsc_forecast = stsc_results(0);
-         const double stsc_variance = stsc_results(1);
-         const int stsc_idx = stsc_results(2);           
+   // Assign Results
+      const double stsc_forecast = stsc_results(0);
+      const double stsc_variance = stsc_results(1);
+      const int stsc_idx = stsc_results(2);           
 
-      // Update DPLL for Combinations (Aggregated Predictive Distributions)
-         dsc_dpll_comb_(dpll_combs, 
-                        y_t, 
-                        forecasts_comb,             
-                        variances_comb,
-                        delta,
-                        method,
-                        risk_aversion,
-                        min_weight,
-                        max_weight);
-   
-      // Fill field   
-         ret(0) = stsc_forecast;
-         ret(1) = stsc_variance;
-         ret(2) = stsc_idx;
-         ret(3) = chosen_cands(stsc_idx); 
+   // Update score for Combinations (Aggregated Predictive Distributions)
+      dsc_score_comb_(score_combs, 
+                      y_t, 
+                      forecasts_comb,             
+                      variances_comb,
+                      delta,
+                      method,
+                      risk_aversion,
+                      min_weight,
+                      max_weight);
 
-      // Return list
-         return ret;
+   // Fill field   
+      ret(0) = stsc_forecast;
+      ret(1) = stsc_variance;
+      ret(2) = stsc_idx;
+      ret(3) = chosen_cands(stsc_idx); 
+
+   // Return
+      return ret;
 }
 
 // ###################################################################################
@@ -606,22 +707,23 @@ using namespace Rcpp;
 // Function I - Loop over t
 // [[Rcpp::export]]
    List stsc_loop_(const arma::vec& y, 
-                  Nullable<const NumericMatrix&> X_, 
-                  Nullable<const NumericMatrix&> Ext_F_, 
-                  int sample_length,
-                  arma::vec lambda_grid,
-                  arma::vec kappa_grid,
-                  int burn_in_tvc,
-                  arma::rowvec gamma_grid, 
-                  arma::irowvec psi_grid, 
-                  double delta,
-                  int burn_in_dsc,
-                  int method,
-                  bool equal_weight,
-                  Nullable<NumericVector> risk_aversion_ = R_NilValue,
-                  Nullable<NumericVector> min_weight_ = R_NilValue,
-                  Nullable<NumericVector> max_weight_ = R_NilValue) { 
-
+                   Nullable<const NumericMatrix&> X_, 
+                   Nullable<const NumericMatrix&> Ext_F_, 
+                   int sample_length,
+                   arma::vec lambda_grid,
+                   arma::vec kappa_grid,
+                   int burn_in_tvc,
+                   bool bias,
+                   arma::rowvec gamma_grid, 
+                   arma::irowvec psi_grid, 
+                   double delta,
+                   int burn_in_dsc,
+                   int method,
+                   bool equal_weight,
+                   Nullable<IntegerVector> incl_,
+                   Nullable<NumericVector> risk_aversion_,
+                   Nullable<NumericVector> min_weight_,
+                   Nullable<NumericVector> max_weight_) {
    
    // Check whether Simple Signals and / or Point Forecasts are provided and create combined Signal-Matrix
       arma::mat S;
@@ -646,27 +748,22 @@ using namespace Rcpp;
          throw std::invalid_argument("Error: Relevant parameter not provided!");
       }
    
-   // Cast Nullable Objects
+   // Cast Nullable Objects for method 4
       double risk_aversion = arma::datum::nan;
-      double min_weight    = arma::datum::nan;
-      double max_weight    = arma::datum::nan;
+      double min_weight = arma::datum::nan;
+      double max_weight = arma::datum::nan;
       if (method == 4) {
          // Cast to double
             risk_aversion = as<double>(risk_aversion_.get());
-            min_weight    = as<double>(min_weight_.get());
-            max_weight    = as<double>(max_weight_.get());
+            min_weight = as<double>(min_weight_.get());
+            max_weight = as<double>(max_weight_.get());
       }
-
-   //// Check Parameter
-   //   if (equal_weight != true && equal_weight != false) {
-   //   throw std::invalid_argument("Error: Equal Weight argument wrong");
-   //}
       
    // Number of Candiate Models and Signals
       const int n_signal = n_raw_sig + n_point_f;
       const int n_cands  = n_signal * lambda_grid.n_elem * kappa_grid.n_elem;
    
-   // Define Variables for TV-C-Models
+   // Define Variables for TVC-Models
       const int tlength = y.n_elem;
       arma::rowvec forecast_tvc_pred(n_cands); forecast_tvc_pred.fill(arma::datum::nan);
       arma::rowvec variance_tvc_pred(n_cands); variance_tvc_pred.fill(arma::datum::nan);
@@ -679,19 +776,44 @@ using namespace Rcpp;
       arma::vec  stsc_forecast(tlength); stsc_forecast.fill(arma::datum::nan);
       arma::vec  stsc_variance(tlength); stsc_variance.fill(arma::datum::nan);
       arma::vec stsc_idx(tlength); stsc_idx.fill(arma::datum::nan);  
-      arma::field<arma::rowvec> dpll_cands(gamma_grid.n_elem);
-      arma::rowvec dpll_combs(n_combs);
+      arma::field<arma::rowvec> score_cands(gamma_grid.n_elem);
+      arma::rowvec score_combs(n_combs);
       List chosen_cands(tlength);
 
+   // Include: TVC-Models that must be included in the Subsets
+      arma::uvec incl_idx;
+      if (incl_.isNotNull()) {
+
+      // Cast Values to uvec incl
+         arma::uvec incl = as<arma::uvec>(incl_.get());
+
+      // Number of TVC-Models per Signal
+         int grid_size = lambda_grid.n_elem * kappa_grid.n_elem;
+
+      // Resize incl_idx (-> Number of TVC-Models that must be included)
+         incl_idx.set_size(grid_size * incl.n_elem);
+
+      // Calculate the Indices of the TVC-Models
+         int ctr = 0;
+         for (arma::uword k = 0; k < incl.n_elem; ++k) {
+           for (int i = 0; i < grid_size; ++i) {
+             arma::uword index = (incl[k] - 1) + n_signal * i;
+             incl_idx(ctr) = index;
+             ctr++;
+           }
+         }
+      }
+
    // --- 
-   // Apply TV-C-Init-Function
+   // Apply TVC-Init-Function
       List init_tvc_results(1);
       init_tvc_results = init_tvc_(y, 
                                    S,
                                    n_raw_sig,
                                    sample_length,
                                    lambda_grid,
-                                   kappa_grid);
+                                   kappa_grid,
+                                   bias);
 
    // Assign Results
       theta_cube    = as<arma::cube>(init_tvc_results(0));
@@ -708,18 +830,18 @@ using namespace Rcpp;
                                    current_na_cm); 
 
    // Assign Results
-      dpll_cands = init_dsc_results(0); 
-      dpll_combs = init_dsc_results(1)(0); 
+      score_cands = init_dsc_results(0); 
+      score_combs = init_dsc_results(1)(0); 
 
    // --- 
    // Loop over t
       for (unsigned int t=0; t<(tlength-1); t++ ) {
 
       // Subset Data
-         const double           y_t = y[t];
-         const double        y_pred = y[t+1];
-         const arma::rowvec     s_t = S.row(t);
-         const arma::rowvec  s_pred = S.row(t+1);
+         const double          y_t = y[t];
+         const double       y_pred = y[t+1];
+         const arma::rowvec    s_t = S.row(t);
+         const arma::rowvec s_pred = S.row(t+1);
 
       // Check for NA-Values in Candidate Models in t 
          new_na_cm.clear();
@@ -745,7 +867,7 @@ using namespace Rcpp;
                   current_na_cm = new_na_cm;    
             for (unsigned int g=0; g<gamma_grid.n_elem; g++ ) {
                for (auto i : vec_diff) {
-                  dpll_cands(g)(i) = 0.0;
+                  score_cands(g)(i) = 0.0;
                }  
             }
          }
@@ -754,8 +876,8 @@ using namespace Rcpp;
          if (t == (burn_in_tvc-1)) {
 
             arma::field<arma::field<arma::rowvec>> init_dsc_results_after_burn_in = dsc_init_(n_cands, n_combs, gamma_grid.n_elem, current_na_cm);
-            dpll_cands = init_dsc_results_after_burn_in(0); 
-            dpll_combs = init_dsc_results_after_burn_in(1)(0); 
+            score_cands = init_dsc_results_after_burn_in(0); 
+            score_combs = init_dsc_results_after_burn_in(1)(0); 
             stsc_forecast.fill(arma::datum::nan); 
             stsc_variance.fill(arma::datum::nan); 
             stsc_idx.fill(arma::datum::nan);   
@@ -766,7 +888,7 @@ using namespace Rcpp;
          if (t == (burn_in_dsc-1)) {
 
             arma::field<arma::field<arma::rowvec>> init_dsc_results_after_burn_in = dsc_init_(n_cands, n_combs, gamma_grid.n_elem, current_na_cm);
-            dpll_combs = init_dsc_results_after_burn_in(1)(0); 
+            score_combs = init_dsc_results_after_burn_in(1)(0); 
             stsc_forecast.fill(arma::datum::nan); 
             stsc_variance.fill(arma::datum::nan); 
             stsc_idx.fill(arma::datum::nan);   
@@ -774,7 +896,7 @@ using namespace Rcpp;
             chosen_cands[idx] = NA_INTEGER;
          }
 
-      // Apply TV-C-Function
+      // Apply TVC-Function
          arma::field<arma::rowvec> tvc_model_cand_results(2);
          tvc_model_cand_results = tvc_model_cand_(y_t, 
                                                   s_t,
@@ -791,8 +913,8 @@ using namespace Rcpp;
 
       // Apply DSC-Function
          arma::field<arma::rowvec> dsc_results(4);
-         dsc_results = dsc_loop_(dpll_cands,
-                                 dpll_combs, 
+         dsc_results = dsc_loop_(score_cands,
+                                 score_combs, 
                                  gamma_grid, 
                                  psi_grid, 
                                  y_pred,
@@ -801,6 +923,7 @@ using namespace Rcpp;
                                  delta,
                                  method,
                                  equal_weight,
+                                 incl_idx,
                                  risk_aversion,
                                  min_weight,
                                  max_weight); 

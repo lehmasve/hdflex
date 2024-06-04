@@ -81,101 +81,111 @@ First example using the `stsc()` function:
 
     ########## Get Data ##########
     # Load Data
-    inflation_data   <-  inflation_data
-    benchmark_ar2    <-  benchmark_ar2
+    inflation_data <- inflation_data
+    benchmark_ar2  <- benchmark_ar2
 
     # Set Index for Target Variable
-    i  <-  1   # (1 -> GDPCTPI; 2 -> PCECTPI; 3 -> CPIAUCSL; 4 -> CPILFESL)
+    i <- 1   # (1 -> GDPCTPI; 2 -> PCECTPI; 3 -> CPIAUCSL; 4 -> CPILFESL)
 
     # Subset Data (keep only data relevant for target variable i)
-    dataset  <-  inflation_data[, c(1+(i-1),                          # Target Variable
-                                    5+(i-1),                          # Lag 1
-                                    9+(i-1),                          # Lag 2
-                                    (13:16)[-i],                      # Remaining Price Series
-                                    17:452,                           # Exogenous Predictor Variables
-                                    seq(453+(i-1)*16,468+(i-1)*16))]  # Ext. Point Forecasts
+    dataset <- inflation_data[, c(1+(i-1),                          # Target Variable
+                                  5+(i-1),                          # Lag 1
+                                  9+(i-1),                          # Lag 2
+                                  (13:16)[-i],                      # Remaining Price Series
+                                  17:452,                           # Exogenous Predictor Variables
+                                  seq(453+(i-1)*16,468+(i-1)*16))]  # Ext. Point Forecasts
 
     ########## STSC ##########
     # Set Target Variable
-    y  <-  dataset[,  1, drop = FALSE]
+    y <- dataset[,  1, drop = FALSE]
 
     # Set 'Simple' Signals
-    X  <-  dataset[, 2:442, drop = FALSE]
+    X <- dataset[, 2:442, drop = FALSE]
 
     # Set External Point Forecasts (Koop & Korobilis 2023)
-    F  <-  dataset[, 443:458, drop = FALSE]
+    Ext_F <- dataset[, 443:458, drop = FALSE]
 
     # Set Dates
     dates  <-  rownames(dataset)
 
     # Set TV-C-Parameter
-    sample_length  <-  4 * 5
-    lambda_grid    <-  c(0.90, 0.95, 1)
-    kappa_grid     <-  0.98
+    sample_length <- 4 * 5
+    lambda_grid   <- c(0.90, 0.95, 1)
+    kappa_grid    <- 0.98
+    burn_in_tvc   <- 79
+    bias          <- TRUE
 
     # Set DSC-Parameter
-    gamma_grid  <-  c(0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
-                      0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00)
-    psi_grid    <-  c(1:100)
-    delta       <-  0.95
+    gamma_grid <- c(0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
+                    0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00)
+    psi_grid     <- c(1:100)
+    delta        <- 0.95
+    burn_in_dsc  <- 1
+    method       <- 1
+    equal_weight <- TRUE
+    incl         <- NULL
+    parallel     <- FALSE
+    n_threads    <- NULL
 
     # Apply STSC-Function
     results  <-  hdflex::stsc(y, 
                               X, 
-                              F,
+                              Ext_F,
                               sample_length,
                               lambda_grid,
                               kappa_grid,
-                              burn_in_tvc = 79,
+                              burn_in_tvc,
+                              bias,
                               gamma_grid,
                               psi_grid,
                               delta,
-                              burn_in_dsc = 1,
-                              method = 1,
-                              equal_weight = TRUE,
-                              parallel = FALSE,
-                              n_threads = NULL,
-                              risk_aversion = NULL,
-                              min_weight = NULL,
-                              max_weight = NULL)
+                              burn_in_dsc,
+                              method,
+                              equal_weight,
+                              incl,
+                              parallel,
+                              n_threads,
+                              NULL,
+                              NULL,
+                              NULL)
 
     # Assign STSC-Results
-    forecast_stsc    <-  results[[1]]
-    variance_stsc    <-  results[[2]]
-    chosen_gamma     <-  results[[3]]
-    chosen_psi       <-  results[[4]]
-    chosen_signals   <-  results[[5]]
+    forecast_stsc  <- results[[1]]
+    variance_stsc  <- results[[2]]
+    chosen_gamma   <- results[[3]]
+    chosen_psi     <- results[[4]]
+    chosen_signals <- results[[5]]
 
     # Define Evaluation Period (OOS-Period)
-    eval_date_start      <-  "1991-01-01"
-    eval_date_end        <-  "2021-12-31"
-    eval_period_idx      <-  which(dates > eval_date_start & dates <= eval_date_end)
+    eval_date_start <- "1991-01-01"
+    eval_date_end   <- "2021-12-31"
+    eval_period_idx <- which(dates > eval_date_start & dates <= eval_date_end)
 
     # Trim Objects to Evaluation Period (OOS-Period)
-    oos_y                <-  y[eval_period_idx, ]
-    oos_forecast_stsc    <-  forecast_stsc[eval_period_idx]
-    oos_variance_stsc    <-  variance_stsc[eval_period_idx]
-    oos_chosen_gamma     <-  chosen_gamma[eval_period_idx]
-    oos_chosen_psi       <-  chosen_psi[eval_period_idx]
-    oos_chosen_signals   <-  chosen_signals[eval_period_idx, , drop = FALSE]
-    oos_dates            <-  dates[eval_period_idx]
+    oos_y               <- y[eval_period_idx, ]
+    oos_forecast_stsc   <- forecast_stsc[eval_period_idx]
+    oos_variance_stsc   <- variance_stsc[eval_period_idx]
+    oos_chosen_gamma    <- chosen_gamma[eval_period_idx]
+    oos_chosen_psi      <- chosen_psi[eval_period_idx]
+    oos_chosen_signals  <- chosen_signals[eval_period_idx, , drop = FALSE]
+    oos_dates           <- dates[eval_period_idx]
 
     # Add Dates
-    names(oos_forecast_stsc)     <-  oos_dates
-    names(oos_variance_stsc)     <-  oos_dates
-    names(oos_chosen_gamma)      <-  oos_dates
-    names(oos_chosen_psi)        <-  oos_dates
-    rownames(oos_chosen_signals) <-  oos_dates
+    names(oos_forecast_stsc)     <- oos_dates
+    names(oos_variance_stsc)     <- oos_dates
+    names(oos_chosen_gamma)      <- oos_dates
+    names(oos_chosen_psi)        <- oos_dates
+    rownames(oos_chosen_signals) <- oos_dates
 
     ########## Evaluation ##########
     # Apply Summary-Function
-    summary_results  <-  summary_stsc(oos_y,
-                                      benchmark_ar2[, i],
-                                      oos_forecast_stsc)
+    summary_results <- summary_stsc(oos_y,
+                                    benchmark_ar2[, i],
+                                    oos_forecast_stsc)
 
     # Assign Summary-Results
-    cssed  <-  summary_results[[3]]
-    mse    <-  summary_results[[4]]
+    cssed <- summary_results[[3]]
+    mse  <- summary_results[[4]]
 
     ########## Visualization ##########
     # Create CSSED-Plot
@@ -189,8 +199,8 @@ First example using the `stsc()` function:
                  ylab = "CSSED") + abline(h = 0, lty = 2, col = "darkgray")
     
     # Create Predictive Signals-Plot
-    vec  <-  seq_len(dim(oos_chosen_signals)[2])
-    mat  <-  oos_chosen_signals %*% diag(vec)
+    vec <- seq_len(dim(oos_chosen_signals)[2])
+    mat <- oos_chosen_signals %*% diag(vec)
     mat[mat == 0]  <- NA
     p2  <-  matplot(x    = as.Date(oos_dates),
                     y    = mat,
@@ -235,11 +245,11 @@ Second example using the `tvc()` and `dsc()` functions:
 
  ########## Get Data ##########
  # Load Data
- inflation_data   <-  inflation_data
- benchmark_ar2    <-  benchmark_ar2
+ inflation_data <- inflation_data
+ benchmark_ar2  <- benchmark_ar2
 
  # Set Index for Target Variable
- i  <-  1   # (1 -> GDPCTPI; 2 -> PCECTPI; 3 -> CPIAUCSL; 4 -> CPILFESL)
+ i <- 1   # (1 -> GDPCTPI; 2 -> PCECTPI; 3 -> CPIAUCSL; 4 -> CPILFESL)
 
  # Subset Data (keep only data relevant for target variable i)
  dataset  <-  inflation_data[, c(1+(i-1),                          # Target Variable
@@ -252,37 +262,39 @@ Second example using the `tvc()` and `dsc()` functions:
  ########## STSC ##########
  ### Part 1: TV-C Model ###
  # Set Target Variable
- y  <-  dataset[,  1, drop = FALSE]
+ y<- dataset[,  1, drop = FALSE]
 
  # Set 'Simple' Signals
- X  <-  dataset[, 2:442, drop = FALSE]
+ X <- dataset[, 2:442, drop = FALSE]
 
  # Set External Point Forecasts (Koop & Korobilis 2023)
- F  <-  dataset[, 443:458, drop = FALSE]
+ Ext_F <- dataset[, 443:458, drop = FALSE]
 
  # Set TV-C-Parameter
- sample_length  <-  4 * 5
- lambda_grid    <-  c(0.90, 0.95, 1)
- kappa_grid     <-  0.98
+ sample_length <- 4 * 5
+ lambda_grid   <- c(0.90, 0.95, 1)
+ kappa_grid    <- 0.98
+ bias          <- TRUE
 
  # Apply TV-C-Function
- results  <-  hdflex::tvc(y,
-                          X,
-                          F,
-                          lambda_grid,
-                          kappa_grid,
-                          sample_length)
+ results <- hdflex::tvc(y,
+                        X,
+                        Ext_F,
+                        sample_length,
+                        lambda_grid,
+                        kappa_grid,
+                        bias)
 
  # Assign TV-C-Results
- forecast_tvc      <-  results[[1]]
- variance_tvc      <-  results[[2]]
+ forecast_tvc <- results[[1]]
+ variance_tvc <- results[[2]]
 
  # Define Burn-In Period
- sample_period_idx  <-  80:nrow(dataset)
- sub_forecast_tvc   <-  forecast_tvc[sample_period_idx, , drop = FALSE]
- sub_variance_tvc   <-  variance_tvc[sample_period_idx, , drop = FALSE]
- sub_y              <-  y[sample_period_idx, , drop = FALSE]
- sub_dates          <-  rownames(dataset)[sample_period_idx]
+ sample_period_idx <- 80:nrow(dataset)
+ sub_forecast_tvc  <- forecast_tvc[sample_period_idx, , drop = FALSE]
+ sub_variance_tvc  <- variance_tvc[sample_period_idx, , drop = FALSE]
+ sub_y             <- y[sample_period_idx, , drop = FALSE]
+ sub_dates         <- rownames(dataset)[sample_period_idx]
 
  ### Part 2: Dynamic Subset Combination ###
  # Set DSC-Parameter
@@ -294,50 +306,50 @@ Second example using the `tvc()` and `dsc()` functions:
  n_cores     <-  4
 
  # Apply DSC-Function
- results  <-  hdflex::dsc(gamma_grid,
-                          psi_grid,
-                          sub_y,
-                          sub_forecast_tvc,
-                          sub_variance_tvc,
-                          delta,
-                          n_cores)
+ results <- hdflex::dsc(gamma_grid,
+                        psi_grid,
+                        sub_y,
+                        sub_forecast_tvc,
+                        sub_variance_tvc,
+                        delta,
+                        n_cores)
 
  # Assign DSC-Results
- sub_forecast_stsc    <-  results[[1]]
- sub_variance_stsc    <-  results[[2]]
- sub_chosen_gamma     <-  results[[3]]
- sub_chosen_psi       <-  results[[4]]
- sub_chosen_signals   <-  results[[5]]
+ sub_forecast_stsc  <- results[[1]]
+ sub_variance_stsc  <- results[[2]]
+ sub_chosen_gamma   <- results[[3]]
+ sub_chosen_psi     <- results[[4]]
+ sub_chosen_signals <- results[[5]]
 
  # Define Evaluation Period (OOS-Period)
- eval_date_start      <-  "1991-01-01"
- eval_date_end        <-  "2021-12-31"
- eval_period_idx      <-  which(sub_dates > eval_date_start & sub_dates <= eval_date_end)
+ eval_date_start <- "1991-01-01"
+ eval_date_end   <- "2021-12-31"
+ eval_period_idx <- which(sub_dates > eval_date_start & sub_dates <= eval_date_end)
 
  # Trim Objects to Evaluation Period (OOS-Period)
- oos_y                <-  sub_y[eval_period_idx, ]
- oos_forecast_stsc    <-  sub_forecast_stsc[eval_period_idx]
- oos_variance_stsc    <-  sub_variance_stsc[eval_period_idx]
- oos_chosen_gamma     <-  sub_chosen_gamma[eval_period_idx]
- oos_chosen_psi       <-  sub_chosen_psi[eval_period_idx]
- oos_chosen_signals   <-  sub_chosen_signals[eval_period_idx, , drop = FALSE]
- oos_dates            <-  sub_dates[eval_period_idx]
+ oos_y                <- sub_y[eval_period_idx, ]
+ oos_forecast_stsc    <- sub_forecast_stsc[eval_period_idx]
+ oos_variance_stsc    <- sub_variance_stsc[eval_period_idx]
+ oos_chosen_gamma     <- sub_chosen_gamma[eval_period_idx]
+ oos_chosen_psi       <- sub_chosen_psi[eval_period_idx]
+ oos_chosen_signals   <- sub_chosen_signals[eval_period_idx, , drop = FALSE]
+ oos_dates            <- sub_dates[eval_period_idx]
 
  # Add Dates
- names(oos_forecast_stsc)     <-  oos_dates
- names(oos_variance_stsc)     <-  oos_dates
- names(oos_chosen_gamma)      <-  oos_dates
- names(oos_chosen_psi)        <-  oos_dates
- rownames(oos_chosen_signals) <-  oos_dates
+ names(oos_forecast_stsc)     <- oos_dates
+ names(oos_variance_stsc)     <- oos_dates
+ names(oos_chosen_gamma)      <- oos_dates
+ names(oos_chosen_psi)        <- oos_dates
+ rownames(oos_chosen_signals) <- oos_dates
 
  ### Part 3: Evaluation ###
  # Apply Summary-Function
- summary_results  <-  summary_stsc(oos_y,
-                                   benchmark_ar2[, i],
-                                   oos_forecast_stsc)
+ summary_results <- summary_stsc(oos_y,
+                                 benchmark_ar2[, i],
+                                 oos_forecast_stsc)
  # Assign Summary-Results
- cssed  <-  summary_results[[3]]
- mse    <-  summary_results[[4]]
+ cssed <- summary_results[[3]]
+ mse   <- summary_results[[4]]
 
  ########## Visualization ##########
  # Create CSSED-Plot

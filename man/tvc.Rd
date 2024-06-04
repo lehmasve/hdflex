@@ -5,7 +5,7 @@
 \title{Compute density forecasts based on univariate time-varying
 coefficient (TV-C) models in state-space form}
 \usage{
-tvc(y, X, Ext_F, lambda_grid, kappa_grid, sample_length)
+tvc(y, X, Ext_F, sample_length, lambda_grid, kappa_grid, bias)
 }
 \arguments{
 \item{y}{A matrix of dimension `T * 1` or numeric vector of length `T`
@@ -18,6 +18,9 @@ Use NULL if no 'simple' signal shall be included.}
 \item{Ext_F}{A matrix with `T` rows containing
 point forecasts of y in each column.
 Use NULL if no point forecasts shall be included.}
+
+\item{sample_length}{An integer that denotes the number of observations used
+to initialize the observational variance and the coefficients' variance.}
 
 \item{lambda_grid}{A numeric vector denoting the discount factor(s)
 that control the dynamics of the coefficients.
@@ -32,8 +35,10 @@ Constant variance is nested for the case `kappa = 1`.
 Each signal in combination with each value of
 kappa provides a separate forecast.}
 
-\item{sample_length}{An integer that denotes the number of observations used
-to initialize the observational variance and the coefficients' variance.}
+\item{bias}{A boolean to indicate whether the TVC-Models should
+perform a bias correction to external point forecasts
+(TRUE -> time-varying intercept) or
+take it 'as is' (FALSE -> constant intercept of 0.0).}
 }
 \value{
 A list that contains:
@@ -67,43 +72,45 @@ estimation and forecasting are carried out recursively.
 
    ########## Get Data ##########
    # Load Data
-   inflation_data   <-  inflation_data
-   benchmark_ar2    <-  benchmark_ar2
+   inflation_data <- inflation_data
+   benchmark_ar2  <- benchmark_ar2
 
    # Set Index for Target Variable
-   i  <-  1   # (1 -> GDPCTPI; 2 -> PCECTPI; 3 -> CPIAUCSL; 4 -> CPILFESL)
+   i <- 1   # (1 -> GDPCTPI; 2 -> PCECTPI; 3 -> CPIAUCSL; 4 -> CPILFESL)
 
    # Subset Data (keep only data relevant for target variable i)
-   dataset  <-  inflation_data[, c(1+(i-1),                          # Target Variable
-                                   5+(i-1),                          # Lag 1
-                                   9+(i-1),                          # Lag 2
-                                   (13:16)[-i],                      # Remaining Price Series
-                                   17:452,                           # Exogenous Predictor Variables
-                                   seq(453+(i-1)*16,468+(i-1)*16))]  # Ext. Point Forecasts
+   dataset <- inflation_data[, c(1+(i-1),                          # Target Variable
+                                 5+(i-1),                          # Lag 1
+                                 9+(i-1),                          # Lag 2
+                                 (13:16)[-i],                      # Remaining Price Series
+                                 17:452,                           # Exogenous Predictor Variables
+                                 seq(453+(i-1)*16,468+(i-1)*16))]  # Ext. Point Forecasts
 
    ########## STSC ##########
    ### Part 1: TV-C Model ###
    # Set Target Variable
-   y  <-  dataset[,  1, drop = FALSE]
+   y <- dataset[,  1, drop = FALSE]
 
    # Set 'Simple' Signals
-   X  <-  dataset[, 2:442, drop = FALSE]
+   X <- dataset[, 2:442, drop = FALSE]
 
    # Set External Point Forecasts (Koop & Korobilis 2023)
-   Ext_F  <-  dataset[, 443:458, drop = FALSE]
+   Ext_F <- dataset[, 443:458, drop = FALSE]
 
    # Set TV-C-Parameter
-   sample_length  <-  4 * 5
-   lambda_grid    <-  c(0.90, 0.95, 1)
-   kappa_grid     <-  0.98
+   sample_length <- 4 * 5
+   lambda_grid   <- c(0.90, 0.95, 1)
+   kappa_grid    <- 0.98
+   bias          <- TRUE
 
    # Apply TV-C-Function
    results  <-  hdflex::tvc(y,
                             X,
                             Ext_F,
+                            sample_length,
                             lambda_grid,
                             kappa_grid,
-                            sample_length)
+                            bias)
 
    # Assign TV-C-Results
    forecast_tvc      <-  results[[1]]

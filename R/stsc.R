@@ -4,77 +4,89 @@
 #' vast sets of predictive signals, many of which are irrelevant or short-lived.
 #' The method transforms heterogeneous scalar-valued signals into
 #' candidate density forecasts via time-varying coefficient models (TV-C),
-#' and subsequently, combines them into a final density forecast
-#' via dynamic subset combination (DSC).
+#' and subsequently, combines them into an ultimate aggregated density forecast
+#' via dynamic subset combinations (DSC).
 #' @param y A matrix of dimension `T * 1` or numeric vector of length `T`
 #' containing the observations of the target variable.
 #' @param X A matrix with `T` rows containing
 #' the lagged 'simple' signals in each column.
 #' Use NULL if no 'simple' signal shall be included.
 #' @param Ext_F A matrix with `T` rows containing
-#' point forecasts of y in each column.
-#' Use NULL if no point forecasts shall be included.
+#' external point forecasts for y in each column.
+#' Use NULL if no external point forecasts shall be included.
 #' @param sample_length An integer that denotes the number of observations used
 #' to initialize the observational variance and the coefficients' variance
 #' in the TV-C models.
-#' @param lambda_grid A numeric vector with values between 0 and 1 denoting the
-#' discount factor(s) that control the dynamics of the time-varying
+#' @param lambda_grid A numeric vector which takes values between 0 and 1
+#' denoting the discount factor(s) that control the dynamics of the time-varying
 #' coefficients. Each signal in combination with each value of
 #' lambda provides a separate candidate forecast.
 #' Constant coefficients are nested for the case `lambda = 1`.
 #' @param kappa_grid A numeric vector between 0 and 1 to accommodate
 #' time-varying volatility in the TV-C models. The observational variance
-#' is estimated via Exponentially Weighted Moving Average.
+#' is estimated via Exponentially Weighted Moving Average and kappa
+#' denotes the underlying decay factor.
 #' Constant variance is nested for the case `kappa = 1`.
 #' Each signal in combination with each value of
-#' kappa provides a separate forecast.
+#' kappa provides a separate candidate forecast.
+#' For the values of kappa, we follow the recommendation
+#' of RiskMetrics (Reuters, 1996).
 #' @param burn_in_tvc An integer value `>= 1` that denotes the number of
 #' observations used to 'initialize' the TV-C models.
-#' After 'burn_in_tvc' observations the generated sum of discounted
-#' predictive log-likelihoods (DPLLs) of each Candidate Model (TV-C model)
-#' and Subset Combination (combination of gamma and psi) is resetted.
+#' After 'burn_in_tvc' observations, the ranking for the candidate models
+#' and aggregated predictive densities are resetted.
 #' `burn_in_tvc = 1` means no burn-in period is applied.
+#' @param bias A boolean to indicate whether the TVC-Models should
+#' perform a bias correction to external point forecasts
+#' (TRUE -> time-varying intercept) or
+#' take it 'as is' (FALSE -> constant intercept of 0.0).
 #' @param gamma_grid A numerical vector that contains discount factors
 #' between 0 and 1 to exponentially down-weight the past predictive performance
-#' of the candidate forecasts.
+#' of the candidate models.
 #' @param psi_grid An integer vector that controls
-#' the (possible) sizes of the active subsets.
+#' the (possible) sizes of the subsets.
 #' @param delta A numeric value between 0 and 1 denoting the discount factor
 #' used to down-weight the past predictive performance of the
 #' subset combinations.
 #' @param burn_in_dsc An integer value `>= 1` that denotes the number of
 #' observations used to 'initialize' the Dynamic Subset Combinations.
-#' After 'burn_in_dsc' observations the generated sum of discounted
-#' predictive log-likelihoods (DPLLs) of each Subset Combination
-#' (combination of gamma and psi) is resetted.
+#' After 'burn_in_dsc' observations the ranking of the
+#' aggregated predictive densities is resetted.
 #' `burn_in_dsc = 1` means no burn-in period is applied.
-#' @param method An integer of the set `1, 2, 3, 4` that denotes
-#' the method used to rank the Candidate Models (TV-C models)
-#' and Subset Combinations according to their performance.
+#' @param method An integer of the set `1, 2, 3, 4, 5` that denotes
+#' the method used to rank the candidate models (TV-C models)
+#' and subset combinations according to their performance.
 #' Default is `method = 1` which ranks according to their
-#' generated sum of discounted predictive log-likelihoods (DPLLs).
-#' `method = 2` uses Squared-Error (SE) instead of DPLLs.
-#' `method = 3` uses Absolute-Error (AE) and
-#' `method = 4` uses Compounded-Returns
-#' (in this case the target variable y has to be a time series of
-#' financial returns).
+#' generated sum of discounted predictive log-likelihoods (DPLLs),
+#' `method = 2` uses Squared-Errors (SE) instead of DPLLs,
+#' `method = 3` uses Absolute-Errors (AE),
+#' `method = 4` uses Compounded-Returns (in this case the target variable
+#' y has to be a time series of financial returns) and
+#' `method = 5` uses Continuous-Ranked-Probability-Scores (CRPS).
 #' @param equal_weight A boolean that denotes whether equal weights are used to
 #' combine the candidate forecasts within a subset. If `FALSE`, the weights are
-#' calculated using the softmax-function on the predictive log-scores of
+#' calculated using the softmax-function on the ranking scores of
 #' the candidate models. The method proposed in Adaemmer et al (2023) uses
 #' equal weights to combine the candidate forecasts.
+#' @param incl An (optional) integer vector that denotes signals that
+#' must be included in the subset combinations. E.g. `incl = c(1, 3)`
+#' includes all TVC-Models generated by the first and third signal.
+#' If `NULL`, no signal is forced to be included.
 #' @param parallel A boolean that denotes whether the function should
 #' be parallelized.
 #' @param n_threads An integer that denotes the number of cores used
 #' for parallelization.
 #' @param risk_aversion A double `>= 0` that denotes the risk aversion
 #' of an investor. A higher value indicates a risk avoiding behaviour.
+#' Only necessary if `method = 4`.
 #' @param min_weight A double that denotes the lower bound
 #' for the weight placed on the market.
 #' A non-negative value rules out short sales.
+#' Only necessary if `method = 4`.
 #' @param max_weight A double that denotes the upper bound
 #' for the weight placed on the market.
 #' A value of e.g. 2 allows for a maximum leverage ratio of two.
+#' Only necessary if `method = 4`.
 #' @return A list that contains:
 #' * (1) a vector with the first moments (point forecasts) of the STSC-Model,
 #' * (2) a vector with the second moments (variance) of the STSC-Model,
@@ -122,102 +134,112 @@
 #'
 #'    ########## Get Data ##########
 #'    # Load Data
-#'    inflation_data   <-  inflation_data
-#'    benchmark_ar2    <-  benchmark_ar2
+#'    inflation_data <- inflation_data
+#'    benchmark_ar2  <- benchmark_ar2
 #'
 #'    # Set Index for Target Variable
-#'    i  <-  1   # (1 -> GDPCTPI; 2 -> PCECTPI; 3 -> CPIAUCSL; 4 -> CPILFESL)
+#'    i <- 1   # (1 -> GDPCTPI; 2 -> PCECTPI; 3 -> CPIAUCSL; 4 -> CPILFESL)
 #'
 #'    # Subset Data (keep only data relevant for target variable i)
-#'    dataset  <-  inflation_data[, c(1+(i-1),                          # Target Variable
-#'                                    5+(i-1),                          # Lag 1
-#'                                    9+(i-1),                          # Lag 2
-#'                                    (13:16)[-i],                      # Remaining Price Series
-#'                                    17:452,                           # Exogenous Predictor Variables
-#'                                    seq(453+(i-1)*16,468+(i-1)*16))]  # Ext. Point Forecasts
+#'    dataset <- inflation_data[, c(1+(i-1),                          # Target Variable
+#'                                  5+(i-1),                          # Lag 1
+#'                                  9+(i-1),                          # Lag 2
+#'                                  (13:16)[-i],                      # Remaining Price Series
+#'                                  17:452,                           # Exogenous Predictor Variables
+#'                                  seq(453+(i-1)*16,468+(i-1)*16))]  # Ext. Point Forecasts
 #'
 #'    ########## STSC ##########
 #'    # Set Target Variable
-#'    y  <-  dataset[,  1, drop = FALSE]
+#'    y <- dataset[,  1, drop = FALSE]
 #'
 #'    # Set 'Simple' Signals
-#'    X  <-  dataset[, 2:442, drop = FALSE]
+#'    X <- dataset[, 2:442, drop = FALSE]
 #'
 #'    # Set External Point Forecasts (Koop & Korobilis 2023)
-#'    Ext_F  <-  dataset[, 443:458, drop = FALSE]
+#'    Ext_F <- dataset[, 443:458, drop = FALSE]
 #'
 #'    # Set Dates
-#'    dates  <-  rownames(dataset)
+#'    dates <- rownames(dataset)
 #'
 #'    # Set TV-C-Parameter
-#'    sample_length  <-  4 * 5
-#'    lambda_grid    <-  c(0.90, 0.95, 1)
-#'    kappa_grid     <-  0.98
+#'    sample_length <- 4 * 5
+#'    lambda_grid   <- c(0.90, 0.95, 1)
+#'    kappa_grid    <- 0.98
+#'    burn_in_tvc   <- 79
+#'    bias          <- TRUE
 #'
 #'    # Set DSC-Parameter
-#'    gamma_grid  <-  c(0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
+#'    gamma_grid   <- c(0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
 #'                      0.91, 0.92, 0.93, 0.94, 0.95, 0.96,
 #'                      0.97, 0.98, 0.99, 1.00)
-#'    psi_grid    <-  c(1:100)
-#'    delta       <-  0.95
+#'    psi_grid     <- c(1:100)
+#'    delta        <- 0.95
+#'    burn_in_dsc  <- 1
+#'    method       <- 1
+#'    equal_weight <- TRUE
+#'    incl         <- NULL
+#'    parallel     <- FALSE
+#'    n_threads    <- NULL
 #'
 #'    # Apply STSC-Function
-#'    results  <-  hdflex::stsc(y,
-#'                              X,
-#'                              Ext_F,
-#'                              sample_length,
-#'                              lambda_grid,
-#'                              kappa_grid,
-#'                              burn_in_tvc = 79,
-#'                              gamma_grid,
-#'                              psi_grid,
-#'                              delta,
-#'                              burn_in_dsc = 1,
-#'                              method = 1,
-#'                              equal_weight = TRUE,
-#'                              parallel = FALSE,
-#'                              n_threads = NULL,
-#'                              risk_aversion = NULL,
-#'                              min_weight = NULL,
-#'                              max_weight = NULL)
+#'    results <- hdflex::stsc(y,
+#'                            X,
+#'                            Ext_F,
+#'                            sample_length,
+#'                            lambda_grid,
+#'                            kappa_grid,
+#'                            burn_in_tvc,
+#'                            bias,
+#'                            gamma_grid,
+#'                            psi_grid,
+#'                            delta,
+#'                            burn_in_dsc,
+#'                            method,
+#'                            equal_weight,
+#'                            incl,
+#'                            parallel,
+#'                            n_threads,
+#'                            NULL,
+#'                            NULL,
+#'                            NULL)
 #'
 #'    # Assign DSC-Results
-#'    forecast_stsc    <-  results[[1]]
-#'    variance_stsc    <-  results[[2]]
-#'    chosen_gamma     <-  results[[3]]
-#'    chosen_psi       <-  results[[4]]
-#'    chosen_signals   <-  results[[5]]
+#'    forecast_stsc  <- results[[1]]
+#'    variance_stsc  <- results[[2]]
+#'    chosen_gamma   <- results[[3]]
+#'    chosen_psi     <- results[[4]]
+#'    chosen_signals <- results[[5]]
 #'
 #'    # Define Evaluation Period
-#'    eval_date_start      <-  "1991-01-01"
-#'    eval_date_end        <-  "2021-12-31"
-#'    eval_period_idx      <-  which(dates > eval_date_start & dates <= eval_date_end)
+#'    eval_date_start <- "1991-01-01"
+#'    eval_date_end   <- "2021-12-31"
+#'    eval_period_idx <- which(dates > eval_date_start & dates <= eval_date_end)
 #'
 #'    # Trim Objects
-#'    oos_y                <-  y[eval_period_idx, ]
-#'    oos_forecast_stsc    <-  forecast_stsc[eval_period_idx]
-#'    oos_variance_stsc    <-  variance_stsc[eval_period_idx]
-#'    oos_chosen_gamma     <-  chosen_gamma[eval_period_idx]
-#'    oos_chosen_psi       <-  chosen_psi[eval_period_idx]
-#'    oos_chosen_signals   <-  chosen_signals[eval_period_idx, , drop = FALSE]
-#'    oos_dates            <-  dates[eval_period_idx]
+#'    oos_y              <- y[eval_period_idx, ]
+#'    oos_forecast_stsc  <- forecast_stsc[eval_period_idx]
+#'    oos_variance_stsc  <- variance_stsc[eval_period_idx]
+#'    oos_chosen_gamma   <- chosen_gamma[eval_period_idx]
+#'    oos_chosen_psi     <- chosen_psi[eval_period_idx]
+#'    oos_chosen_signals <- chosen_signals[eval_period_idx, , drop = FALSE]
+#'    oos_dates          <- dates[eval_period_idx]
 #'
 #'    # Add Dates
-#'    names(oos_forecast_stsc)     <-  oos_dates
-#'    names(oos_variance_stsc)     <-  oos_dates
-#'    names(oos_chosen_gamma)      <-  oos_dates
-#'    names(oos_chosen_psi)        <-  oos_dates
-#'    rownames(oos_chosen_signals) <-  oos_dates
+#'    names(oos_forecast_stsc)     <- oos_dates
+#'    names(oos_variance_stsc)     <- oos_dates
+#'    names(oos_chosen_gamma)      <- oos_dates
+#'    names(oos_chosen_psi)        <- oos_dates
+#'    rownames(oos_chosen_signals) <- oos_dates
 #'
 #'    ### Part 2: Evaluation ###
 #'    # Apply Summary-Function
-#'    summary_results  <-  summary_stsc(oos_y,
-#'                                      benchmark_ar2[, i],
-#'                                      oos_forecast_stsc)
+#'    summary_results <- summary_stsc(oos_y,
+#'                                    benchmark_ar2[, i],
+#'                                    oos_forecast_stsc)
 #'
 #'    # Assign Summary-Results
-#'    cssed  <-  summary_results[[3]]
-#'    mse    <-  summary_results[[4]]
+#'    cssed <- summary_results[[3]]
+#'    mse   <- summary_results[[4]]
 #'
 #'    ########## Results ##########
 #'    # Relative MSE
@@ -234,9 +256,9 @@
 #'         ylab = "CSSED") + abline(h = 0, lty = 2, col = "darkgray")
 #'
 #'    # Plot Predictive Signals
-#'    vec  <-  seq_len(dim(oos_chosen_signals)[2])
-#'    mat  <-  oos_chosen_signals %*% diag(vec)
-#'    mat[mat == 0]  <- NA
+#'    vec <- seq_len(dim(oos_chosen_signals)[2])
+#'    mat <- oos_chosen_signals %*% diag(vec)
+#'    mat[mat == 0] <- NA
 #'    matplot(x    = as.Date(oos_dates),
 #'            y    = mat,
 #'            cex  = 0.4,
@@ -259,24 +281,26 @@
 #'  }
 
 ### New STSC-Function
-stsc  <-  function(y,
-                   X,
-                   Ext_F,
-                   sample_length,
-                   lambda_grid,
-                   kappa_grid,
-                   burn_in_tvc,
-                   gamma_grid,
-                   psi_grid,
-                   delta,
-                   burn_in_dsc,
-                   method,
-                   equal_weight,
-                   parallel = FALSE,
-                   n_threads = parallel::detectCores() - 2,
-                   risk_aversion = NULL,
-                   min_weight = NULL,
-                   max_weight = NULL) {
+stsc <- function(y,
+                 X,
+                 Ext_F,
+                 sample_length,
+                 lambda_grid,
+                 kappa_grid,
+                 burn_in_tvc,
+                 bias,
+                 gamma_grid,
+                 psi_grid,
+                 delta,
+                 burn_in_dsc,
+                 method,
+                 equal_weight,
+                 incl,
+                 parallel = FALSE,
+                 n_threads = parallel::detectCores() - 2,
+                 risk_aversion = NULL,
+                 min_weight = NULL,
+                 max_weight = NULL) {
 
   ########################################################
   ### Checkmate
@@ -310,7 +334,7 @@ stsc  <-  function(y,
 
   # Check if lambda_grid is numeric vector with values between 0 and 1
   checkmate::assertNumeric(lambda_grid,
-                           lower = 0,
+                           lower = exp(-10),
                            upper = 1,
                            min.len = 1,
                            any.missing = FALSE,
@@ -318,15 +342,20 @@ stsc  <-  function(y,
 
   # Check if kappa_grid is numeric vector with values between 0 and 1
   checkmate::assertNumeric(kappa_grid,
-                           lower = 0,
+                           lower = exp(-10),
                            upper = 1,
                            min.len = 1,
                            any.missing = FALSE,
                            finite = TRUE)
 
+  # Check if bias is Boolean
+  checkmate::assertLogical(bias,
+                           len = 1,
+                           any.missing = FALSE)
+
   # Check if gamma_grid is numeric vector with values between 0 and 1
   checkmate::assertNumeric(gamma_grid,
-                           lower = 0,
+                           lower = exp(-10),
                            upper = 1,
                            min.len = 1,
                            any.missing = FALSE,
@@ -364,9 +393,9 @@ stsc  <-  function(y,
                        na.ok = FALSE,
                        null.ok = FALSE)
 
-  # Check if method is element of set {1, 2, 3, 4}
+  # Check if method is element of set {1, 2, 3, 4, 5}
   checkmate::assertChoice(method,
-                          c(1, 2, 3, 4),
+                          c(1, 2, 3, 4, 5),
                           null.ok = FALSE)
 
   # Check if equal_weight is Boolean
@@ -376,10 +405,10 @@ stsc  <-  function(y,
 
   # Check if method == 4: risk_aversion, min_weight & max_weight are given ...
   # ... & y are returns
-  if (checkmate::testChoice(method, c(4))) {
+  if (method == 4) {
 
     # Check if returns
-    checkmate::assertNumeric(y, lower = -1)
+    checkmate::assertNumeric(y, lower = -1) # -> check
 
     # Check if not NULL
     checkmate::assert(checkmate::checkNumber(risk_aversion, na.ok = FALSE),
@@ -388,7 +417,7 @@ stsc  <-  function(y,
                       combine = "and")
   }
 
-  # Check if risk_aversion is Numeric between 0 and 1
+  # Check if risk_aversion is Numeric and at least 0.0
   checkmate::assertNumber(risk_aversion,
                           lower = 0,
                           upper = Inf,
@@ -416,12 +445,30 @@ stsc  <-  function(y,
   checkmate::assertFALSE(all_na)
 
   # Check if there are any Na-values not from the start
-  non_consec_na  <-  any(apply(is.na(cbind(if (exists("X")) X,
-                                           if (exists("Ext_F")) Ext_F)),
-                               2, function(x) {
-                                    sum(abs(diff(x))) > 1 |
-                                    sum(diff(x)) == 1 }))
+  non_consec_na <- any(apply(is.na(cbind(if (exists("X")) X,
+                                         if (exists("Ext_F")) Ext_F)),
+                             2, function(x) {
+                                  sum(abs(diff(x))) > 1 |
+                                  sum(diff(x)) == 1 }))
   checkmate::assertFALSE(non_consec_na)
+
+  # Check Keep Argument I: Nullable Integer Vector
+  checkmate::assertIntegerish(incl,
+                              lower = 1,
+                              upper = (ncol(cbind(if (exists("X")) X,
+                                                  if (exists("Ext_F")) Ext_F)) *
+                                      length(lambda_grid) * length(kappa_grid)),
+                              null.ok = TRUE)
+
+  # Check Keep Argument II: Minimum Psi must match keep argument
+  if (!is.null(incl)) {
+    checkmate::assertTRUE(min(psi_grid) >= length(incl) * length(lambda_grid) * length(kappa_grid))
+  }
+
+  # Check Keep Argument III: No NA-Values in Keep-Columns
+  if (!is.null(incl)) {
+    checkmate::assertFALSE(any(is.na(cbind(if (exists("X")) X, if (exists("Ext_F")) Ext_F)[, incl, drop = FALSE])))
+  }
 
   # Check if any column in X is constant for the first observations
   if (!is.null(X)) {
@@ -439,7 +486,7 @@ stsc  <-  function(y,
   ########################################################
 
   # Convert y to matrix
-  y  <-  as.matrix(y, ncol = 1)
+  y <- as.matrix(y, ncol = 1)
 
   # Parallel or Single Core
   if (parallel) {
@@ -447,102 +494,106 @@ stsc  <-  function(y,
       n_threads <- parallel::detectCores() - 2
     }
     # Apply Multi-Core-Rcpp-Function
-    stsc_results  <-  stsc_loop_par_(y,
-                                     X,
-                                     Ext_F,
-                                     sample_length,
-                                     lambda_grid,
-                                     kappa_grid,
-                                     burn_in_tvc,
-                                     gamma_grid,
-                                     psi_grid,
-                                     delta,
-                                     burn_in_dsc,
-                                     method,
-                                     n_threads,
-                                     equal_weight,
-                                     risk_aversion,
-                                     min_weight,
-                                     max_weight)
+    stsc_results <- stsc_loop_par_(y,
+                                   X,
+                                   Ext_F,
+                                   sample_length,
+                                   lambda_grid,
+                                   kappa_grid,
+                                   burn_in_tvc,
+                                   bias,
+                                   gamma_grid,
+                                   psi_grid,
+                                   delta,
+                                   burn_in_dsc,
+                                   method,
+                                   equal_weight,
+                                   incl,
+                                   n_threads,
+                                   risk_aversion,
+                                   min_weight,
+                                   max_weight)
 
   } else {
     # Apply Single-Core-Rcpp-Function
-    stsc_results  <-  stsc_loop_(y,
-                                 X,
-                                 Ext_F,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 method,
-                                 equal_weight,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight)
+    stsc_results <- stsc_loop_(y,
+                               X,
+                               Ext_F,
+                               sample_length,
+                               lambda_grid,
+                               kappa_grid,
+                               burn_in_tvc,
+                               bias,
+                               gamma_grid,
+                               psi_grid,
+                               delta,
+                               burn_in_dsc,
+                               method,
+                               equal_weight,
+                               incl,
+                               risk_aversion,
+                               min_weight,
+                               max_weight)
   }
 
   # Assign Results
-  stsc_forecast  <-  as.numeric(stsc_results[[1]])
-  stsc_variance  <-  as.numeric(stsc_results[[2]])
-  stsc_comb_mod  <-  as.integer(stsc_results[[3]])
-  stsc_cand_mod  <-  stsc_results[[4]]
+  stsc_forecast <- as.numeric(stsc_results[[1]])
+  stsc_variance <- as.numeric(stsc_results[[2]])
+  stsc_comb_mod <- as.integer(stsc_results[[3]])
+  stsc_cand_mod <- stsc_results[[4]]
 
   # Remove
   rm(list = c("stsc_results"))
 
   # Get Values for Gamma & Psi
-  para_grid     <-  expand.grid(psi_grid, gamma_grid)
-  chosen_psi    <-  para_grid[stsc_comb_mod + 1, 1]
-  chosen_gamma  <-  para_grid[stsc_comb_mod + 1, 2]
+  para_grid    <- expand.grid(psi_grid, gamma_grid)
+  chosen_psi   <- para_grid[stsc_comb_mod + 1, 1]
+  chosen_gamma <- para_grid[stsc_comb_mod + 1, 2]
 
   # Create / Get Raw-Signal Names
   if (!is.null(X)) {
     if (!is.null(colnames(X))) {
-      x_names  <-  colnames(X)
+      x_names <- colnames(X)
     } else {
-      x_names  <-  paste0("X", as.character(seq_len(ncol(X))))
+      x_names <- paste0("X", as.character(seq_len(ncol(X))))
     }
   }
 
   # Create / Get Point-Forecast Names
   if (!is.null(Ext_F)) {
     if (!is.null(colnames(Ext_F))) {
-      f_names  <-  colnames(Ext_F)
+      f_names <- colnames(Ext_F)
     } else {
-      f_names  <-  paste0("Ext_F", as.character(seq_len(ncol(Ext_F))))
+      f_names <- paste0("Ext_F", as.character(seq_len(ncol(Ext_F))))
     }
   }
 
   # Combine Signal Names
-  signal_names  <-  c(if (exists("x_names")) x_names,
-                      if (exists("f_names")) f_names)
+  signal_names <- c(if (exists("x_names")) x_names,
+                    if (exists("f_names")) f_names)
 
   # Create Signal-Parameter-Grid
-  signal_grid  <-  expand.grid(signal_names,
-                               kappa_grid,
-                               lambda_grid,
-                               stringsAsFactors = FALSE)
+  signal_grid <- expand.grid(signal_names,
+                             kappa_grid,
+                             lambda_grid,
+                             stringsAsFactors = FALSE)
 
   # Set up matrix for selected signals
-  mat  <-  matrix(0,
-                  nrow = nrow(y),
-                  ncol = length(signal_names),
-                  dimnames = list(NULL, signal_names))
+  mat <- matrix(0,
+                nrow = nrow(y),
+                ncol = length(signal_names),
+                dimnames = list(NULL, signal_names))
 
   # Fill matrix with selected signals
   for (t in seq(max(burn_in_tvc, burn_in_dsc) + 1, nrow(y))) {
-    col_names  <-  signal_grid[stsc_cand_mod[[t]] + 1, 1]
-    mat[t, col_names]  <- 1
+    col_names <- signal_grid[stsc_cand_mod[[t]] + 1, 1]
+    mat[t, col_names] <- 1
   }
 
   # Return Results
-  return(list(stsc_forecast,
-              stsc_variance,
-              chosen_gamma,
-              chosen_psi,
-              mat))
+  return(list(Point_Forecast = stsc_forecast,
+              Variance = stsc_variance,
+              Gamma = chosen_gamma,
+              Psi = chosen_psi,
+              Signals = mat))
 }

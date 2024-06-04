@@ -23,6 +23,7 @@ colnames(f_signals)  <-  f_names
 sample_length  <-  100
 lambda_grid    <-  c(0.99, 0.999, 1.000)
 kappa_grid     <-  c(0.94)
+bias           <-  TRUE
 
 ### Tests on Y
 test_that("Test whether y is Numeric Vector", {
@@ -31,9 +32,10 @@ test_that("Test whether y is Numeric Vector", {
   testthat::expect_error(tvc(target_var,
                              raw_signals,
                              f_signals,
+                             sample_length,
                              lambda_grid,
                              kappa_grid,
-                             sample_length),
+                             bias),
               "Must be of type 'numeric', not 'data.frame'.", fixed = TRUE)
 })
 
@@ -43,9 +45,10 @@ test_that("Test whether y is not NULL", {
   testthat::expect_error(tvc(target_var,
                              raw_signals,
                              f_signals,
+                             sample_length,
                              lambda_grid,
                              kappa_grid,
-                             sample_length),
+                             bias),
               "Must be of type 'numeric', not 'NULL'.", fixed = TRUE)
 })
 
@@ -55,9 +58,10 @@ test_that("Test whether y has only numeric values", {
   testthat::expect_error(tvc(target_var,
                              raw_signals,
                              f_signals,
+                             sample_length,
                              lambda_grid,
                              kappa_grid,
-                             sample_length),
+                             bias),
               "Must be of type 'numeric', not 'character'.", fixed = TRUE)
 })
 
@@ -67,9 +71,10 @@ test_that("Test whether y has no NA-Values", {
   testthat::expect_error(tvc(target_var,
                              raw_signals,
                              f_signals,
+                             sample_length,
                              lambda_grid,
                              kappa_grid,
-                             sample_length),
+                             bias),
               "Contains missing values", fixed = TRUE)
 })
 
@@ -80,9 +85,10 @@ test_that("Test whether x is matrix", {
   testthat::expect_error(tvc(target_var,
                              raw_signals,
                              f_signals,
+                             sample_length,
                              lambda_grid,
                              kappa_grid,
-                             sample_length),
+                             bias),
               "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
 })
 
@@ -91,9 +97,10 @@ test_that("Test with only X-Matrix", {
   testthat::expect_no_error(tvc(target_var,
                                 raw_signals,
                                 NULL,
-                                lambda_grid,
+ 
+ sample_length,                               lambda_grid,
                                 kappa_grid,
-                                sample_length))
+                                bias))
 })
 
 test_that("Test whether x has the same number of observations as y", {
@@ -102,9 +109,10 @@ test_that("Test whether x has the same number of observations as y", {
   testthat::expect_error(tvc(target_var,
                              raw_signals,
                              f_signals,
+                             sample_length,
                              lambda_grid,
                              kappa_grid,
-                             sample_length),
+                             bias),
                         "Must have exactly", fixed = TRUE)
 })
 
@@ -114,17 +122,19 @@ test_that("Test whether exception works when cov_mat cannot be initialised", {
   testthat::expect_no_error(tvc(target_var,
                                 raw_signals,
                                 f_signals,
+                                sample_length,
                                 lambda_grid,
                                 kappa_grid,
-                                sample_length))
+                                bias))
 
   f_signals[1:100, 10]  <-  0
   testthat::expect_no_error(tvc(target_var,
                                 raw_signals,
                                 f_signals,
+                                sample_length,
                                 lambda_grid,
                                 kappa_grid,
-                                sample_length))
+                                bias))
 })
 
 ### Tests on f
@@ -134,9 +144,10 @@ test_that("Test whether f is matrix", {
   testthat::expect_error(tvc(target_var,
                              raw_signals,
                              f_signals,
+                             sample_length,
                              lambda_grid,
                              kappa_grid,
-                             sample_length),
+                             bias),
                         "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
 })
 
@@ -145,9 +156,10 @@ test_that("Test with only F-Matrix", {
   testthat::expect_no_error(tvc(target_var,
                                 NULL,
                                 f_signals,
+                                sample_length,
                                 lambda_grid,
                                 kappa_grid,
-                                sample_length))
+                                bias))
 })
 
 test_that("Test whether f has the same number of observations as y", {
@@ -156,9 +168,10 @@ test_that("Test whether f has the same number of observations as y", {
   testthat::expect_error(tvc(target_var,
                              raw_signals,
                              f_signals,
+                             sample_length,
                              lambda_grid,
                              kappa_grid,
-                             sample_length),
+                             bias),
                         "Must have exactly", fixed = TRUE)
 })
 
@@ -170,9 +183,10 @@ test_that("Test whether either x or f is provided", {
   testthat::expect_error(tvc(target_var,
                              raw_signals,
                              f_signals,
+                             sample_length,
                              lambda_grid,
                              kappa_grid,
-                             sample_length),
+                             bias),
             "Assertion failed. One of the following must apply:
  * checkmate::checkMatrix(X): Must be of type 'matrix', not 'NULL'
  * checkmate::checkMatrix(Ext_F): Must be of type 'matrix', not 'NULL'",
@@ -186,9 +200,10 @@ test_that("Test whether Code still works without dimnames", {
   testthat::expect_no_error(tvc(target_var,
                                 raw_signals,
                                 f_signals,
+                                sample_length,
                                 lambda_grid,
                                 kappa_grid,
-                                sample_length))
+                                bias))
 })
 
 ### Output
@@ -198,9 +213,10 @@ test_that("Test whether the output has the right format", {
   results  <-  tvc(target_var,
                    raw_signals,
                    f_signals,
+                   sample_length,
                    lambda_grid,
                    kappa_grid,
-                   sample_length)
+                   bias)
 
   # List Contains Two Elements
   testthat::expect_equal(length(results), 2)

@@ -9,7 +9,8 @@ using namespace Rcpp;
                  int n_raw_sig,
                  int sample_length,
                  arma::vec lambda_grid,
-                 arma::vec kappa_grid) {
+                 arma::vec kappa_grid,
+                 bool bias) {
 
    // Get Dimensions   
       const int n_signal = S.n_cols;
@@ -35,7 +36,7 @@ using namespace Rcpp;
                // Select Signal
                   x = S.col(j);
 
-               // Check and Count for NA-Values
+               // Check and Count NA-Values
                   non_finite = arma::find_nonfinite(x);
                   int na_ctr = non_finite.n_elem;
    
@@ -61,14 +62,17 @@ using namespace Rcpp;
 
                // Distinguish between raw and processed signals
                   if(j < n_raw_sig) {
-                     if(arma::is_finite(var_y / var_x)) {
+                     if (var_x != 0.0) {
                           cov_mat(1, 1) =  var_y / var_x; 
                      } else {
-                          cov_mat(1, 1) = 0;
+                          cov_mat(1, 1) = var_y;
                      }
                   } else {
-                     theta(1, 0) = 1;
-                     cov_mat(1, 1) = 0;
+                     theta(1, 0) = 1.0;   // -> Slope Coefficient 1.0
+                     cov_mat(1, 1) = 0.0; // -> Constant Slope Coefficient
+                     if(!bias) {
+                        cov_mat(0, 0) = 0.0; // -> Constant Intercept
+                     }
                   }
 
                // Initialize - Observational Variance
@@ -95,48 +99,46 @@ using namespace Rcpp;
 
 // Function II - Predictive and Update Step for Signal j and time t
    arma::field<double> tvc_model(double y_t, 
-                                  double s_t_j, 
-                                  double s_pred_j,
-                                  double lambda, 
-                                  double kappa, 
-                                  arma::mat& theta, 
-                                  arma::mat& cov_mat, 
-                                  double& h) { 
+                                 double s_t_j, 
+                                 double s_pred_j,
+                                 double lambda, 
+                                 double kappa, 
+                                 arma::mat& theta, 
+                                 arma::mat& cov_mat, 
+                                 double& h) { 
   
    // Define Variables
       arma::field<double> ret(2);
-      //arma::mat r_upt;
-      //double mu, variance, inv_tvar, e_t;
 
-   // Get Predictor for Time t and Predicting t + 1
+   // Get Signal for time t and t + 1
       const arma::mat z_t = {1.0, s_t_j};
       const arma::mat z_pred = {1.0, s_pred_j};
    
-   // Add noise to uncertainty of Coefficients in time t (Equation 5)
+   // Add noise to uncertainty of coefficients in time t (see Equation 5)
       const arma::mat r_upt = cov_mat / lambda;
 
    // Calculate (OOS) Forecast Error for time t (see Equation 7)
       const double e_t = arma::as_scalar(y_t - z_t * theta);
 
-   // Update Observational Variance in time t (Equation 10 and 11)
+   // Update Observational Variance in time t (see Equation 10 and 11)
       h = arma::as_scalar(kappa * h + (1 - kappa) * pow(e_t, 2));
     
-   // Update Coefficients in time t (Equation 7)
+   // Update Coefficients in time t (see Equation 7)
       const double inv_tvar = arma::as_scalar(1.0 / (h + z_t * r_upt * z_t.t()));
       theta = theta + r_upt * z_t.t() * inv_tvar * e_t;
      
-   // Update Uncertainty of Coefficients in time t (Equation 8)
+   // Update Uncertainty of Coefficients in time t (see Equation 8)
       cov_mat = r_upt - r_upt * z_t.t() * inv_tvar * (z_t * r_upt);
        
-   // Get Predictive Density for Predicting t + 1 (Equation 9)
+   // Get Predictive Density for Predicting t + 1 (see Equation 9)
       const double       mu = arma::as_scalar(z_pred * theta);
       const double variance = arma::as_scalar(h + z_pred * ((1.0 / lambda) * cov_mat) * z_pred.t());
       
-   // Fill Return-List  
+   // Fill Return-Field  
       ret(0) = mu;
       ret(1) = variance;
    
-   // Return List  
+   // Return  
       return ret;
 }
 // ----------
@@ -225,8 +227,8 @@ using namespace Rcpp;
              Nullable<const NumericMatrix&> Ext_F_, 
              int sample_length,
              const arma::vec& lambda_grid,
-             const arma::vec& kappa_grid) { 
-
+             const arma::vec& kappa_grid,
+             bool bias) { 
    
    // Check whether Simple Signals and / or Point Forecasts are provided and create combined Signal-Matrix
       arma::mat S;
@@ -266,7 +268,8 @@ using namespace Rcpp;
                                   n_raw_sig,
                                   sample_length,
                                   lambda_grid,
-                                  kappa_grid);
+                                  kappa_grid,
+                                  bias);
 
    // Assign Results
       theta_cube    = as<arma::cube>(init_tvc_results(0));
