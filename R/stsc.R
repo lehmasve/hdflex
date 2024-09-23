@@ -9,11 +9,11 @@
 #' @param y A matrix of dimension `T * 1` or numeric vector of length `T`
 #' containing the observations of the target variable.
 #' @param X A matrix with `T` rows containing
-#' the lagged 'simple' signals in each column.
-#' Use NULL if no 'simple' signal shall be included.
+#' the lagged 'P' signals in each column.
+#' Use NULL if no 'P' signal shall be included.
 #' @param Ext_F A matrix with `T` rows containing
-#' external point forecasts for y in each column.
-#' Use NULL if no external point forecasts shall be included.
+#' (external) 'F' signals for y in each column.
+#' Use NULL if no (external) 'F' signal shall be included.
 #' @param sample_length An integer that denotes the number of observations used
 #' to initialize the observational variance and the coefficients' variance
 #' in the TV-C models.
@@ -33,7 +33,7 @@
 #' of RiskMetrics (Reuters, 1996).
 #' @param burn_in_tvc An integer value `>= 1` that denotes the number of
 #' observations used to 'initialize' the TV-C models.
-#' After 'burn_in_tvc' observations, the ranking for the candidate models
+#' After 'burn_in_tvc' observations, the ranking for the candidate forecasting models
 #' and aggregated predictive densities are resetted.
 #' `burn_in_tvc = 1` means no burn-in period is applied.
 #' @param bias A boolean to indicate whether the TVC-Models should
@@ -42,7 +42,7 @@
 #' take it 'as is' (FALSE -> constant intercept of 0.0).
 #' @param gamma_grid A numerical vector that contains discount factors
 #' between 0 and 1 to exponentially down-weight the past predictive performance
-#' of the candidate models.
+#' of the candidate forecasting models.
 #' @param psi_grid An integer vector that controls
 #' the (possible) sizes of the subsets.
 #' @param delta A numeric value between 0 and 1 denoting the discount factor
@@ -54,7 +54,7 @@
 #' aggregated predictive densities is resetted.
 #' `burn_in_dsc = 1` means no burn-in period is applied.
 #' @param method An integer of the set `1, 2, 3, 4, 5` that denotes
-#' the method used to rank the candidate models (TV-C models)
+#' the method used to rank the candidate forecasting models (TV-C models)
 #' and subset combinations according to their performance.
 #' Default is `method = 1` which ranks according to their
 #' generated sum of discounted predictive log-likelihoods (DPLLs),
@@ -66,7 +66,7 @@
 #' @param equal_weight A boolean that denotes whether equal weights are used to
 #' combine the candidate forecasts within a subset. If `FALSE`, the weights are
 #' calculated using the softmax-function on the ranking scores of
-#' the candidate models. The method proposed in Adaemmer et al (2023) uses
+#' the candidate forecasting models. The method proposed in Adaemmer et al (2023) uses
 #' equal weights to combine the candidate forecasts.
 #' @param incl An (optional) integer vector that denotes signals that
 #' must be included in the subset combinations. E.g. `incl = c(1, 3)`
@@ -91,8 +91,11 @@
 #' * (1) a vector with the first moments (point forecasts) of the STSC-Model,
 #' * (2) a vector with the second moments (variance) of the STSC-Model,
 #' * (3) a vector that contains the selected values for gamma,
-#' * (4) a vector that contains the selected values for psi and
-#' * (5) a matrix that indicates the selected signals for every point in time.
+#' * (4) a vector that contains the selected values for psi,
+#' * (5) a matrix that contains the selected signals,
+#' * (6) a matrix that contains the selected values for lambda and
+#' * (7) a matrix that contains the selected values for kappa
+#' for every point in time.
 #'
 #' @seealso \url{https://github.com/lehmasve/hdflex#readme}
 #' @author Philipp Adämmer, Sven Lehmann, Rainer Schüssler
@@ -550,27 +553,10 @@ stsc <- function(y,
   chosen_psi   <- para_grid[stsc_comb_mod + 1, 1]
   chosen_gamma <- para_grid[stsc_comb_mod + 1, 2]
 
-  # Create / Get Raw-Signal Names
-  if (!is.null(X)) {
-    if (!is.null(colnames(X))) {
-      x_names <- colnames(X)
-    } else {
-      x_names <- paste0("X", as.character(seq_len(ncol(X))))
-    }
-  }
-
-  # Create / Get Point-Forecast Names
-  if (!is.null(Ext_F)) {
-    if (!is.null(colnames(Ext_F))) {
-      f_names <- colnames(Ext_F)
-    } else {
-      f_names <- paste0("Ext_F", as.character(seq_len(ncol(Ext_F))))
-    }
-  }
-
-  # Combine Signal Names
-  signal_names <- c(if (exists("x_names")) x_names,
-                    if (exists("f_names")) f_names)
+  # P-Signal / F-Signal Names
+  x_names <- if (!is.null(X)) if (!is.null(colnames(X))) colnames(X) else paste0("X", seq_len(ncol(X)))
+  f_names <- if (!is.null(Ext_F)) if (!is.null(colnames(Ext_F))) colnames(Ext_F) else paste0("Ext_F", seq_len(ncol(Ext_F)))
+  signal_names <- c(if (exists("x_names")) x_names, if (exists("f_names")) f_names)
 
   # Create Signal-Parameter-Grid
   signal_grid <- expand.grid(signal_names,
@@ -579,15 +565,36 @@ stsc <- function(y,
                              stringsAsFactors = FALSE)
 
   # Set up matrix for selected signals
-  mat <- matrix(0,
-                nrow = nrow(y),
-                ncol = length(signal_names),
-                dimnames = list(NULL, signal_names))
+  chosen_signals <- matrix(0,
+                           nrow = nrow(y),
+                           ncol = length(signal_names),
+                           dimnames = list(NULL, signal_names))
 
-  # Fill matrix with selected signals
+  # Set up matrix for selected lambda
+  chosen_lambda <- matrix(0,
+                          nrow = nrow(y),
+                          ncol = length(lambda_grid),
+                          dimnames = list(NULL, lambda_grid))
+
+  # Set up matrix for selected kappa
+  chosen_kappa <- matrix(0,
+                         nrow = nrow(y),
+                         ncol = length(kappa_grid),
+                         dimnames = list(NULL, kappa_grid))
+  # Fill matrices
   for (t in seq(max(burn_in_tvc, burn_in_dsc) + 1, nrow(y))) {
+
+    # Select Signals
     col_names <- signal_grid[stsc_cand_mod[[t]] + 1, 1]
-    mat[t, col_names] <- 1
+    chosen_signals[t, col_names] <- 1
+
+    # Select Lambda
+    lambda_values <- as.matrix(table(signal_grid[stsc_cand_mod[[t]] + 1, 3]))
+    chosen_lambda[t, rownames(lambda_values)] <- lambda_values
+
+    # Select Kappa
+    kappa_values <- as.matrix(table(signal_grid[stsc_cand_mod[[t]] + 1, 2]))
+    chosen_kappa[t, rownames(kappa_values)] <- kappa_values
   }
 
   # Return Results
@@ -595,5 +602,7 @@ stsc <- function(y,
               Variance = stsc_variance,
               Gamma = chosen_gamma,
               Psi = chosen_psi,
-              Signals = mat))
+              Signals = chosen_signals,
+              Lambda = chosen_lambda,
+              Kappa = chosen_kappa))
 }

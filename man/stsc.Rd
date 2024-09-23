@@ -32,12 +32,12 @@ stsc(
 containing the observations of the target variable.}
 
 \item{X}{A matrix with `T` rows containing
-the lagged 'simple' signals in each column.
-Use NULL if no 'simple' signal shall be included.}
+the lagged 'P' signals in each column.
+Use NULL if no 'P' signal shall be included.}
 
 \item{Ext_F}{A matrix with `T` rows containing
-external point forecasts for y in each column.
-Use NULL if no external point forecasts shall be included.}
+(external) 'F' signals for y in each column.
+Use NULL if no (external) 'F' signal shall be included.}
 
 \item{sample_length}{An integer that denotes the number of observations used
 to initialize the observational variance and the coefficients' variance
@@ -61,7 +61,7 @@ of RiskMetrics (Reuters, 1996).}
 
 \item{burn_in_tvc}{An integer value `>= 1` that denotes the number of
 observations used to 'initialize' the TV-C models.
-After 'burn_in_tvc' observations, the ranking for the candidate models
+After 'burn_in_tvc' observations, the ranking for the candidate forecasting models
 and aggregated predictive densities are resetted.
 `burn_in_tvc = 1` means no burn-in period is applied.}
 
@@ -72,7 +72,7 @@ take it 'as is' (FALSE -> constant intercept of 0.0).}
 
 \item{gamma_grid}{A numerical vector that contains discount factors
 between 0 and 1 to exponentially down-weight the past predictive performance
-of the candidate models.}
+of the candidate forecasting models.}
 
 \item{psi_grid}{An integer vector that controls
 the (possible) sizes of the subsets.}
@@ -88,7 +88,7 @@ aggregated predictive densities is resetted.
 `burn_in_dsc = 1` means no burn-in period is applied.}
 
 \item{method}{An integer of the set `1, 2, 3, 4, 5` that denotes
-the method used to rank the candidate models (TV-C models)
+the method used to rank the candidate forecasting models (TV-C models)
 and subset combinations according to their performance.
 Default is `method = 1` which ranks according to their
 generated sum of discounted predictive log-likelihoods (DPLLs),
@@ -101,7 +101,7 @@ y has to be a time series of financial returns) and
 \item{equal_weight}{A boolean that denotes whether equal weights are used to
 combine the candidate forecasts within a subset. If `FALSE`, the weights are
 calculated using the softmax-function on the ranking scores of
-the candidate models. The method proposed in Adaemmer et al (2023) uses
+the candidate forecasting models. The method proposed in Adaemmer et al (2023) uses
 equal weights to combine the candidate forecasts.}
 
 \item{incl}{An (optional) integer vector that denotes signals that
@@ -134,8 +134,11 @@ A list that contains:
 * (1) a vector with the first moments (point forecasts) of the STSC-Model,
 * (2) a vector with the second moments (variance) of the STSC-Model,
 * (3) a vector that contains the selected values for gamma,
-* (4) a vector that contains the selected values for psi and
-* (5) a matrix that indicates the selected signals for every point in time.
+* (4) a vector that contains the selected values for psi,
+* (5) a matrix that contains the selected signals,
+* (6) a matrix that contains the selected values for lambda and
+* (7) a matrix that contains the selected values for kappa
+for every point in time.
 }
 \description{
 `stsc()` is a time series forecasting method designed to handle

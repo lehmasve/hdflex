@@ -539,6 +539,27 @@ test_that("Test whether Code still works with different methods", {
                                  min_weight,
                                  max_weight))
 
+  testthat::expect_no_error(stsc(y,
+                               raw_signals,
+                               f_signals,
+                               sample_length,
+                               lambda_grid,
+                               kappa_grid,
+                               burn_in_tvc,
+                               bias,
+                               gamma_grid,
+                               psi_grid,
+                               delta,
+                               burn_in_dsc,
+                               method = 5,
+                               equal_weight,
+                               incl,
+                               parallel,
+                               n_threads,
+                               risk_aversion,
+                               min_weight,
+                               max_weight))
+
 })
 
 test_that("Test whether method is of given set", {
@@ -898,37 +919,48 @@ test_that("Test whether the output has the right format", {
                     min_weight,
                     max_weight)
 
-  # List Contains Five Elements
-  testthat::expect_equal(length(results), 5)
+  # List Contains seven Elements
+  testthat::expect_equal(length(results), 7)
 
-  # Number of Forecasts
+  # Point Forecasts
   checkmate::expect_numeric(results[[1]],
                             len = numb_obs,
                             finite = TRUE)
 
-  # Number of Variances
+  # Variances
   checkmate::expect_numeric(results[[2]],
                             len = numb_obs,
                             lower = 0,
                             finite = TRUE)
-  # Length of Gamma-Vector
+  # Gamma-Vector
   checkmate::expect_numeric(results[[3]],
                             len = numb_obs,
-                            lower = 0,
+                            lower = min(gamma_grid),
+                            upper = max(gamma_grid),
                             finite = TRUE)
-  # Length of Psi-Vector
+  # Psi-Vector
   checkmate::expect_numeric(results[[4]],
                             len = numb_obs,
-                            lower = 0,
+                            lower = min(psi_grid),
+                            upper = max(psi_grid),
                             finite = TRUE)
 
-  # Dimension of selected Candidate Forecasts
+  # Candidate Forecasting Models
   checkmate::expect_matrix(results[[5]],
                            mode = "integerish",
                            nrows = numb_obs,
                            ncols = (ncol(raw_signals) + ncol(f_signals)))
-})
 
+  # Lambda-Vector
+  checkmate::expect_matrix(results[[6]],
+                           nrows = numb_obs,
+                           ncols = length(lambda_grid))
+
+  # Kappa-Vector
+  checkmate::expect_matrix(results[[7]],
+                           nrows = numb_obs,
+                           ncols = length(kappa_grid))
+})
 
 ### Guarantee same results between tvc() & dsc() vs. stsc()
 test_that("Test whether the different implementations give same results", {

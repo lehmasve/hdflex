@@ -703,6 +703,26 @@ using namespace Rcpp;
        return diff;
    }
 
+// Helper Function -- Median with NAs
+   double compute_median(arma::rowvec vec) {
+      
+      // Filter out NA values
+         arma::vec finiteVec = vec(arma::find_finite(vec));
+
+      // Check if empty
+         if (finiteVec.empty()) {
+           return arma::datum::nan; // Return NA if there are no finite values
+         }
+
+      // Calculate and return median
+         return arma::median(finiteVec);
+}
+
+// ###################################################################################
+// ###################################################################################
+// ###################################################################################
+
+
 // 3.) STSC 
 // Function I - Loop over t
 // [[Rcpp::export]]
@@ -867,7 +887,7 @@ using namespace Rcpp;
                   current_na_cm = new_na_cm;    
             for (unsigned int g=0; g<gamma_grid.n_elem; g++ ) {
                for (auto i : vec_diff) {
-                  score_cands(g)(i) = 0.0;
+                  score_cands(g)(i) = compute_median(arma::conv_to<arma::rowvec>::from(score_cands(g))); // 0.0;  // -> Insert Value !!!
                }  
             }
          }
