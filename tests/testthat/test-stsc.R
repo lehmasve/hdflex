@@ -1,1034 +1,1097 @@
 ###########################################################
 ### Simulate Data
-# Set Seed
-set.seed(123)
-
 # Set Dimensions
-numb_obs      <-  500
-numb_noise    <-  49
-numb_signals  <-  numb_noise + 1
-numb_forc     <-  50
+n_obs <- 500
+n_sigs <- 90
 
-# Set up Coefficient-Matrix
-theta  <-  matrix(NA, nrow = numb_obs, ncol = numb_signals)
+### Simulate Data
+# Generate Covariates
+X <- matrix(rnorm(n_obs * n_sigs), nrow = n_obs, ncol = n_sigs)
 
-# Loop over Time
-for (t in seq_len(numb_obs)) {
+# Generate Beta-Coefficients
+n_relevant <- 10
+beta <- runif(n_relevant, -1.0, 1.0)
 
-  ### Theta: Abrupt Change
-  theta[t, 1]  <-  ifelse((t > 200 & t < 450), -0.30, 0.30)
+# Compute f(x)
+f_x <- X[, seq(n_relevant)] %*% beta
 
-  ### Noise Predictors
-  theta[t, -1] <-  0
-}
+# Generate Error-Term
+eps <- rnorm(n_obs)
 
-### Draw Simple Signals
-raw_signals            <-  replicate(numb_signals, rnorm(numb_obs, 0, 0.5))
-colnames(raw_signals)  <-  paste0("X", as.character(seq_len(numb_signals)))
+# Calculate Response
+y <- as.matrix(f_x + eps, ncol = 1)
+returns <- as.matrix(exp(f_x + eps), ncol = 1)
 
-### Draw Noise
-eps  <-  rnorm(numb_obs, 0, 0.1)
+# F-Signals
+Ext_F <- matrix(rep(y, 10), nrow = n_obs, ncol = 10) + rnorm(n_obs * 10)
 
-### Compute Target Variable
-y    <-  rowSums(cbind(theta * raw_signals, eps))
-
-# Create 'External' Forecasts
-f_signals            <-  y + replicate(numb_forc, rnorm(numb_obs, 0, 0.5))
-colnames(f_signals)  <-  paste0("F", as.character(seq_len(numb_forc)))
-###########################################################
+# Add Names
+colnames(X) <- paste0("X", seq_len(n_sigs))
+colnames(y) <- "response"
+colnames(Ext_F) <- paste0("F", seq_len(10))
 
 ###########################################################
 ### STSC Parameter
 # TV-C-Parameter
-sample_length  <-  100
-lambda_grid    <-  c(0.95, 1.00)
-kappa_grid     <-  0.97
-bias           <-  TRUE
+init <- 10
+lambda_grid <- c(0.95, 1.00)
+kappa_grid <- c(0.95, 0.97)
+bias <- TRUE
 
 # Set DSC-Parameter
-gamma_grid  <-  c(0.9, 0.95, 1)
-psi_grid    <-  c(1:10)
-delta       <-  0.95
-incl        <-  NULL
+gamma_grid <- c(0.9, 0.95, 1)
+psi_grid <- c(1:10)
+delta <- 0.95
+burn_in <- 5
+burn_in_dsc <- 10
+metric <- 5
+equal_weight <- TRUE
+incl <- NULL
 
-# Set Method-Parameter
-burn_in_tvc   <-  5
-burn_in_dsc   <-  5
-method        <-  1
-equal_weight  <-  TRUE
-parallel      <-  FALSE
-n_threads     <-  NULL
+# Parallel-Parameter
+parallel <- FALSE
+n_threads <- 1
 
 # Set Portfolio-Parameter
-risk_aversion <-  3
-min_weight    <-  0
-max_weight    <-  2
+portfolio_params <- c(3, 0, 2)
 
 ###########################################################
+### Test STSC
+test_that("Test whether the STSC-Function works", {
 
-###########################################################
-### Tests on Y
-test_that("Test whether y is Numeric Vector", {
+  apply_stsc <- function(y, metric) {
+    stsc(y,
+         X,
+         Ext_F,
+         init,
+         lambda_grid,
+         kappa_grid,
+         bias,
+         gamma_grid,
+         psi_grid,
+         delta,
+         burn_in,
+         burn_in_dsc,
+         metric,
+         equal_weight,
+         incl,
+         parallel,
+         n_threads,
+         portfolio_params)
+  }
 
-  y  <-  as.data.frame(y)
-  testthat::expect_error(stsc(y,
-                              raw_signals,
-                              f_signals,
-                              sample_length,
-                              lambda_grid,
-                              kappa_grid,
-                              burn_in_tvc,
-                              bias,
-                              gamma_grid,
-                              psi_grid,
-                              delta,
-                              burn_in_dsc,
-                              method,
-                              equal_weight,
-                              incl,
-                              parallel,
-                              n_threads,
-                              risk_aversion,
-                              min_weight,
-                              max_weight),
-              "Must be of type 'numeric', not 'data.frame'.", fixed = TRUE)
-})
+  check_results <- function(results, y) {
+    # List Contains three Elements
+    expect_equal(length(results), 3)
 
-test_that("Test whether y is not NULL", {
+    # Forecasts List Contains three Elements
+    expect_equal(length(results$Forecasts), 3)
 
-  y  <-  NULL
-  testthat::expect_error(stsc(y,
-                              raw_signals,
-                              f_signals,
-                              sample_length,
-                              lambda_grid,
-                              kappa_grid,
-                              burn_in_tvc,
-                              bias,
-                              gamma_grid,
-                              psi_grid,
-                              delta,
-                              burn_in_dsc,
-                              method,
-                              equal_weight,
-                              incl,
-                              parallel,
-                              n_threads,
-                              risk_aversion,
-                              min_weight,
-                              max_weight),
-              "Must be of type 'numeric', not 'NULL'.", fixed = TRUE)
-})
+    # Point Forecasts
+    expect_numeric(results$Forecasts$Point_Forecasts, len = n_obs, finite = TRUE)
 
-test_that("Test whether y has only numeric values", {
+    # Variance Forecasts
+    expect_numeric(results$Forecasts$Variance_Forecasts, len = n_obs, lower = 0, finite = TRUE)
 
-  y[10]  <-  "test"
-  testthat::expect_error(stsc(y,
-                              raw_signals,
-                              f_signals,
-                              sample_length,
-                              lambda_grid,
-                              kappa_grid,
-                              burn_in_tvc,
-                              bias,
-                              gamma_grid,
-                              psi_grid,
-                              delta,
-                              burn_in_dsc,
-                              method,
-                              equal_weight,
-                              incl,
-                              parallel,
-                              n_threads,
-                              risk_aversion,
-                              min_weight,
-                              max_weight),
-                           "Must be of type 'numeric', not 'character'.", fixed = TRUE)
-})
+    # Realization
+    expect_equal(results$Forecasts$Realization, y)
 
-test_that("Test whether y has no NA-Values", {
+    # Tuning Parameters List Contains five Elements
+    expect_equal(length(results$Tuning_Parameters), 5)
 
-  y[10]  <-  NA
-  testthat::expect_error(stsc(y,
-                              raw_signals,
-                              f_signals,
-                              sample_length,
-                              lambda_grid,
-                              kappa_grid,
-                              burn_in_tvc,
-                              bias,
-                              gamma_grid,
-                              psi_grid,
-                              delta,
-                              burn_in_dsc,
-                              method,
-                              equal_weight,
-                              incl,
-                              parallel,
-                              n_threads,
-                              risk_aversion,
-                              min_weight,
-                              max_weight),
-                         "Contains missing values", fixed = TRUE)
-})
+    # Gamma-Vector
+    expect_numeric(results$Tuning_Parameters$Gamma, len = n_obs, lower = min(gamma_grid), upper = max(gamma_grid), finite = TRUE)
 
-### Tests on X
-test_that("Test whether x is matrix", {
+    # Psi-Vector
+    expect_numeric(results$Tuning_Parameters$Psi, len = n_obs, lower = min(psi_grid), upper = max(psi_grid), finite = TRUE)
 
-  raw_signals  <-  as.data.frame(raw_signals)
-  testthat::expect_error(stsc(y,
-                              raw_signals,
-                              f_signals,
-                              sample_length,
-                              lambda_grid,
-                              kappa_grid,
-                              burn_in_tvc,
-                              bias,
-                              gamma_grid,
-                              psi_grid,
-                              delta,
-                              burn_in_dsc,
-                              method,
-                              equal_weight,
-                              incl,
-                              parallel,
-                              n_threads,
-                              risk_aversion,
-                              min_weight,
-                              max_weight),
-                         "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
-})
+    # Signals
+    expect_matrix(results$Tuning_Parameters$Signals, mode = "integerish", nrows = n_obs, ncols = (ncol(X) + ncol(Ext_F)))
 
-test_that("Test whether x has the same number of observations as y", {
+    # Lambda-Vector
+    expect_matrix(results$Tuning_Parameters$Lambda, mode = "integerish", nrows = n_obs, ncols = length(lambda_grid))
 
-  raw_signals  <-  raw_signals[1:10, ]
-  testthat::expect_error(stsc(y,
-                              raw_signals,
-                              f_signals,
-                              sample_length,
-                              lambda_grid,
-                              kappa_grid,
-                              burn_in_tvc,
-                              bias,
-                              gamma_grid,
-                              psi_grid,
-                              delta,
-                              burn_in_dsc,
-                              method,
-                              equal_weight,
-                              incl,
-                              parallel,
-                              n_threads,
-                              risk_aversion,
-                              min_weight,
-                              max_weight),
-                         "Must have exactly", fixed = TRUE)
-})
+    # Kappa-Vector
+    expect_matrix(results$Tuning_Parameters$Kappa, mode = "integerish", nrows = n_obs, ncols = length(kappa_grid))
 
-test_that("Test whether exception works when cov_mat cannot be initialised", {
+    # Model List Contains 12 Elements
+    expect_equal(length(results$Model), 12)
 
-  raw_signals[1:100, 10]  <-  0
-  testthat::expect_no_error(stsc(y,
-                                 raw_signals,
-                                 f_signals,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 method,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                 n_threads,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight))
+    # Lambda Grid
+    expect_equal(results$Model$Lambda_grid, lambda_grid)
 
-  f_signals[1:100, 10]  <-  0
-  testthat::expect_no_error(stsc(y,
-                                 raw_signals,
-                                 f_signals,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 method,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                 n_threads,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight))
-})
+    # Kappa Grid
+    expect_equal(results$Model$Kappa_grid, kappa_grid)
 
-### Tests on f
-test_that("Test whether f is matrix", {
+    # Gamma Grid
+    expect_equal(results$Model$Gamma_grid, gamma_grid)
 
-  f_signals  <-  as.data.frame(f_signals)
-  testthat::expect_error(stsc(y,
-                              raw_signals,
-                              f_signals,
-                              sample_length,
-                              lambda_grid,
-                              kappa_grid,
-                              burn_in_tvc,
-                              bias,
-                              gamma_grid,
-                              psi_grid,
-                              delta,
-                              burn_in_dsc,
-                              method,
-                              equal_weight,
-                              incl,
-                              parallel,
-                              n_threads,
-                              risk_aversion,
-                              min_weight,
-                              max_weight),
-                         "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
-})
+    # Psi Grid
+    expect_equal(results$Model$Psi_grid, psi_grid)
 
-test_that("Test whether f has the same number of observations as y", {
+    # Delta
+    expect_equal(results$Model$Delta, delta)
 
-  f_signals  <-  f_signals[1:10, ]
-  testthat::expect_error(stsc(y,
-                              raw_signals,
-                              f_signals,
-                              sample_length,
-                              lambda_grid,
-                              kappa_grid,
-                              burn_in_tvc,
-                              bias,
-                              gamma_grid,
-                              psi_grid,
-                              delta,
-                              burn_in_dsc,
-                              method,
-                              equal_weight,
-                              incl,
-                              parallel,
-                              n_threads,
-                              risk_aversion,
-                              min_weight,
-                              max_weight),
-                         "Must have exactly", fixed = TRUE)
-})
+    # Init
+    expect_equal(results$Model$Init, init)
 
-### Tests on x and f
-test_that("Test whether either x or f is provided", {
+    # Burn-in
+    expect_equal(results$Model$Burn_in, burn_in)
 
-  raw_signals  <-  NULL
-  f_signals    <-  NULL
-  testthat::expect_error(stsc_loop_(y,
-                                    raw_signals,
-                                    f_signals,
-                                    sample_length,
-                                    lambda_grid,
-                                    kappa_grid,
-                                    burn_in_tvc,
-                                    bias,
-                                    gamma_grid,
-                                    psi_grid,
-                                    delta,
-                                    burn_in_dsc,
-                                    method,
-                                    equal_weight,
-                                    incl,
-                                    risk_aversion,
-                                    min_weight,
-                                    max_weight),
-                         "Error: No signals provided",
-                         fixed = TRUE)
+    # Burn-in DSC
+    expect_equal(results$Model$Burn_in_dsc, burn_in_dsc)
 
-  testthat::expect_error(stsc(y,
-                              raw_signals,
-                              f_signals,
-                              sample_length,
-                              lambda_grid,
-                              kappa_grid,
-                              burn_in_tvc,
-                              bias,
-                              gamma_grid,
-                              psi_grid,
-                              delta,
-                              burn_in_dsc,
-                              method,
-                              equal_weight,
-                              incl,
-                              parallel,
-                              n_threads,
-                              risk_aversion,
-                              min_weight,
-                              max_weight),
-                         "Assertion failed. One of the following must apply:
- * checkmate::checkMatrix(X): Must be of type 'matrix', not 'NULL'
- * checkmate::checkMatrix(Ext_F): Must be of type 'matrix', not 'NULL'",
-                         fixed = TRUE)
-})
+    # Metric
+    expect_numeric(results$Model$Metric, len = 1, lower = 1, upper = 5)
 
-test_that("Test whether Code still works with only raw signals / only point forecasts", {
+    # Equal Weight
+    expect_equal(results$Model$Equal_weight, equal_weight)
 
-  testthat::expect_no_error(stsc(y,
-                                 raw_signals,
-                                 NULL,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 method,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                 n_threads,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight))
+    # Bias
+    expect_equal(results$Model$Bias, bias)
 
-  testthat::expect_no_error(stsc(y,
-                                 NULL,
-                                 f_signals,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 method,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                n_threads,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight))
-})
-
-test_that("Test whether Code still works with NA-values", {
-
-  raw_signals[1:20, c(1, 3, 5)] <-  NA
-  testthat::expect_no_error(stsc(y,
-                                 raw_signals,
-                                 f_signals,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 method,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                 n_threads,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight))
-})
-
-test_that("Test whether Code still works without dimnames", {
-
-  colnames(raw_signals)  <-  NULL
-  colnames(f_signals)    <-  NULL
-  testthat::expect_no_error(stsc(y,
-                                 raw_signals,
-                                 f_signals,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 method,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                 n_threads,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight))
-})
-
-### Tests on Methods
-test_that("Test whether Code still works with different methods", {
-
-  testthat::expect_no_error(stsc(y,
-                                 raw_signals,
-                                 f_signals,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 method = 2,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                 n_threads,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight))
-
-  testthat::expect_no_error(stsc(y,
-                                 raw_signals,
-                                 f_signals,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 method = 3,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                 n_threads,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight))
-
-  testthat::expect_no_error(stsc(y,
-                                 raw_signals,
-                                 f_signals,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 method = 4,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                 n_threads,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight))
-
-  testthat::expect_no_error(stsc(y,
-                               raw_signals,
-                               f_signals,
-                               sample_length,
-                               lambda_grid,
-                               kappa_grid,
-                               burn_in_tvc,
-                               bias,
-                               gamma_grid,
-                               psi_grid,
-                               delta,
-                               burn_in_dsc,
-                               method = 5,
-                               equal_weight,
-                               incl,
-                               parallel,
-                               n_threads,
-                               risk_aversion,
-                               min_weight,
-                               max_weight))
-
-})
-
-test_that("Test whether method is of given set", {
-
-  method  <-  6
-  testthat::expect_error(stsc(y,
-                              raw_signals,
-                              f_signals,
-                              sample_length,
-                              lambda_grid,
-                              kappa_grid,
-                              burn_in_tvc,
-                              bias,
-                              gamma_grid,
-                              psi_grid,
-                              delta,
-                              burn_in_dsc,
-                              method,
-                              equal_weight,
-                              incl,
-                              parallel,
-                              n_threads,
-                              risk_aversion,
-                              min_weight,
-                              max_weight),
-                         "Must be element of set {'1','2','3','4','5'}",
-                         fixed = TRUE)
-
-  testthat::expect_error(stsc_loop_(y,
-                                    raw_signals,
-                                    f_signals,
-                                    sample_length,
-                                    lambda_grid,
-                                    kappa_grid,
-                                    burn_in_tvc,
-                                    bias,
-                                    gamma_grid,
-                                    psi_grid,
-                                    delta,
-                                    burn_in_dsc,
-                                    method,
-                                    equal_weight,
-                                    incl,
-                                    risk_aversion,
-                                    min_weight,
-                                    max_weight),
-                         "Error: Method not available", fixed = TRUE)
-})
-
-### Tests on Equal_weight
-test_that("Tests on equal_weight", {
-
-  equal_weight  <-  "True"
-  testthat::expect_error(stsc(y,
-                              raw_signals,
-                              f_signals,
-                              sample_length,
-                              lambda_grid,
-                              kappa_grid,
-                              burn_in_tvc,
-                              bias,
-                              gamma_grid,
-                              psi_grid,
-                              delta,
-                              burn_in_dsc,
-                              method,
-                              equal_weight,
-                              incl,
-                              parallel,
-                              n_threads,
-                              risk_aversion,
-                              min_weight,
-                              max_weight),
-                         "Must be of type 'logical'", fixed = TRUE)
-
-  equal_weight  <-  FALSE
-  testthat::expect_no_error(stsc(y,
-                                 raw_signals,
-                                 f_signals,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 method,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                 n_threads,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight))
-})
-
-### Tests on Return Parameter
-test_that("Test whether relevant parameter are provided", {
-
-  method        <- 4
-  risk_aversion <- NULL
-  min_weight    <- NULL
-  max_weight    <- NULL
-  testthat::expect_error(stsc(y,
-                              raw_signals,
-                              f_signals,
-                              sample_length,
-                              lambda_grid,
-                              kappa_grid,
-                              burn_in_tvc,
-                              bias,
-                              gamma_grid,
-                              psi_grid,
-                              delta,
-                              burn_in_dsc,
-                              method,
-                              equal_weight,
-                              incl,
-                              parallel,
-                              n_threads,
-                              risk_aversion,
-                              min_weight,
-                              max_weight),
-                         "Must be of type 'number', not 'NULL'",
-                         fixed = TRUE)
-
-  testthat::expect_error(stsc_loop_(y,
-                                    raw_signals,
-                                    f_signals,
-                                    sample_length,
-                                    lambda_grid,
-                                    kappa_grid,
-                                    burn_in_tvc,
-                                    bias,
-                                    gamma_grid,
-                                    psi_grid,
-                                    delta,
-                                    burn_in_dsc,
-                                    method,
-                                    equal_weight,
-                                    incl,
-                                    risk_aversion,
-                                    min_weight,
-                                    max_weight),
-                         "Error: Relevant parameter not provided!",
-                         fixed = TRUE)
-})
-
-### Test STSC-Parallel
-test_that("Test parallel function", {
-
-  parallel   <- TRUE
-  n_threads  <- NULL
-  testthat::expect_no_error(stsc(y,
-                                 raw_signals,
-                                 f_signals,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 method,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                 n_threads,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight))
-
-  testthat::expect_no_error(stsc(y,
-                                 raw_signals,
-                                 f_signals,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 2,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                 n_threads,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight))
-
-  testthat::expect_no_error(stsc(y,
-                                 raw_signals,
-                                 f_signals,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 3,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                 n_threads,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight))
-
-  testthat::expect_no_error(stsc(y,
-                                 raw_signals,
-                                 f_signals,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 4,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                 n_threads,
-                                 3,
-                                 0,
-                                 2))
-
-  # Apply Parallel-STSC-Function
-  parallel   <- TRUE
-  n_threads  <- 1
-  stsc_par_results <- stsc(y,
-                           raw_signals,
-                           f_signals,
-                           sample_length,
-                           lambda_grid,
-                           kappa_grid,
-                           burn_in_tvc,
-                           bias,
-                           gamma_grid,
-                           psi_grid,
-                           delta,
-                           burn_in_dsc,
-                           method,
-                           equal_weight,
-                           incl,
-                           parallel,
-                           n_threads,
-                           risk_aversion,
-                           min_weight,
-                           max_weight)
-
-  # Apply Parallel-STSC-Function
-  parallel   <- FALSE
-  n_threads  <- NULL
-  stsc_results <- stsc(y,
-                       raw_signals,
-                       f_signals,
-                       sample_length,
-                       lambda_grid,
-                       kappa_grid,
-                       burn_in_tvc,
-                       bias,
-                       gamma_grid,
-                       psi_grid,
-                       delta,
-                       burn_in_dsc,
-                       method,
-                       equal_weight,
-                       incl,
-                       parallel,
-                       n_threads,
-                       risk_aversion,
-                       min_weight,
-                       max_weight)
-
-  # Compare Forecasts
-  testthat::expect_equal(round(sum(na.omit(stsc_results[[1]])), 20),
-                         round(sum(na.omit(stsc_par_results[[1]])), 20))
-
-  # Compare Variances
-  testthat::expect_equal(round(sum(na.omit(stsc_results[[2]])), 20),
-                         round(sum(na.omit(stsc_par_results[[2]])), 20))
-
-  # Compare Gammas
-  testthat::expect_equal(na.omit(stsc_results[[3]]),
-                         na.omit(stsc_par_results[[3]]))
-
-  # Compare Psis
-  testthat::expect_equal(na.omit(stsc_results[[4]]),
-                         na.omit(stsc_par_results[[4]]))
-})
-
-test_that("Test parallel function", {
-
-  parallel  <- TRUE
-  n_threads <- 1
-  raw_signals[1:10, 1] <-  0
-  raw_signals[1:100, 3] <-  0
-  raw_signals[1:20, c(2, 5, 7)] <-  NA
-  f_signals[1:30, 1] <-  NA
-  testthat::expect_no_error(stsc(y,
-                                 raw_signals,
-                                 f_signals,
-                                 sample_length,
-                                 lambda_grid,
-                                 kappa_grid,
-                                 burn_in_tvc,
-                                 bias,
-                                 gamma_grid,
-                                 psi_grid,
-                                 delta,
-                                 burn_in_dsc,
-                                 method,
-                                 equal_weight,
-                                 incl,
-                                 parallel,
-                                 n_threads,
-                                 risk_aversion,
-                                 min_weight,
-                                 max_weight))
-})
-
-### Output
-test_that("Test whether the output has the right format", {
+    # Incl
+    expect_equal(results$Model$Incl, incl)
+  }
 
   # Apply STSC-Function
-  results  <-  stsc(y,
-                    raw_signals,
-                    f_signals,
-                    sample_length,
+  results1 <- apply_stsc(y, 1)
+  results2 <- apply_stsc(y, 2)
+  results3 <- apply_stsc(y, 3)
+  results4 <- apply_stsc(returns, 4)
+  results5 <- apply_stsc(y, 5)
+
+  # Check results
+  check_results(results1, y)
+  check_results(results2, y)
+  check_results(results3, y)
+  check_results(results4, returns)
+  check_results(results5, y)
+})
+
+###########################################################
+### Test STSC-Parallel
+test_that("Test whether the STSC-Parallel-Function works", {
+
+  apply_stsc <- function(y, metric) {
+    stsc(y,
+         X,
+         Ext_F,
+         init,
+         lambda_grid,
+         kappa_grid,
+         bias,
+         gamma_grid,
+         psi_grid,
+         delta,
+         burn_in,
+         burn_in_dsc,
+         metric,
+         equal_weight,
+         incl,
+         TRUE,
+         1,
+         portfolio_params)
+  }
+
+  check_results <- function(results, y) {
+    # List Contains three Elements
+    expect_equal(length(results), 3)
+
+    # Forecasts List Contains three Elements
+    expect_equal(length(results$Forecasts), 3)
+
+    # Point Forecasts
+    expect_numeric(results$Forecasts$Point_Forecasts, len = n_obs, finite = TRUE)
+
+    # Variance Forecasts
+    expect_numeric(results$Forecasts$Variance_Forecasts, len = n_obs, lower = 0, finite = TRUE)
+
+    # Realization
+    expect_equal(results$Forecasts$Realization, y)
+
+    # Tuning Parameters List Contains five Elements
+    expect_equal(length(results$Tuning_Parameters), 5)
+
+    # Gamma-Vector
+    expect_numeric(results$Tuning_Parameters$Gamma, len = n_obs, lower = min(gamma_grid), upper = max(gamma_grid), finite = TRUE)
+
+    # Psi-Vector
+    expect_numeric(results$Tuning_Parameters$Psi, len = n_obs, lower = min(psi_grid), upper = max(psi_grid), finite = TRUE)
+
+    # Signals
+    expect_matrix(results$Tuning_Parameters$Signals, mode = "integerish", nrows = n_obs, ncols = (ncol(X) + ncol(Ext_F)))
+
+    # Lambda-Vector
+    expect_matrix(results$Tuning_Parameters$Lambda, mode = "integerish", nrows = n_obs, ncols = length(lambda_grid))
+
+    # Kappa-Vector
+    expect_matrix(results$Tuning_Parameters$Kappa, mode = "integerish", nrows = n_obs, ncols = length(kappa_grid))
+
+    # Model List Contains 12 Elements
+    expect_equal(length(results$Model), 12)
+
+    # Lambda Grid
+    expect_equal(results$Model$Lambda_grid, lambda_grid)
+
+    # Kappa Grid
+    expect_equal(results$Model$Kappa_grid, kappa_grid)
+
+    # Gamma Grid
+    expect_equal(results$Model$Gamma_grid, gamma_grid)
+
+    # Psi Grid
+    expect_equal(results$Model$Psi_grid, psi_grid)
+
+    # Delta
+    expect_equal(results$Model$Delta, delta)
+
+    # Init
+    expect_equal(results$Model$Init, init)
+
+    # Burn-in
+    expect_equal(results$Model$Burn_in, burn_in)
+
+    # Burn-in DSC
+    expect_equal(results$Model$Burn_in_dsc, burn_in_dsc)
+
+    # Metric
+    expect_numeric(results$Model$Metric, len = 1, lower = 1, upper = 5)
+
+    # Equal Weight
+    expect_equal(results$Model$Equal_weight, equal_weight)
+
+    # Bias
+    expect_equal(results$Model$Bias, bias)
+
+    # Incl
+    expect_equal(results$Model$Incl, incl)
+  }
+
+  # Apply STSC-Function
+  results1 <- apply_stsc(y, 1)
+  results2 <- apply_stsc(y, 2)
+  results3 <- apply_stsc(y, 3)
+  results4 <- apply_stsc(returns, 4)
+  results5 <- apply_stsc(y, 5)
+
+  # Check results
+  check_results(results1, y)
+  check_results(results2, y)
+  check_results(results3, y)
+  check_results(results4, returns)
+  check_results(results5, y)
+})
+
+#############################################################
+### Test for same results between STSC and STSC-Parallel for different metrics
+test_that("Test whether the STSC-Function and STSC-Parallel-Function return the same results", {
+
+  for (m in seq(5)) {
+
+    # Use returns instead of y if m == 4
+    y_input <- if (m == 4) returns else y
+
+    # Apply STSC-Function
+    results <- stsc(y_input,
+                    X,
+                    Ext_F,
+                    init,
                     lambda_grid,
                     kappa_grid,
-                    burn_in_tvc,
                     bias,
                     gamma_grid,
                     psi_grid,
                     delta,
+                    burn_in,
                     burn_in_dsc,
-                    method,
+                    m,
                     equal_weight,
                     incl,
                     parallel,
                     n_threads,
-                    risk_aversion,
-                    min_weight,
-                    max_weight)
+                    portfolio_params)
 
-  # List Contains seven Elements
-  testthat::expect_equal(length(results), 7)
+    # Apply STSC-Parallel-Function
+    results_par <- stsc(y_input,
+                        X,
+                        Ext_F,
+                        init,
+                        lambda_grid,
+                        kappa_grid,
+                        bias,
+                        gamma_grid,
+                        psi_grid,
+                        delta,
+                        burn_in,
+                        burn_in_dsc,
+                        m,
+                        equal_weight,
+                        incl,
+                        TRUE,
+                        n_threads,
+                        portfolio_params)
 
-  # Point Forecasts
-  checkmate::expect_numeric(results[[1]],
-                            len = numb_obs,
-                            finite = TRUE)
+    # Forecasts
+    expect_equal(results$Forecasts$Point_Forecasts,
+                 results_par$Forecasts$Point_Forecasts,
+                 info = paste("Mismatch in Point_Forecasts for m =", m))
 
-  # Variances
-  checkmate::expect_numeric(results[[2]],
-                            len = numb_obs,
-                            lower = 0,
-                            finite = TRUE)
-  # Gamma-Vector
-  checkmate::expect_numeric(results[[3]],
-                            len = numb_obs,
-                            lower = min(gamma_grid),
-                            upper = max(gamma_grid),
-                            finite = TRUE)
-  # Psi-Vector
-  checkmate::expect_numeric(results[[4]],
-                            len = numb_obs,
-                            lower = min(psi_grid),
-                            upper = max(psi_grid),
-                            finite = TRUE)
+    expect_equal(results$Forecasts$Variance_Forecasts,
+                 results_par$Forecasts$Variance_Forecasts,
+                 info = paste("Mismatch in Variance_Forecasts for m =", m))
 
-  # Candidate Forecasting Models
-  checkmate::expect_matrix(results[[5]],
-                           mode = "integerish",
-                           nrows = numb_obs,
-                           ncols = (ncol(raw_signals) + ncol(f_signals)))
+    expect_equal(results$Forecasts$Realization,
+                 results_par$Forecasts$Realization,
+                 info = paste("Mismatch in Realization for m =", m))
 
-  # Lambda-Vector
-  checkmate::expect_matrix(results[[6]],
-                           nrows = numb_obs,
-                           ncols = length(lambda_grid))
+    # Tuning Parameters
+    expect_equal(results$Tuning_Parameters$Gamma,
+                 results_par$Tuning_Parameters$Gamma,
+                 info = paste("Mismatch in Gamma for m =", m))
 
-  # Kappa-Vector
-  checkmate::expect_matrix(results[[7]],
-                           nrows = numb_obs,
-                           ncols = length(kappa_grid))
+    expect_equal(results$Tuning_Parameters$Psi,
+                 results_par$Tuning_Parameters$Psi,
+                 info = paste("Mismatch in Psi for m =", m))
+
+    expect_equal(results$Tuning_Parameters$Signals,
+                 results_par$Tuning_Parameters$Signals,
+                 info = paste("Mismatch in Signals for m =", m))
+
+    expect_equal(results$Tuning_Parameters$Lambda,
+                 results_par$Tuning_Parameters$Lambda,
+                 info = paste("Mismatch in Lambda for m =", m))
+
+    expect_equal(results$Tuning_Parameters$Kappa,
+                 results_par$Tuning_Parameters$Kappa,
+                 info = paste("Mismatch in Kappa for m =", m))
+  }
 })
 
-### Guarantee same results between tvc() & dsc() vs. stsc()
-test_that("Test whether the different implementations give same results", {
+###########################################################
+### Test same results between STSC and TVC/DSC
+test_that("Test whether the STSC-Function and TVC/DSC-Function return the same results", {
 
   # Apply STSC-Function
-  stsc_results <- hdflex::stsc(y,
-                               raw_signals,
-                               f_signals,
-                               sample_length,
-                               lambda_grid,
-                               kappa_grid,
-                               burn_in_tvc,
-                               bias,
-                               gamma_grid,
-                               psi_grid,
-                               delta,
-                               burn_in_dsc,
-                               method,
-                               equal_weight,
-                               incl,
-                               parallel,
-                               n_threads,
-                               risk_aversion,
-                               min_weight,
-                               max_weight)
+  results <- stsc(y,
+                  X,
+                  Ext_F,
+                  init,
+                  lambda_grid,
+                  kappa_grid,
+                  bias,
+                  gamma_grid,
+                  psi_grid,
+                  delta,
+                  burn_in,
+                  burn_in_dsc,
+                  metric,
+                  equal_weight,
+                  incl,
+                  parallel,
+                  n_threads,
+                  portfolio_params)
+
+  # Apply STSC-Function
+  results_par <- stsc(y,
+                      X,
+                      Ext_F,
+                      init,
+                      lambda_grid,
+                      kappa_grid,
+                      bias,
+                      gamma_grid,
+                      psi_grid,
+                      delta,
+                      burn_in,
+                      burn_in_dsc,
+                      metric,
+                      equal_weight,
+                      incl,
+                      TRUE,
+                      n_threads,
+                      portfolio_params)
 
   # Apply TVC-Function
   tvc_results <- hdflex::tvc(y,
-                             raw_signals,
-                             f_signals,
-                             sample_length,
+                             X,
+                             Ext_F,
+                             init,
                              lambda_grid,
                              kappa_grid,
                              bias)
 
-  # Assign Results
-  forecast_tvc <- tvc_results[[1]]
-  variance_tvc <- tvc_results[[2]]
+  # Assign TVC-Results
+  forecast_tvc <- tvc_results$Forecasts$Point_Forecasts
+  variance_tvc <- tvc_results$Forecasts$Variance_Forecasts
 
-  # Cut Initialization-Period
-  sample_period_idx <- (burn_in_tvc+1):numb_obs
-  sub_forecast_tvc  <- forecast_tvc[sample_period_idx, , drop = FALSE]
-  sub_variance_tvc  <- variance_tvc[sample_period_idx, , drop = FALSE]
-  sub_y             <- y[sample_period_idx]
+  # First complete forecast period (no missing values)
+  sub_period <- seq(which(complete.cases(forecast_tvc))[1], nrow(y))
 
+  ### Part 2: DSC-Function
   # Apply DSC-Function
-  dsc_results <- hdflex::dsc(gamma_grid,
+  dsc_results <- hdflex::dsc(y[sub_period],
+                             forecast_tvc[sub_period, , drop = FALSE],
+                             variance_tvc[sub_period, , drop = FALSE],
+                             gamma_grid,
                              psi_grid,
-                             sub_y,
-                             sub_forecast_tvc,
-                             sub_variance_tvc,
                              delta,
-                             1)
+                             burn_in,
+                             burn_in_dsc,
+                             metric,
+                             equal_weight,
+                             incl,
+                             NULL)
+
+  # Forecasts
+  expect_true(
+    all(
+      all.equal(
+        na.omit(results$Forecasts$Point_Forecasts),
+        na.omit(results_par$Forecasts$Point_Forecasts),
+        check.attributes = FALSE,
+      ) == TRUE,
+      all.equal(
+        na.omit(results$Forecasts$Point_Forecasts),
+        na.omit(dsc_results$Forecasts$Point_Forecasts),
+        check.attributes = FALSE,
+      ) == TRUE
+    )
+  )
+
+  expect_true(
+    all(
+      all.equal(
+        na.omit(results$Forecasts$Variance_Forecasts),
+        na.omit(results_par$Forecasts$Variance_Forecasts),
+        check.attributes = FALSE,
+      ) == TRUE,
+      all.equal(
+        na.omit(results$Forecasts$Variance_Forecasts),
+        na.omit(dsc_results$Forecasts$Variance_Forecasts),
+        check.attributes = FALSE,
+      ) == TRUE
+    )
+  )
+
+  # Tuning Parameters
+  expect_true(
+    all(
+      all.equal(
+        na.omit(results$Tuning_Parameters$Gamma),
+        na.omit(dsc_results$Tuning_Parameters$Gamma),
+        check.attributes = FALSE
+      ) == TRUE,
+      all.equal(
+        na.omit(results$Tuning_Parameters$Gamma),
+        na.omit(results_par$Tuning_Parameters$Gamma),
+        check.attributes = FALSE
+      ) == TRUE
+    )
+  )
+
+  expect_true(
+    all(
+      all.equal(
+        na.omit(results$Tuning_Parameters$Psi),
+        na.omit(dsc_results$Tuning_Parameters$Psi),
+        check.attributes = FALSE
+      ) == TRUE,
+      all.equal(
+        na.omit(results$Tuning_Parameters$Psi),
+        na.omit(results_par$Tuning_Parameters$Psi),
+        check.attributes = FALSE
+      ) == TRUE
+    )
+  )
+})
+
+###########################################################
+### Test STSC with missing values
+test_that("Test whether the STSC-Function works with missing values", {
+
+  # Set Missing Values
+  X[1:20, 1] <- NA
+  Ext_F[1:15, 1] <- NA
+
+  # Apply STSC-Function
+  results <- stsc(y,
+                  X,
+                  Ext_F,
+                  init,
+                  lambda_grid,
+                  kappa_grid,
+                  bias,
+                  gamma_grid,
+                  psi_grid,
+                  delta,
+                  burn_in,
+                  burn_in_dsc,
+                  metric,
+                  equal_weight,
+                  incl,
+                  parallel,
+                  n_threads,
+                  portfolio_params)
+
+  # Apply STSC-Function
+  results_par <- stsc(y,
+                      X,
+                      Ext_F,
+                      init,
+                      lambda_grid,
+                      kappa_grid,
+                      bias,
+                      gamma_grid,
+                      psi_grid,
+                      delta,
+                      burn_in,
+                      burn_in_dsc,
+                      metric,
+                      equal_weight,
+                      incl,
+                      TRUE,
+                      NULL,
+                      portfolio_params)
 
   # Compare Forecasts
-  testthat::expect_equal(round(sum(na.omit(stsc_results[[1]])[-1]), 20),
-                         round(sum(         dsc_results[[1]][-1]), 20))
+  expect_equal(results$Forecasts$Point_Forecasts,
+                         results_par$Forecasts$Point_Forecasts)
 
-  # Compare Variances
-  testthat::expect_equal(round(sum(na.omit(stsc_results[[2]])[-1]), 20),
-                         round(sum(         dsc_results[[2]][-1]), 20))
+  # List Contains three Elements
+  expect_equal(length(results), 3)
 
-  # Compare Gammas
-  testthat::expect_equal(na.omit(stsc_results[[3]])[-1],
-                                  dsc_results[[3]][-1])
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
 
-  # Compare Psis
-  testthat::expect_equal(na.omit(stsc_results[[4]])[-1],
-                                  dsc_results[[4]][-1])
+  # Point Forecasts
+  expect_numeric(results$Forecasts$Point_Forecasts,
+                            len = n_obs,
+                            finite = TRUE)
 
+  # Variance Forecasts
+  expect_numeric(results$Forecasts$Variance_Forecasts,
+                            len = n_obs,
+                            lower = 0,
+                            finite = TRUE)
+})
+
+###########################################################
+### Test STSC with inclusion
+test_that("Test whether the STSC-Function works with inclusion", {
+
+  # Set Inclusion
+  incl <- c(1, 2)
+  psi_grid <- c(8:20)
+
+  # Apply STSC-Function
+  results <- stsc(y,
+                  X,
+                  Ext_F,
+                  init,
+                  lambda_grid,
+                  kappa_grid,
+                  bias,
+                  gamma_grid,
+                  psi_grid,
+                  delta,
+                  burn_in,
+                  burn_in_dsc,
+                  metric,
+                  equal_weight,
+                  incl,
+                  parallel,
+                  n_threads,
+                  portfolio_params)
+
+  # Apply STSC-Function
+  results_par <- stsc(y,
+                      X,
+                      Ext_F,
+                      init,
+                      lambda_grid,
+                      kappa_grid,
+                      bias,
+                      gamma_grid,
+                      psi_grid,
+                      delta,
+                      burn_in,
+                      burn_in_dsc,
+                      metric,
+                      equal_weight,
+                      incl,
+                      TRUE,
+                      n_threads,
+                      portfolio_params)
+
+  # Compare Forecasts
+  expect_equal(results$Forecasts$Point_Forecasts,
+                         results_par$Forecasts$Point_Forecasts)
+
+  # Cut-Off
+  cut_off <- seq(max(burn_in, burn_in_dsc))
+
+  # List Contains three Elements
+  expect_equal(length(results), 3)
+
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
+
+  # Point Forecasts
+  expect_numeric(results$Forecasts$Point_Forecasts,
+                            len = n_obs,
+                            finite = TRUE)
+
+  # Variance Forecasts
+  expect_numeric(results$Forecasts$Variance_Forecasts,
+                            len = n_obs,
+                            lower = 0,
+                            finite = TRUE)
+
+  # Tuning Parameters List Contains five Elements
+  expect_equal(length(results$Tuning_Parameters), 5)
+
+  # Psi-Vector
+  expect_numeric(results$Tuning_Parameters$Psi,
+                            len = n_obs,
+                            lower = min(psi_grid),
+                            upper = max(psi_grid),
+                            finite = TRUE)
+
+  # Signals
+  expect_matrix(results$Tuning_Parameters$Signals,
+                           mode = "integerish",
+                           nrows = n_obs,
+                           ncols = (ncol(X) + ncol(Ext_F)))
+
+  # Check if the Signals in incl were really selected
+  for (i in incl) {
+    expect_true(all(results$Tuning_Parameters$Signals[-cut_off, i] > 0),
+                info = paste("Column", i, "contains zeros"))
+  }
+
+  # Lambda-Vector
+  expect_matrix(results$Tuning_Parameters$Lambda,
+                           mode = "integerish",
+                           nrows = n_obs,
+                           ncols = length(lambda_grid))
+
+  # Check that the Lambda matrix does not contain any zeros
+  expect_true(all(results$Tuning_Parameters$Lambda[-cut_off, ] > 0),
+              info = "Lambda matrix contains zeros")
+
+  # Kappa-Vector
+  expect_matrix(results$Tuning_Parameters$Kappa,
+                           mode = "integerish",
+                           nrows = n_obs,
+                           ncols = length(kappa_grid))
+
+  # Check that the Kappa matrix does not contain any zeros
+  expect_true(all(results$Tuning_Parameters$Kappa[-cut_off, ] > 0),
+              info = "Kappa matrix contains zeros")
+})
+
+###########################################################
+### Test STSC with X
+test_that("Test whether the STSC-Function works with X", {
+
+  # Apply STSC-Function
+  results <- stsc(y,
+                  X,
+                  NULL,
+                  init,
+                  lambda_grid,
+                  kappa_grid,
+                  bias,
+                  gamma_grid,
+                  psi_grid,
+                  delta,
+                  burn_in,
+                  burn_in_dsc,
+                  metric,
+                  equal_weight,
+                  incl,
+                  parallel,
+                  n_threads,
+                  portfolio_params)
+
+  # Apply STSC-Function
+  results_par <- stsc(y,
+                      X,
+                      NULL,
+                      init,
+                      lambda_grid,
+                      kappa_grid,
+                      bias,
+                      gamma_grid,
+                      psi_grid,
+                      delta,
+                      burn_in,
+                      burn_in_dsc,
+                      metric,
+                      equal_weight,
+                      incl,
+                      TRUE,
+                      n_threads,
+                      portfolio_params)
+
+  # Compare Forecasts
+  expect_equal(results$Forecasts$Point_Forecasts,
+                         results_par$Forecasts$Point_Forecasts)
+
+  # List Contains three Elements
+  expect_equal(length(results), 3)
+
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
+
+  # Point Forecasts
+  expect_numeric(results$Forecasts$Point_Forecasts,
+                            len = n_obs,
+                            finite = TRUE)
+
+  # Variance Forecasts
+  expect_numeric(results$Forecasts$Variance_Forecasts,
+                            len = n_obs,
+                            lower = 0,
+                            finite = TRUE)
+
+  # Tuning Parameters List Contains five Elements
+  expect_equal(length(results$Tuning_Parameters), 5)
+
+  # Gamma-Vector
+  expect_numeric(results$Tuning_Parameters$Gamma,
+                            len = n_obs,
+                            lower = min(gamma_grid),
+                            upper = max(gamma_grid),
+                            finite = TRUE)
+
+  # Psi-Vector
+  expect_numeric(results$Tuning_Parameters$Psi,
+                            len = n_obs,
+                            lower = min(psi_grid),
+                            upper = max(psi_grid),
+                            finite = TRUE)
+
+  # Signals
+  expect_matrix(results$Tuning_Parameters$Signals,
+                           mode = "integerish",
+                           nrows = n_obs,
+                           ncols = ncol(X))
+
+  # Lambda-Vector
+  expect_matrix(results$Tuning_Parameters$Lambda,
+                           nrows = n_obs,
+                           mode = "integerish",
+                           ncols = length(lambda_grid))
+
+  # Kappa-Vector
+  expect_matrix(results$Tuning_Parameters$Kappa,
+                           nrows = n_obs,
+                           mode = "integerish",
+                           ncols = length(kappa_grid))
+})
+
+### Test STSC with Ext_F
+test_that("Test whether the STSC-Function works with Ext_F", {
+
+  # Apply STSC-Function
+  results <- stsc(y,
+                  NULL,
+                  Ext_F,
+                  init,
+                  lambda_grid,
+                  kappa_grid,
+                  bias,
+                  gamma_grid,
+                  psi_grid,
+                  delta,
+                  burn_in,
+                  burn_in_dsc,
+                  metric,
+                  equal_weight,
+                  incl,
+                  parallel,
+                  n_threads,
+                  portfolio_params)
+
+  # Apply STSC-Function
+  results_par <- stsc(y,
+                      NULL,
+                      Ext_F,
+                      init,
+                      lambda_grid,
+                      kappa_grid,
+                      bias,
+                      gamma_grid,
+                      psi_grid,
+                      delta,
+                      burn_in,
+                      burn_in_dsc,
+                      metric,
+                      equal_weight,
+                      incl,
+                      TRUE,
+                      n_threads,
+                      portfolio_params)
+
+  # Compare Forecasts
+  expect_equal(results$Forecasts$Point_Forecasts,
+                         results_par$Forecasts$Point_Forecasts)
+
+  # List Contains three Elements
+  expect_equal(length(results), 3)
+
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
+
+  # Point Forecasts
+  expect_numeric(results$Forecasts$Point_Forecasts,
+                            len = n_obs,
+                            finite = TRUE)
+
+  # Variance Forecasts
+  expect_numeric(results$Forecasts$Variance_Forecasts,
+                            len = n_obs,
+                            lower = 0,
+                            finite = TRUE)
+
+  # Tuning Parameters List Contains five Elements
+  expect_equal(length(results$Tuning_Parameters), 5)
+
+  # Gamma-Vector
+  expect_numeric(results$Tuning_Parameters$Gamma,
+                            len = n_obs,
+                            lower = min(gamma_grid),
+                            upper = max(gamma_grid),
+                            finite = TRUE)
+
+  # Psi-Vector
+  expect_numeric(results$Tuning_Parameters$Psi,
+                            len = n_obs,
+                            lower = min(psi_grid),
+                            upper = max(psi_grid),
+                            finite = TRUE)
+
+  # Signals
+  expect_matrix(results$Tuning_Parameters$Signals,
+                           mode = "integerish",
+                           nrows = n_obs,
+                           ncols = ncol(Ext_F))
+
+  # Lambda-Vector
+  expect_matrix(results$Tuning_Parameters$Lambda,
+                           nrows = n_obs,
+                           ncols = length(lambda_grid))
+
+  # Kappa-Vector
+  expect_matrix(results$Tuning_Parameters$Kappa,
+                           nrows = n_obs,
+                           ncols = length(kappa_grid))
+})
+
+###########################################################
+### Test STSC without Bias Correction
+test_that("Test whether the STSC-Function works without Bias", {
+
+  # Set Signal constant for init periods
+  X[1:10, 1] <- 0
+  Ext_F[1:10, 1] <- 0
+
+  # Apply STSC-Function
+  results <- stsc(y,
+                  X,
+                  Ext_F,
+                  init,
+                  lambda_grid,
+                  kappa_grid,
+                  FALSE,
+                  gamma_grid,
+                  psi_grid,
+                  delta,
+                  burn_in,
+                  burn_in_dsc,
+                  metric,
+                  equal_weight,
+                  incl,
+                  parallel,
+                  n_threads,
+                  portfolio_params)
+
+  # Apply STSC-Function
+  results_par <- stsc(y,
+                      X,
+                      Ext_F,
+                      init,
+                      lambda_grid,
+                      kappa_grid,
+                      FALSE,
+                      gamma_grid,
+                      psi_grid,
+                      delta,
+                      burn_in,
+                      burn_in_dsc,
+                      metric,
+                      equal_weight,
+                      incl,
+                      TRUE,
+                      n_threads,
+                      portfolio_params)
+
+  # Compare Forecasts
+  expect_equal(results$Forecasts$Point_Forecasts,
+                         results_par$Forecasts$Point_Forecasts)
+
+  # List Contains three Elements
+  expect_equal(length(results), 3)
+
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
+
+  # Point Forecasts
+  expect_numeric(results$Forecasts$Point_Forecasts,
+                            len = n_obs,
+                            finite = TRUE)
+
+  # Variance Forecasts
+  expect_numeric(results$Forecasts$Variance_Forecasts,
+                            len = n_obs,
+                            lower = 0,
+                            finite = TRUE)
+
+  # Tuning Parameters List Contains five Elements
+  expect_equal(length(results$Tuning_Parameters), 5)
+
+  # Gamma-Vector
+  expect_numeric(results$Tuning_Parameters$Gamma,
+                            len = n_obs,
+                            lower = min(gamma_grid),
+                            upper = max(gamma_grid),
+                            finite = TRUE)
+
+  # Psi-Vector
+  expect_numeric(results$Tuning_Parameters$Psi,
+                            len = n_obs,
+                            lower = min(psi_grid),
+                            upper = max(psi_grid),
+                            finite = TRUE)
+
+  # Signals
+  expect_matrix(results$Tuning_Parameters$Signals,
+                           mode = "integerish",
+                           nrows = n_obs,
+                           ncols = (ncol(X) + ncol(Ext_F)))
+
+  # Lambda-Vector
+  expect_matrix(results$Tuning_Parameters$Lambda,
+                           mode = "integerish",
+                           nrows = n_obs,
+                           ncols = length(lambda_grid))
+
+  # Kappa-Vector
+  expect_matrix(results$Tuning_Parameters$Kappa,
+                           mode = "integerish",
+                           nrows = n_obs,
+                           ncols = length(kappa_grid))
+})
+
+###########################################################
+### Test STSC with equal weight option
+test_that("Test whether the STSC-Function works with equal weight option", {
+
+  # Apply STSC-Function
+  results <- stsc(y,
+                  X,
+                  Ext_F,
+                  init,
+                  lambda_grid,
+                  kappa_grid,
+                  bias,
+                  gamma_grid,
+                  psi_grid,
+                  delta,
+                  burn_in,
+                  burn_in_dsc,
+                  metric,
+                  FALSE,
+                  incl,
+                  parallel,
+                  n_threads,
+                  portfolio_params)
+
+  # Apply STSC-Function
+  results_par <- stsc(y,
+                      X,
+                      Ext_F,
+                      init,
+                      lambda_grid,
+                      kappa_grid,
+                      bias,
+                      gamma_grid,
+                      psi_grid,
+                      delta,
+                      burn_in,
+                      burn_in_dsc,
+                      metric,
+                      FALSE,
+                      incl,
+                      TRUE,
+                      n_threads,
+                      portfolio_params)
+
+  # Compare Forecasts
+  expect_equal(results$Forecasts$Point_Forecasts,
+                         results_par$Forecasts$Point_Forecasts)
+
+  # List Contains three Elements
+  expect_equal(length(results), 3)
+
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
+
+  # Point Forecasts
+  expect_numeric(results$Forecasts$Point_Forecasts,
+                            len = n_obs,
+                            finite = TRUE)
+
+  # Variance Forecasts
+  expect_numeric(results$Forecasts$Variance_Forecasts,
+                            len = n_obs,
+                            lower = 0,
+                            finite = TRUE)
+
+  # Tuning Parameters List Contains five Elements
+  expect_equal(length(results$Tuning_Parameters), 5)
+
+  # Gamma-Vector
+  expect_numeric(results$Tuning_Parameters$Gamma,
+                            len = n_obs,
+                            lower = min(gamma_grid),
+                            upper = max(gamma_grid),
+                            finite = TRUE)
+
+  # Psi-Vector
+  expect_numeric(results$Tuning_Parameters$Psi,
+                            len = n_obs,
+                            lower = min(psi_grid),
+                            upper = max(psi_grid),
+                            finite = TRUE)
+
+  # Signals
+  expect_matrix(results$Tuning_Parameters$Signals,
+                           mode = "integerish",
+                           nrows = n_obs,
+                           ncols = (ncol(X) + ncol(Ext_F)))
+
+  # Lambda-Vector
+  expect_matrix(results$Tuning_Parameters$Lambda,
+                           mode = "integerish",
+                           nrows = n_obs,
+                           ncols = length(lambda_grid))
+
+  # Kappa-Vector
+  expect_matrix(results$Tuning_Parameters$Kappa,
+                           mode = "integerish",
+                           nrows = n_obs,
+                           ncols = length(kappa_grid))
 })

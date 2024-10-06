@@ -15,3 +15,4 @@
 ^cran-comments\.md$
 ^\.DS_Store$
 Build_Code.R
+^dev$

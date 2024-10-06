@@ -1,154 +1,365 @@
+###########################################################
 ### Simulate Data
+# Set Seed
 set.seed(123)
 
 # Set Dimensions
-numb_obs   <-  500
-numb_mods  <-  50
+n_obs <- 500
+n_sigs <- 90
 
-# Create Random Target-Variable
-target_var  <-  rnorm(n = numb_obs, mean = 0, sd = 1)
+### Simulate Data
+# Generate Covariates
+X <- matrix(rnorm(n_obs * n_sigs), nrow = n_obs, ncol = n_sigs)
 
-# Create Random Candidate-Forecast-Matrix
-forecast_tvc            <-  replicate(numb_mods, rnorm(n = numb_obs, mean = 0, sd = 1), )
-f_tvc_names             <-  paste0("X", as.character(seq_len(ncol(forecast_tvc))))
-colnames(forecast_tvc)  <-  f_tvc_names
+# Generate Beta-Coefficients
+n_relevant <- 10
+beta <- runif(n_relevant, -1.0, 1.0)
 
-# Create Random Candidate-Variance-Matrix
-variance_tvc            <-  replicate(numb_mods, abs(rnorm(n = numb_obs, mean = 0, sd = 1)), )
-v_tvc_names             <-  paste0("F", as.character(seq_len(ncol(variance_tvc))))
-colnames(variance_tvc)  <-  v_tvc_names
+# Compute f(x)
+f_x <- X[, seq(n_relevant)] %*% beta
 
-# Set DSC Parameter
-nr_mods     <-  numb_mods
-gamma_grid  <-  c(0.8, 0.9, 0.95, 0.99, 1)
-psi_grid    <-  c(1, 2, 3)
-delta       <-  0.99
-n_cores     <-  1
+# Generate Error-Term
+eps <- rnorm(n_obs)
 
-### Test for no NULLs
-test_that("Test whether every input parameter is specified.", {
+# Calculate Response
+y <- as.matrix(f_x + eps, ncol = 1)
+returns <- as.matrix(exp(f_x + eps), ncol = 1)
 
-  testthat::expect_error(dsc(NULL,
-                             psi_grid,
-                             target_var,
-                             forecast_tvc,
-                             variance_tvc,
-                             delta,
-                             n_cores),
-              "not 'NULL'.", fixed = TRUE)
+# F-Signals
+Ext_F <- matrix(rep(y, 10), nrow = n_obs, ncol = 10) + rnorm(n_obs * 10)
 
-  testthat::expect_error(dsc(gamma_grid,
-                             NULL,
-                             target_var,
-                             forecast_tvc,
-                             variance_tvc,
-                             delta,
-                             n_cores),
-            "not 'NULL'.", fixed = TRUE)
+# Add Names
+colnames(X) <- paste0("X", seq_len(n_sigs))
+colnames(y) <- "response"
+colnames(Ext_F) <- paste0("F", seq_len(10))
 
-  testthat::expect_error(dsc(gamma_grid,
-                             psi_grid,
-                             NULL,
-                             forecast_tvc,
-                             variance_tvc,
-                             delta,
-                             n_cores),
-              "not 'NULL'.", fixed = TRUE)
+###########################################################
+### STSC Parameter
+# TV-C-Parameter
+init <- 10
+lambda_grid <- c(0.95, 1.00)
+kappa_grid <- c(0.95, 0.97)
+bias <- TRUE
 
-  testthat::expect_error(dsc(gamma_grid,
-                             psi_grid,
-                             target_var,
-                             NULL,
-                             variance_tvc,
-                             delta,
-                             n_cores),
-              "not 'NULL'.", fixed = TRUE)
+# Set DSC-Parameter
+gamma_grid <- c(0.9, 0.95, 1)
+psi_grid <- c(1:10)
+delta <- 0.95
+burn_in <- 5
+burn_in_dsc <- 10
+metric <- 5
+equal_weight <- TRUE
+incl <- NULL
 
-  testthat::expect_error(dsc(gamma_grid,
-                             psi_grid,
-                             target_var,
-                             forecast_tvc,
-                             NULL,
-                             delta,
-                             n_cores),
-              "not 'NULL'.", fixed = TRUE)
+# Parallel-Parameter
+parallel <- FALSE
+n_threads <- NULL
 
-  testthat::expect_error(dsc(gamma_grid,
-                             psi_grid,
-                             target_var,
-                             forecast_tvc,
-                             variance_tvc,
-                             NULL,
-                             n_cores),
-              "not 'NULL'.", fixed = TRUE)
+# Set Portfolio-Parameter
+portfolio_params <- c(3, 0, 2)
 
-  testthat::expect_error(dsc(gamma_grid,
-                             psi_grid,
-                             target_var,
-                             forecast_tvc,
-                             variance_tvc,
-                             delta,
-                             NULL),
-              "not 'NULL'.", fixed = TRUE)
-})
+###########################################################
+### Create Density Forecast
+# Apply TVC-Function
+tvc_results <- tvc(y,
+                           X,
+                           Ext_F,
+                           init,
+                           lambda_grid,
+                           kappa_grid,
+                           bias)
 
-### Test on Dimnames
-test_that("Test whether Code still works without dimnames", {
+# Assign TVC-Results
+forecast_tvc <- tvc_results$Forecasts$Point_Forecasts
+variance_tvc <- tvc_results$Forecasts$Variance_Forecasts
 
-  colnames(forecast_tvc)  <-  NULL
-  colnames(variance_tvc)    <-  NULL
-  testthat::expect_no_error(dsc(gamma_grid,
-                                psi_grid,
-                                target_var,
-                                forecast_tvc,
-                                variance_tvc,
-                                delta,
-                                n_cores))
-})
+# Remove NAs
+y <- y[-1, , drop = FALSE]
+returns <- returns[-1, , drop = FALSE]
+forecast_tvc <- forecast_tvc[-1, ]
+variance_tvc <- variance_tvc[-1, ]
 
-### Output
-test_that("Test whether the output has the right format", {
+###########################################################
+### Test DSC (with test_that)
+test_that("DSC-Function works correctly", {
 
-  # Apply TVP-Function
-  results  <-  dsc(gamma_grid,
-                   psi_grid,
-                   target_var,
-                   forecast_tvc,
-                   variance_tvc,
-                   delta,
-                   n_cores)
+  # Apply DSC-Function
+  results <- dsc(y,
+                 forecast_tvc,
+                 variance_tvc,
+                 gamma_grid,
+                 psi_grid,
+                 delta,
+                 burn_in,
+                 burn_in_dsc,
+                 1,
+                 equal_weight,
+                 incl,
+                 portfolio_params)
 
-  # List Contains Five Elements
-  testthat::expect_equal(length(results), 5)
+  # Apply DSC-Function
+  results <- dsc(y,
+                 forecast_tvc,
+                 variance_tvc,
+                 gamma_grid,
+                 psi_grid,
+                 delta,
+                 burn_in,
+                 burn_in_dsc,
+                 2,
+                 equal_weight,
+                 incl,
+                 portfolio_params)
 
-  # Number of Forecasts
-  checkmate::expect_numeric(results[[1]],
-                            len = numb_obs,
-                            any.missing = FALSE,
+  # Apply DSC-Function
+  results <- dsc(y,
+                 forecast_tvc,
+                 variance_tvc,
+                 gamma_grid,
+                 psi_grid,
+                 delta,
+                 burn_in,
+                 burn_in_dsc,
+                 3,
+                 equal_weight,
+                 incl,
+                 portfolio_params)
+
+  # Apply DSC-Function
+  results <- dsc(returns,
+                 forecast_tvc,
+                 variance_tvc,
+                 gamma_grid,
+                 psi_grid,
+                 delta,
+                 burn_in,
+                 burn_in_dsc,
+                 4,
+                 equal_weight,
+                 incl,
+                 portfolio_params)
+
+  # Apply DSC-Function
+  results <- dsc(y,
+                 forecast_tvc,
+                 variance_tvc,
+                 gamma_grid,
+                 psi_grid,
+                 delta,
+                 burn_in,
+                 burn_in_dsc,
+                 metric,
+                 equal_weight,
+                 incl,
+                 portfolio_params)
+
+  # List Contains three Elements
+  expect_equal(length(results), 3)
+
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
+
+  # Point Forecasts
+  expect_numeric(results$Forecasts$Point_Forecasts,
+                            len = n_obs - 1,
                             finite = TRUE)
 
-  # Number of Variances
-  checkmate::expect_numeric(results[[2]],
-                            len = numb_obs,
-                            any.missing = FALSE,
+  # Variance Forecasts
+  expect_numeric(results$Forecasts$Variance_Forecasts,
+                            len = n_obs - 1,
                             lower = 0,
                             finite = TRUE)
-  # Length of Gamma-Vector
-  checkmate::expect_numeric(results[[3]],
-                            len = numb_obs,
-                            any.missing = FALSE,
-                            lower = 0,
-                            finite = TRUE)
-  # Length of Psi-Vector
-  checkmate::expect_numeric(results[[4]],
-                            len = numb_obs,
-                            any.missing = FALSE,
-                            lower = 0,
+
+  # Realization
+  expect_numeric(results$Forecasts$Realization,
+                            len = n_obs - 1,
                             finite = TRUE)
 
-  # Dimension of selected Candidate Forecasts
-  checkmate::expect_matrix(results[[5]],
+  # Tuning Parameters List Contains three Elements
+  expect_equal(length(results$Tuning_Parameters), 3)
+
+  # Gamma-Vector
+  expect_numeric(results$Tuning_Parameters$Gamma,
+                            len = n_obs - 1,
+                            lower = min(gamma_grid),
+                            upper = max(gamma_grid),
+                            finite = TRUE)
+
+  # Psi-Vector
+  expect_numeric(results$Tuning_Parameters$Psi,
+                            len = n_obs - 1,
+                            lower = min(psi_grid),
+                            upper = max(psi_grid),
+                            finite = TRUE)
+
+  # CFM
+  expect_matrix(results$Tuning_Parameters$CFM,
                            mode = "integerish",
-                           nrows = numb_obs,
-                           ncols = numb_mods)
+                           nrows = n_obs - 1,
+                           ncols = ncol(forecast_tvc))
+
+  # Model List Contains 8 Elements
+  expect_equal(length(results$Model), 8)
+
+  # Gamma Grid
+  expect_numeric(results$Model$Gamma_grid,
+                            len = length(gamma_grid),
+                            finite = TRUE)
+
+  # Psi Grid
+  expect_numeric(results$Model$Psi_grid,
+                            len = length(psi_grid),
+                            finite = TRUE)
+
+  # Delta
+  expect_numeric(results$Model$Delta,
+                            len = 1,
+                            finite = TRUE)
+
+  # Burn-in
+  expect_numeric(results$Model$Burn_in,
+                            len = 1,
+                            finite = TRUE)
+
+  # Burn-in DSC
+  expect_numeric(results$Model$Burn_in_dsc,
+                            len = 1,
+                            finite = TRUE)
+
+  # Metric
+  expect_numeric(results$Model$Metric,
+                            len = 1,
+                            finite = TRUE)
+
+  # Equal Weight
+  expect_equal(results$Model$Equal_weight, equal_weight)
+
+  # Incl
+  expect_equal(results$Model$Incl, incl)
+})
+
+###########################################################
+### Test DSC with inclusion
+###########################################################
+### Test STSC with inclusion
+test_that("Test whether the STSC-Function works with inclusion", {
+
+  # Set Inclusion
+  incl <- c(1, 2)
+  psi_grid <- c(8:20)
+
+  # Apply DSC-Function
+  results <- dsc(y,
+                         forecast_tvc,
+                         variance_tvc,
+                         gamma_grid,
+                         psi_grid,
+                         delta,
+                         burn_in,
+                         burn_in_dsc,
+                         metric,
+                         equal_weight,
+                         incl,
+                         portfolio_params)
+
+  # Cut-Off
+  cut_off <- seq(max(burn_in, burn_in_dsc))
+
+  # List Contains three Elements
+  expect_equal(length(results), 3)
+
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
+
+  # Point Forecasts
+  expect_numeric(results$Forecasts$Point_Forecasts,
+                            len = n_obs - 1,
+                            finite = TRUE)
+
+  # Variance Forecasts
+  expect_numeric(results$Forecasts$Variance_Forecasts,
+                            len = n_obs - 1,
+                            lower = 0,
+                            finite = TRUE)
+
+  # Tuning Parameters List Contains three Elements
+  expect_equal(length(results$Tuning_Parameters), 3)
+
+  # Psi-Vector
+  expect_numeric(results$Tuning_Parameters$Psi,
+                            len = n_obs - 1,
+                            lower = min(psi_grid),
+                            upper = max(psi_grid),
+                            finite = TRUE)
+
+  # CFM
+  expect_matrix(results$Tuning_Parameters$CFM,
+                           mode = "integerish",
+                           nrows = n_obs - 1,
+                           ncols = ncol(forecast_tvc))
+
+  # Check if the CFMs in incl were really selected
+  for (i in incl) {
+    expect_true(all(results$Tuning_Parameters$CFM[-cut_off, i] > 0),
+                info = paste("Column", i, "contains zeros"))
+  }
+})
+
+###########################################################
+### Test STSC with equal weight option
+test_that("Test whether the STSC-Function works with equal weight option", {
+
+  # Apply DSC-Function
+  results <- dsc(y,
+                         forecast_tvc,
+                         variance_tvc,
+                         gamma_grid,
+                         psi_grid,
+                         delta,
+                         burn_in,
+                         burn_in_dsc,
+                         metric,
+                         FALSE,
+                         incl,
+                         portfolio_params)
+
+  # List Contains three Elements
+  expect_equal(length(results), 3)
+
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
+
+  # Point Forecasts
+  expect_numeric(results$Forecasts$Point_Forecasts,
+                            len = n_obs - 1,
+                            finite = TRUE)
+
+  # Variance Forecasts
+  expect_numeric(results$Forecasts$Variance_Forecasts,
+                            len = n_obs - 1,
+                            lower = 0,
+                            finite = TRUE)
+
+  # Tuning Parameters List Contains three Elements
+  expect_equal(length(results$Tuning_Parameters), 3)
+
+  # Gamma-Vector
+  expect_numeric(results$Tuning_Parameters$Gamma,
+                            len = n_obs - 1,
+                            lower = min(gamma_grid),
+                            upper = max(gamma_grid),
+                            finite = TRUE)
+
+  # Psi-Vector
+  expect_numeric(results$Tuning_Parameters$Psi,
+                            len = n_obs - 1,
+                            lower = min(psi_grid),
+                            upper = max(psi_grid),
+                            finite = TRUE)
+
+  # CFM
+  expect_matrix(results$Tuning_Parameters$CFM,
+                           mode = "integerish",
+                           nrows = n_obs - 1,
+                           ncols = ncol(forecast_tvc))
 })

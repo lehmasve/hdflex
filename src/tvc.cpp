@@ -7,7 +7,7 @@ using namespace Rcpp;
    List init_tvc(const arma::vec& y, 
                  const arma::mat& S,
                  int n_raw_sig,
-                 int sample_length,
+                 int init,
                  arma::vec lambda_grid,
                  arma::vec kappa_grid,
                  bool bias) {
@@ -41,7 +41,7 @@ using namespace Rcpp;
                   int na_ctr = non_finite.n_elem;
    
                // Index for subsetting the Initialisation Sample
-                  init_idx = arma::regspace<arma::uvec>(0 + na_ctr, na_ctr + sample_length - 1);
+                  init_idx = arma::regspace<arma::uvec>(0 + na_ctr, na_ctr + init - 1);
    
                // Define and prepare matrices for regression  
                   y_sample = y.elem(init_idx);  
@@ -225,7 +225,7 @@ using namespace Rcpp;
    List tvc_(const arma::vec& y, 
              Nullable<const NumericMatrix&> X_, 
              Nullable<const NumericMatrix&> Ext_F_, 
-             int sample_length,
+             int init,
              const arma::vec& lambda_grid,
              const arma::vec& kappa_grid,
              bool bias) { 
@@ -266,7 +266,7 @@ using namespace Rcpp;
       init_tvc_results = init_tvc(y, 
                                   S,
                                   n_raw_sig,
-                                  sample_length,
+                                  init,
                                   lambda_grid,
                                   kappa_grid,
                                   bias);
