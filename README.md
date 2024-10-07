@@ -18,7 +18,7 @@ This package contains the forecasting algorithm developed by [Adämmer,
 Lehmann and Schüssler (2023)](https://dx.doi.org/10.2139/ssrn.4342487).
 Please cite the paper when using the package.
 
-The package comprises four functions:
+The package comprises three functions:
 
 - `stsc()` can be used to directly apply the
   “Signal-Transform-Subset-Combination” forecasting algorithm described
@@ -32,11 +32,6 @@ The package comprises four functions:
 - `dsc()` can be used to dynamically generate forecast combinations from
   a subset of candidate density forecasts (second part of the STSC
   algorithm).
-
-- `summary_stsc()` returns a statistical summary for the forecasting
-  results. It provides statistical measures such as
-  Clark-West-Statistic, OOS-R2, Mean-Squared-Error and Cumulated Sum of
-  Squared-Error-Differences.
 
 ## Installation
 
@@ -76,147 +71,140 @@ First example using the `stsc()` function:
 #### details regarding the data & external forecasts ####
 #########################################################
 
-    # Packages
-    library("hdflex")
+# Load Package
+library("hdflex")
+library("ggplot2")
+library("cowplot")
 
-    ########## Get Data ##########
-    # Load Data
-    inflation_data   <-  inflation_data
-    benchmark_ar2    <-  benchmark_ar2
+########## Get Data ##########
+# Load Package Data
+inflation_data <- inflation_data
 
-    # Set Index for Target Variable
-    i  <-  1   # (1 -> GDPCTPI; 2 -> PCECTPI; 3 -> CPIAUCSL; 4 -> CPILFESL)
+# Set Target Variable
+y <- inflation_data[,  1]
 
-    # Subset Data (keep only data relevant for target variable i)
-    dataset  <-  inflation_data[, c(1+(i-1),                          # Target Variable
-                                    5+(i-1),                          # Lag 1
-                                    9+(i-1),                          # Lag 2
-                                    (13:16)[-i],                      # Remaining Price Series
-                                    17:452,                           # Exogenous Predictor Variables
-                                    seq(453+(i-1)*16,468+(i-1)*16))]  # Ext. Point Forecasts
+# Set 'P-Signals'
+X <- inflation_data[, 2:442]
 
-    ########## STSC ##########
-    # Set Target Variable
-    y  <-  dataset[,  1, drop = FALSE]
+# Set 'F-Signals'
+Ext_F <- inflation_data[, 443:462]
 
-    # Set 'Simple' Signals
-    X  <-  dataset[, 2:442, drop = FALSE]
+# Get Dates and Number of Observations
+tdates <- rownames(inflation_data)
+tlength <- length(tdates)
 
-    # Set External Point Forecasts (Koop & Korobilis 2023)
-    F  <-  dataset[, 443:458, drop = FALSE]
+# First complete observation (no missing values)
+first_complete <- which(complete.cases(inflation_data))[1]
 
-    # Set Dates
-    dates  <-  rownames(dataset)
+########## Rolling AR2-Benchmark ##########
+# Set up matrix for predictions
+benchmark <- matrix(NA, nrow = tlength,
+                    ncol = 1, dimnames = list(tdates, "AR2"))
 
-    # Set TV-C-Parameter
-    sample_length  <-  4 * 5
-    lambda_grid    <-  c(0.90, 0.95, 1)
-    kappa_grid     <-  0.98
+# Set Window-Size (15 years of quarterly data)
+window_size <- 15 * 4
 
-    # Set DSC-Parameter
-    gamma_grid  <-  c(0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
-                      0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00)
-    psi_grid    <-  c(1:100)
-    delta       <-  0.95
+# Time Sequence
+t_seq <- seq(window_size, tlength - 1)
 
-    # Apply STSC-Function
-    results  <-  hdflex::stsc(y, 
-                              X, 
-                              F,
-                              sample_length,
-                              lambda_grid,
-                              kappa_grid,
-                              burn_in_tvc = 79,
-                              gamma_grid,
-                              psi_grid,
-                              delta,
-                              burn_in_dsc = 1,
-                              method = 1,
-                              equal_weight = TRUE,
-                              risk_aversion = NULL,
-                              min_weight = NULL,
-                              max_weight = NULL)
+# Loop with rolling window
+for (t in t_seq) {
 
-    # Assign STSC-Results
-    forecast_stsc    <-  results[[1]]
-    variance_stsc    <-  results[[2]]
-    chosen_gamma     <-  results[[3]]
-    chosen_psi       <-  results[[4]]
-    chosen_signals   <-  results[[5]]
+  # Split Data for Training Train Data
+  x_train <- cbind(int = 1, X[(t - window_size + 1):t, 1:2])
+  y_train <- y[(t - window_size + 1):t]
 
-    # Define Evaluation Period (OOS-Period)
-    eval_date_start      <-  "1991-01-01"
-    eval_date_end        <-  "2021-12-31"
-    eval_period_idx      <-  which(dates > eval_date_start & dates <= eval_date_end)
+  # Split Data for Prediction
+  x_pred <- cbind(int = 1, X[t + 1, 1:2, drop = FALSE])
 
-    # Trim Objects to Evaluation Period (OOS-Period)
-    oos_y                <-  y[eval_period_idx, ]
-    oos_forecast_stsc    <-  forecast_stsc[eval_period_idx]
-    oos_variance_stsc    <-  variance_stsc[eval_period_idx]
-    oos_chosen_gamma     <-  chosen_gamma[eval_period_idx]
-    oos_chosen_psi       <-  chosen_psi[eval_period_idx]
-    oos_chosen_signals   <-  chosen_signals[eval_period_idx, , drop = FALSE]
-    oos_dates            <-  dates[eval_period_idx]
+  # Fit AR-Model
+  model_ar <- .lm.fit(x_train, y_train)
 
-    # Add Dates
-    names(oos_forecast_stsc)     <-  oos_dates
-    names(oos_variance_stsc)     <-  oos_dates
-    names(oos_chosen_gamma)      <-  oos_dates
-    names(oos_chosen_psi)        <-  oos_dates
-    rownames(oos_chosen_signals) <-  oos_dates
+  # Predict and store in benchmark matrix
+  benchmark[t + 1, ] <- x_pred %*% model_ar$coefficients
+}
 
-    ########## Evaluation ##########
-    # Apply Summary-Function
-    summary_results  <-  summary_stsc(oos_y,
-                                      benchmark_ar2[, i],
-                                      oos_forecast_stsc)
+########## STSC ##########
+# Set TV-C-Parameter
+init <- 5 * 4
+lambda_grid <- c(0.90, 0.95, 1.00)
+kappa_grid <- c(0.94, 0.96, 0.98)
+bias <- TRUE
 
-    # Assign Summary-Results
-    cssed  <-  summary_results[[3]]
-    mse    <-  summary_results[[4]]
+# Set DSC-Parameter
+gamma_grid <- c(0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
+                0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00)
+n_tvc <- (ncol(X) + ncol(Ext_F)) * length(lambda_grid) * length(kappa_grid)
+psi_grid <- c(1:100, sapply(1:4, function(i) floor(i * n_tvc / 4)))
+delta <- 0.95
+burn_in <- first_complete + init / 2
+burn_in_dsc <- 1
+metric <- 5
+equal_weight <- TRUE
+incl <- NULL
+parallel <- FALSE
+n_threads <- NULL
 
-    ########## Visualization ##########
-    # Create CSSED-Plot
-    p1  <-  plot(x    = as.Date(oos_dates),
-                 y    = cssed,
-                 ylim = c(-0.0008, 0.0008),
-                 main = "Cumulated squared error differences",
-                 type = "l",
-                 lwd  = 1.5,
-                 xlab = "Date",
-                 ylab = "CSSED") + abline(h = 0, lty = 2, col = "darkgray")
-    
-    # Create Predictive Signals-Plot
-    vec  <-  seq_len(dim(oos_chosen_signals)[2])
-    mat  <-  oos_chosen_signals %*% diag(vec)
-    mat[mat == 0]  <- NA
-    p2  <-  matplot(x    = as.Date(oos_dates),
-                    y    = mat,
-                    cex  = 0.4,
-                    pch  = 20,
-                    type = "p",
-                    main = "Evolution of selected signal(s)",
-                    xlab = "Date",
-                    ylab = "Predictive Signal")
-    
-    # Create Psi-Plot
-    p3  <-  plot(x    = as.Date(oos_dates),
-                 y    = oos_chosen_psi,
-                 ylim = c(1, 100),
-                 main = "Evolution of the subset size",
-                 type = "p",
-                 cex  = 0.75,
-                 pch  = 20,
-                 xlab = "Date",
-                 ylab = "Psi")
-    
-    # Relative MSE
-    print(paste("Relative MSE:", round(mse[[1]] / mse[[2]], 4)))
-    
-    # Print Plots
-    print(p1)
-    print(p2)
-    print(p3)
+# Apply STSC-Function
+results <- hdflex::stsc(y,
+                        X,
+                        Ext_F,
+                        init,
+                        lambda_grid,
+                        kappa_grid,
+                        bias,
+                        gamma_grid,
+                        psi_grid,
+                        delta,
+                        burn_in,
+                        burn_in_dsc,
+                        metric,
+                        equal_weight,
+                        incl,
+                        parallel,
+                        n_threads,
+                        NULL)
+
+########## Evaluation ##########
+# Define Evaluation Period (OOS-Period)
+eval_period <- which(tdates >= "1991-04-01" & tdates <= "2021-12-01")
+
+# Apply Evaluation Summary for STSC
+eval_results <- summary(obj = results, eval_period = eval_period)
+
+# Calculate (Mean-)Squared-Errors for AR2-Benchmark
+se_ar2 <- (y[eval_period] - benchmark[eval_period, 1])^2
+mse_ar2 <- mean(se_ar2)
+
+# Create Cumulative Squared Error Differences (CSSED) Plot
+cssed <- cumsum(se_ar2 - eval_results$MSE[[2]])
+plot_cssed <- ggplot(
+  data.frame(eval_period, cssed),
+  aes(x = eval_period, y = cssed)
+) +
+  geom_line() +
+  ylim(-0.0008, 0.0008) +
+  ggtitle("Cumulative Squared Error Differences") +
+  xlab("Time Index") +
+  ylab("CSSED") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "darkgray") +
+  theme_minimal(base_size = 15) +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(colour = "black", fill = NA),
+    axis.ticks = element_line(colour = "black"),
+    plot.title = element_text(hjust = 0.5)
+  )
+
+# Show Plots
+options(repr.plot.width = 15, repr.plot.height = 15)
+plots_list <- eval_results$Plots
+plots_list <- c(list(plot_cssed), plots_list)
+cowplot::plot_grid(plotlist = plots_list, ncol = 2, nrow = 3, align = "hv")
+
+# Relative MSE
+print(paste("Relative MSE:", round(eval_results$MSE[[1]] / mse_ar2, 4)))
 ```
 
 Second example using the `tvc()` and `dsc()` functions:
@@ -228,160 +216,155 @@ Second example using the `tvc()` and `dsc()` functions:
 #### details regarding the data & external forecasts ####
 #########################################################
 
- # Packages
- library("hdflex")
+# Load Package
+library("hdflex")
+library("ggplot2")
+library("cowplot")
 
- ########## Get Data ##########
- # Load Data
- inflation_data   <-  inflation_data
- benchmark_ar2    <-  benchmark_ar2
+########## Get Data ##########
+# Load Package Data
+inflation_data <- inflation_data
 
- # Set Index for Target Variable
- i  <-  1   # (1 -> GDPCTPI; 2 -> PCECTPI; 3 -> CPIAUCSL; 4 -> CPILFESL)
+# Set Target Variable
+y <- inflation_data[,  1]
 
- # Subset Data (keep only data relevant for target variable i)
- dataset  <-  inflation_data[, c(1+(i-1),                          # Target Variable
-                                 5+(i-1),                          # Lag 1
-                                 9+(i-1),                          # Lag 2
-                                 (13:16)[-i],                      # Remaining Price Series
-                                 17:452,                           # Exogenous Predictor Variables
-                                 seq(453+(i-1)*16,468+(i-1)*16))]  # Ext. Point Forecasts
+# Set 'P-Signals'
+X <- inflation_data[, 2:442]
 
- ########## STSC ##########
- ### Part 1: TV-C Model ###
- # Set Target Variable
- y  <-  dataset[,  1, drop = FALSE]
+# Set 'F-Signals'
+Ext_F <- inflation_data[, 443:462]
 
- # Set 'Simple' Signals
- X  <-  dataset[, 2:442, drop = FALSE]
+# Get Dates and Number of Observations
+tdates <- rownames(inflation_data)
+tlength <- length(tdates)
 
- # Set External Point Forecasts (Koop & Korobilis 2023)
- F  <-  dataset[, 443:458, drop = FALSE]
+# First complete observation (no missing values)
+first_complete <- which(complete.cases(inflation_data))[1]
 
- # Set TV-C-Parameter
- sample_length  <-  4 * 5
- lambda_grid    <-  c(0.90, 0.95, 1)
- kappa_grid     <-  0.98
- n_cores        <-  4
+########## Rolling AR2-Benchmark ##########
+# Set up matrix for predictions
+benchmark <- matrix(NA, nrow = tlength,
+                    ncol = 1, dimnames = list(tdates, "AR2"))
 
- # Apply TV-C-Function
- results  <-  hdflex::tvc(y,
-                          X,
-                          F,
-                          lambda_grid,
-                          kappa_grid,
-                          sample_length,
-                          n_cores)
+# Set Window-Size (15 years of quarterly data)
+window_size <- 15 * 4
 
- # Assign TV-C-Results
- forecast_tvc      <-  results[[1]]
- variance_tvc      <-  results[[2]]
+# Time Sequence
+t_seq <- seq(window_size, tlength - 1)
 
- # Define Burn-In Period
- sample_period_idx  <-  80:nrow(dataset)
- sub_forecast_tvc   <-  forecast_tvc[sample_period_idx, , drop = FALSE]
- sub_variance_tvc   <-  variance_tvc[sample_period_idx, , drop = FALSE]
- sub_y              <-  y[sample_period_idx, , drop = FALSE]
- sub_dates          <-  rownames(dataset)[sample_period_idx]
+# Loop with rolling window
+for (t in t_seq) {
 
- ### Part 2: Dynamic Subset Combination ###
- # Set DSC-Parameter
- nr_mods     <-  ncol(sub_forecast_tvc)
- gamma_grid  <-  c(0.40, 0.05, 0.60, 0.70, 0.80, 0.90,
-                   0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00)
- psi_grid    <-  c(1:100)
- delta       <-  0.95
- n_cores     <-  4
+  # Split Data for Training Train Data
+  x_train <- cbind(int = 1, X[(t - window_size + 1):t, 1:2])
+  y_train <- y[(t - window_size + 1):t]
 
- # Apply DSC-Function
- results  <-  hdflex::dsc(gamma_grid,
-                          psi_grid,
-                          sub_y,
-                          sub_forecast_tvc,
-                          sub_variance_tvc,
-                          delta,
-                          n_cores)
+  # Split Data for Prediction
+  x_pred <- cbind(int = 1, X[t + 1, 1:2, drop = FALSE])
 
- # Assign DSC-Results
- sub_forecast_stsc    <-  results[[1]]
- sub_variance_stsc    <-  results[[2]]
- sub_chosen_gamma     <-  results[[3]]
- sub_chosen_psi       <-  results[[4]]
- sub_chosen_signals   <-  results[[5]]
+  # Fit AR-Model
+  model_ar <- .lm.fit(x_train, y_train)
 
- # Define Evaluation Period (OOS-Period)
- eval_date_start      <-  "1991-01-01"
- eval_date_end        <-  "2021-12-31"
- eval_period_idx      <-  which(sub_dates > eval_date_start & sub_dates <= eval_date_end)
+  # Predict and store in benchmark matrix
+  benchmark[t + 1, ] <- x_pred %*% model_ar$coefficients
+}
 
- # Trim Objects to Evaluation Period (OOS-Period)
- oos_y                <-  sub_y[eval_period_idx, ]
- oos_forecast_stsc    <-  sub_forecast_stsc[eval_period_idx]
- oos_variance_stsc    <-  sub_variance_stsc[eval_period_idx]
- oos_chosen_gamma     <-  sub_chosen_gamma[eval_period_idx]
- oos_chosen_psi       <-  sub_chosen_psi[eval_period_idx]
- oos_chosen_signals   <-  sub_chosen_signals[eval_period_idx, , drop = FALSE]
- oos_dates            <-  sub_dates[eval_period_idx]
+########## STSC ##########
+### Part 1: TVC-Function
+# Set TV-C-Parameter
+init <- 5 * 4
+lambda_grid <- c(0.90, 0.95, 1.00)
+kappa_grid <- c(0.94, 0.96, 0.98)
+bias <- TRUE
 
- # Add Dates
- names(oos_forecast_stsc)     <-  oos_dates
- names(oos_variance_stsc)     <-  oos_dates
- names(oos_chosen_gamma)      <-  oos_dates
- names(oos_chosen_psi)        <-  oos_dates
- rownames(oos_chosen_signals) <-  oos_dates
+# Apply TVC-Function
+tvc_results <- hdflex::tvc(y,
+                           X,
+                           Ext_F,
+                           init,
+                           lambda_grid,
+                           kappa_grid,
+                           bias)
 
- ### Part 3: Evaluation ###
- # Apply Summary-Function
- summary_results  <-  summary_stsc(oos_y,
-                                   benchmark_ar2[, i],
-                                   oos_forecast_stsc)
- # Assign Summary-Results
- cssed  <-  summary_results[[3]]
- mse    <-  summary_results[[4]]
+# Assign TVC-Results
+forecast_tvc <- tvc_results$Forecasts$Point_Forecasts
+variance_tvc <- tvc_results$Forecasts$Variance_Forecasts
 
- ########## Visualization ##########
- # Create CSSED-Plot
- p1  <-  plot(x    = as.Date(oos_dates),
-              y    = cssed,
-              ylim = c(-0.0008, 0.0008),
-              main = "Cumulated squared error differences",
-              type = "l",
-              lwd  = 1.5,
-              xlab = "Date",
-              ylab = "CSSED") + abline(h = 0, lty = 2, col = "darkgray")
+# First complete forecast period (no missing values)
+sub_period <- seq(which(complete.cases(forecast_tvc))[1], tlength)
 
- # Create Predictive Signals-Plot
- vec  <-  seq_len(dim(oos_chosen_signals)[2])
- mat  <-  oos_chosen_signals %*% diag(vec)
- mat[mat == 0]  <- NA
- p2  <-  matplot(x    = as.Date(oos_dates),
-                 y    = mat,
-                 cex  = 0.4,
-                 pch  = 20,
-                 type = "p",
-                 main = "Evolution of selected signal(s)",
-                 xlab = "Date",
-                 ylab = "Predictive Signal")
+### Part 2: DSC-Function
+# Set DSC-Parameter
+gamma_grid <- c(0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
+                0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00)
+psi_grid <- c(1:100, sapply(1:4, function(i) floor(i * ncol(forecast_tvc) / 4)))
+delta <- 0.95
+burn_in <- (init / 2) + 1
+burn_in_dsc <- 1
+metric <- 5
+equal_weight <- TRUE
+incl <- NULL
 
- # Create Psi-Plot
- p3  <-  plot(x    = as.Date(oos_dates),
-              y    = oos_chosen_psi,
-              ylim = c(1, 100),
-              main = "Evolution of the subset size",
-              type = "p",
-              cex  = 0.75,
-              pch  = 20,
-              xlab = "Date",
-              ylab = "Psi")
- 
- # Relative MSE
- print(paste("Relative MSE:", round(mse[[1]] / mse[[2]], 4)))
- 
- # Print Plots
- print(p1)
- print(p2)
- print(p3)
- 
+# Apply DSC-Function
+dsc_results <- hdflex::dsc(y[sub_period],
+                           forecast_tvc[sub_period, , drop = FALSE],
+                           variance_tvc[sub_period, , drop = FALSE],
+                           gamma_grid,
+                           psi_grid,
+                           delta,
+                           burn_in,
+                           burn_in_dsc,
+                           metric,
+                           equal_weight,
+                           incl,
+                           NULL)
+
+# Assign DSC-Results
+pred_stsc <- dsc_results$Forecasts$Point_Forecasts
+var_stsc <- dsc_results$Forecasts$Variance_Forecasts
+
+########## Evaluation ##########
+# Define Evaluation Period (OOS-Period)
+eval_period <- which(tdates[sub_period] >= "1991-04-01" & tdates[sub_period] <= "2021-12-01")
+
+# Get Evaluation Summary for STSC
+eval_results <- summary(obj = dsc_results, eval_period = eval_period)
+
+# Calculate (Mean-)Squared-Errors for AR2-Benchmark
+oos_y <- y[sub_period][eval_period]
+oos_benchmark <- benchmark[sub_period[eval_period], , drop = FALSE]
+se_ar2 <- (oos_y - oos_benchmark)^2
+mse_ar2 <- mean(se_ar2)
+
+# Create Cumulative Squared Error Differences (CSSED) Plot
+cssed <- cumsum(se_ar2 - eval_results$MSE[[2]])
+plot_cssed <- ggplot(
+  data.frame(eval_period, cssed),
+  aes(x = eval_period, y = cssed)
+) +
+  geom_line() +
+  ylim(-0.0008, 0.0008) +
+  ggtitle("Cumulative Squared Error Differences") +
+  xlab("Time Index") +
+  ylab("CSSED") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "darkgray") +
+  theme_minimal(base_size = 15) +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(colour = "black", fill = NA),
+    axis.ticks = element_line(colour = "black"),
+    plot.title = element_text(hjust = 0.5)
+  )
+
+# Show Plots
+options(repr.plot.width = 15, repr.plot.height = 15)
+plots_list <- eval_results$Plots
+plots_list <- c(list(plot_cssed), plots_list)
+cowplot::plot_grid(plotlist = plots_list, ncol = 2, nrow = 3, align = "hv")
+
+# Relative MSE
+print(paste("Relative MSE:", round(eval_results$MSE[[1]] / mse_ar2, 4)))
 ```
 
 ### Authors

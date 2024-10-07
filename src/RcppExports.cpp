@@ -2,6 +2,7 @@
 // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #include <RcppArmadillo.h>
+#include <RcppThread.h>
 #include <Rcpp.h>
 
 using namespace Rcpp;
@@ -11,356 +12,95 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// init_dsc
-NumericVector init_dsc(int number_forecasts);
-RcppExport SEXP _hdflex_init_dsc(SEXP number_forecastsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type number_forecasts(number_forecastsSEXP);
-    rcpp_result_gen = Rcpp::wrap(init_dsc(number_forecasts));
-    return rcpp_result_gen;
-END_RCPP
-}
-// forget_dsc
-NumericVector forget_dsc(NumericVector weights, double gamma);
-RcppExport SEXP _hdflex_forget_dsc(SEXP weightsSEXP, SEXP gammaSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type weights(weightsSEXP);
-    Rcpp::traits::input_parameter< double >::type gamma(gammaSEXP);
-    rcpp_result_gen = Rcpp::wrap(forget_dsc(weights, gamma));
-    return rcpp_result_gen;
-END_RCPP
-}
-// active_models_dsc
-List active_models_dsc(NumericVector weights, int psi);
-RcppExport SEXP _hdflex_active_models_dsc(SEXP weightsSEXP, SEXP psiSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type weights(weightsSEXP);
-    Rcpp::traits::input_parameter< int >::type psi(psiSEXP);
-    rcpp_result_gen = Rcpp::wrap(active_models_dsc(weights, psi));
-    return rcpp_result_gen;
-END_RCPP
-}
-// matrix_subset_idx
-NumericVector matrix_subset_idx(NumericMatrix mat, IntegerVector col_idx, int t);
-RcppExport SEXP _hdflex_matrix_subset_idx(SEXP matSEXP, SEXP col_idxSEXP, SEXP tSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type mat(matSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type col_idx(col_idxSEXP);
-    Rcpp::traits::input_parameter< int >::type t(tSEXP);
-    rcpp_result_gen = Rcpp::wrap(matrix_subset_idx(mat, col_idx, t));
-    return rcpp_result_gen;
-END_RCPP
-}
-// agg_density_dsc
-List agg_density_dsc(NumericVector active_weights, NumericVector oos_target_var, NumericMatrix oos_forecast_tvp, NumericMatrix oos_variance_tvp, IntegerVector idx_sub, int t);
-RcppExport SEXP _hdflex_agg_density_dsc(SEXP active_weightsSEXP, SEXP oos_target_varSEXP, SEXP oos_forecast_tvpSEXP, SEXP oos_variance_tvpSEXP, SEXP idx_subSEXP, SEXP tSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type active_weights(active_weightsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type oos_target_var(oos_target_varSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type oos_forecast_tvp(oos_forecast_tvpSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type oos_variance_tvp(oos_variance_tvpSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type idx_sub(idx_subSEXP);
-    Rcpp::traits::input_parameter< int >::type t(tSEXP);
-    rcpp_result_gen = Rcpp::wrap(agg_density_dsc(active_weights, oos_target_var, oos_forecast_tvp, oos_variance_tvp, idx_sub, t));
-    return rcpp_result_gen;
-END_RCPP
-}
-// update_dsc
-NumericVector update_dsc(NumericVector weights, NumericVector oos_target_var, NumericMatrix oos_forecast_tvp, NumericMatrix oos_variance_tvp, int n_models, int t);
-RcppExport SEXP _hdflex_update_dsc(SEXP weightsSEXP, SEXP oos_target_varSEXP, SEXP oos_forecast_tvpSEXP, SEXP oos_variance_tvpSEXP, SEXP n_modelsSEXP, SEXP tSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type weights(weightsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type oos_target_var(oos_target_varSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type oos_forecast_tvp(oos_forecast_tvpSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type oos_variance_tvp(oos_variance_tvpSEXP);
-    Rcpp::traits::input_parameter< int >::type n_models(n_modelsSEXP);
-    Rcpp::traits::input_parameter< int >::type t(tSEXP);
-    rcpp_result_gen = Rcpp::wrap(update_dsc(weights, oos_target_var, oos_forecast_tvp, oos_variance_tvp, n_models, t));
-    return rcpp_result_gen;
-END_RCPP
-}
-// dsc_loop
-List dsc_loop(NumericVector weights, double gamma, int psi, NumericVector oos_target_var, NumericMatrix oos_forecast_tvp, NumericMatrix oos_variance_tvp, int len_para_grid, int oos_length, int n_models);
-RcppExport SEXP _hdflex_dsc_loop(SEXP weightsSEXP, SEXP gammaSEXP, SEXP psiSEXP, SEXP oos_target_varSEXP, SEXP oos_forecast_tvpSEXP, SEXP oos_variance_tvpSEXP, SEXP len_para_gridSEXP, SEXP oos_lengthSEXP, SEXP n_modelsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type weights(weightsSEXP);
-    Rcpp::traits::input_parameter< double >::type gamma(gammaSEXP);
-    Rcpp::traits::input_parameter< int >::type psi(psiSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type oos_target_var(oos_target_varSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type oos_forecast_tvp(oos_forecast_tvpSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type oos_variance_tvp(oos_variance_tvpSEXP);
-    Rcpp::traits::input_parameter< int >::type len_para_grid(len_para_gridSEXP);
-    Rcpp::traits::input_parameter< int >::type oos_length(oos_lengthSEXP);
-    Rcpp::traits::input_parameter< int >::type n_models(n_modelsSEXP);
-    rcpp_result_gen = Rcpp::wrap(dsc_loop(weights, gamma, psi, oos_target_var, oos_forecast_tvp, oos_variance_tvp, len_para_grid, oos_length, n_models));
-    return rcpp_result_gen;
-END_RCPP
-}
-// init_tvc_
-List init_tvc_(const arma::vec& y, const arma::mat& S, const int& n_sim_sig, const int& sample_length, const arma::vec& lambda_grid, const arma::vec& kappa_grid);
-RcppExport SEXP _hdflex_init_tvc_(SEXP ySEXP, SEXP SSEXP, SEXP n_sim_sigSEXP, SEXP sample_lengthSEXP, SEXP lambda_gridSEXP, SEXP kappa_gridSEXP) {
+// dsc_
+List dsc_(const arma::vec& y, const arma::mat& point_forecasts, const arma::mat& variance_forecasts, arma::rowvec gamma_grid, arma::irowvec psi_grid, double delta, int burn_in, int burn_in_dsc, int metric, bool equal_weight, Nullable<IntegerVector> incl_, Nullable<NumericVector> portfolio_params_);
+RcppExport SEXP _hdflex_dsc_(SEXP ySEXP, SEXP point_forecastsSEXP, SEXP variance_forecastsSEXP, SEXP gamma_gridSEXP, SEXP psi_gridSEXP, SEXP deltaSEXP, SEXP burn_inSEXP, SEXP burn_in_dscSEXP, SEXP metricSEXP, SEXP equal_weightSEXP, SEXP incl_SEXP, SEXP portfolio_params_SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type S(SSEXP);
-    Rcpp::traits::input_parameter< const int& >::type n_sim_sig(n_sim_sigSEXP);
-    Rcpp::traits::input_parameter< const int& >::type sample_length(sample_lengthSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type lambda_grid(lambda_gridSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type kappa_grid(kappa_gridSEXP);
-    rcpp_result_gen = Rcpp::wrap(init_tvc_(y, S, n_sim_sig, sample_length, lambda_grid, kappa_grid));
+    Rcpp::traits::input_parameter< const arma::mat& >::type point_forecasts(point_forecastsSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type variance_forecasts(variance_forecastsSEXP);
+    Rcpp::traits::input_parameter< arma::rowvec >::type gamma_grid(gamma_gridSEXP);
+    Rcpp::traits::input_parameter< arma::irowvec >::type psi_grid(psi_gridSEXP);
+    Rcpp::traits::input_parameter< double >::type delta(deltaSEXP);
+    Rcpp::traits::input_parameter< int >::type burn_in(burn_inSEXP);
+    Rcpp::traits::input_parameter< int >::type burn_in_dsc(burn_in_dscSEXP);
+    Rcpp::traits::input_parameter< int >::type metric(metricSEXP);
+    Rcpp::traits::input_parameter< bool >::type equal_weight(equal_weightSEXP);
+    Rcpp::traits::input_parameter< Nullable<IntegerVector> >::type incl_(incl_SEXP);
+    Rcpp::traits::input_parameter< Nullable<NumericVector> >::type portfolio_params_(portfolio_params_SEXP);
+    rcpp_result_gen = Rcpp::wrap(dsc_(y, point_forecasts, variance_forecasts, gamma_grid, psi_grid, delta, burn_in, burn_in_dsc, metric, equal_weight, incl_, portfolio_params_));
     return rcpp_result_gen;
 END_RCPP
 }
-// tvc_model_
-List tvc_model_(const double& y_t, const double& s_t_j, const double& s_pred_j, const double& lambda, const double& kappa, const arma::mat& theta, const arma::mat& cov_mat, const double& h);
-RcppExport SEXP _hdflex_tvc_model_(SEXP y_tSEXP, SEXP s_t_jSEXP, SEXP s_pred_jSEXP, SEXP lambdaSEXP, SEXP kappaSEXP, SEXP thetaSEXP, SEXP cov_matSEXP, SEXP hSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const double& >::type y_t(y_tSEXP);
-    Rcpp::traits::input_parameter< const double& >::type s_t_j(s_t_jSEXP);
-    Rcpp::traits::input_parameter< const double& >::type s_pred_j(s_pred_jSEXP);
-    Rcpp::traits::input_parameter< const double& >::type lambda(lambdaSEXP);
-    Rcpp::traits::input_parameter< const double& >::type kappa(kappaSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type theta(thetaSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type cov_mat(cov_matSEXP);
-    Rcpp::traits::input_parameter< const double& >::type h(hSEXP);
-    rcpp_result_gen = Rcpp::wrap(tvc_model_(y_t, s_t_j, s_pred_j, lambda, kappa, theta, cov_mat, h));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tvc_model_cand_
-List tvc_model_cand_(const double& y_t, const arma::rowvec& s_t, const arma::rowvec& s_pred, const arma::vec& lambda_grid, const arma::vec& kappa_grid, List& theta_all, List& cov_mat_all, List& h_all);
-RcppExport SEXP _hdflex_tvc_model_cand_(SEXP y_tSEXP, SEXP s_tSEXP, SEXP s_predSEXP, SEXP lambda_gridSEXP, SEXP kappa_gridSEXP, SEXP theta_allSEXP, SEXP cov_mat_allSEXP, SEXP h_allSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const double& >::type y_t(y_tSEXP);
-    Rcpp::traits::input_parameter< const arma::rowvec& >::type s_t(s_tSEXP);
-    Rcpp::traits::input_parameter< const arma::rowvec& >::type s_pred(s_predSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type lambda_grid(lambda_gridSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type kappa_grid(kappa_gridSEXP);
-    Rcpp::traits::input_parameter< List& >::type theta_all(theta_allSEXP);
-    Rcpp::traits::input_parameter< List& >::type cov_mat_all(cov_mat_allSEXP);
-    Rcpp::traits::input_parameter< List& >::type h_all(h_allSEXP);
-    rcpp_result_gen = Rcpp::wrap(tvc_model_cand_(y_t, s_t, s_pred, lambda_grid, kappa_grid, theta_all, cov_mat_all, h_all));
-    return rcpp_result_gen;
-END_RCPP
-}
-// dsc_init_
-List dsc_init_(const int& n_cands, const int& n_combs, const int& n_gamma, IntegerVector na_idx);
-RcppExport SEXP _hdflex_dsc_init_(SEXP n_candsSEXP, SEXP n_combsSEXP, SEXP n_gammaSEXP, SEXP na_idxSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const int& >::type n_cands(n_candsSEXP);
-    Rcpp::traits::input_parameter< const int& >::type n_combs(n_combsSEXP);
-    Rcpp::traits::input_parameter< const int& >::type n_gamma(n_gammaSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type na_idx(na_idxSEXP);
-    rcpp_result_gen = Rcpp::wrap(dsc_init_(n_cands, n_combs, n_gamma, na_idx));
-    return rcpp_result_gen;
-END_RCPP
-}
-// dsc_active_models_
-IntegerVector dsc_active_models_(const NumericVector& dpll_cands_gamma, const int& psi);
-RcppExport SEXP _hdflex_dsc_active_models_(SEXP dpll_cands_gammaSEXP, SEXP psiSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericVector& >::type dpll_cands_gamma(dpll_cands_gammaSEXP);
-    Rcpp::traits::input_parameter< const int& >::type psi(psiSEXP);
-    rcpp_result_gen = Rcpp::wrap(dsc_active_models_(dpll_cands_gamma, psi));
-    return rcpp_result_gen;
-END_RCPP
-}
-// dsc_agg_density_
-List dsc_agg_density_(const NumericVector& active_weights, const NumericVector& forecast_tvc_t, const NumericVector& variance_tvc_t, const IntegerVector& idx_sub);
-RcppExport SEXP _hdflex_dsc_agg_density_(SEXP active_weightsSEXP, SEXP forecast_tvc_tSEXP, SEXP variance_tvc_tSEXP, SEXP idx_subSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericVector& >::type active_weights(active_weightsSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type forecast_tvc_t(forecast_tvc_tSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type variance_tvc_t(variance_tvc_tSEXP);
-    Rcpp::traits::input_parameter< const IntegerVector& >::type idx_sub(idx_subSEXP);
-    rcpp_result_gen = Rcpp::wrap(dsc_agg_density_(active_weights, forecast_tvc_t, variance_tvc_t, idx_sub));
-    return rcpp_result_gen;
-END_RCPP
-}
-// dsc_dpll_cands_
-void dsc_dpll_cands_(NumericVector dpll_cands_gamma, const double& y_t, const NumericVector& forecast_tvc_t, const NumericVector& variance_tvc_t, const double& gamma, const int& method, Nullable<const NumericVector&> risk_aversion_, Nullable<const NumericVector&> min_weight_, Nullable<const NumericVector&> max_weight_);
-RcppExport SEXP _hdflex_dsc_dpll_cands_(SEXP dpll_cands_gammaSEXP, SEXP y_tSEXP, SEXP forecast_tvc_tSEXP, SEXP variance_tvc_tSEXP, SEXP gammaSEXP, SEXP methodSEXP, SEXP risk_aversion_SEXP, SEXP min_weight_SEXP, SEXP max_weight_SEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type dpll_cands_gamma(dpll_cands_gammaSEXP);
-    Rcpp::traits::input_parameter< const double& >::type y_t(y_tSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type forecast_tvc_t(forecast_tvc_tSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type variance_tvc_t(variance_tvc_tSEXP);
-    Rcpp::traits::input_parameter< const double& >::type gamma(gammaSEXP);
-    Rcpp::traits::input_parameter< const int& >::type method(methodSEXP);
-    Rcpp::traits::input_parameter< Nullable<const NumericVector&> >::type risk_aversion_(risk_aversion_SEXP);
-    Rcpp::traits::input_parameter< Nullable<const NumericVector&> >::type min_weight_(min_weight_SEXP);
-    Rcpp::traits::input_parameter< Nullable<const NumericVector&> >::type max_weight_(max_weight_SEXP);
-    dsc_dpll_cands_(dpll_cands_gamma, y_t, forecast_tvc_t, variance_tvc_t, gamma, method, risk_aversion_, min_weight_, max_weight_);
-    return R_NilValue;
-END_RCPP
-}
-// rank_comb_
-List rank_comb_(const NumericVector& dpll_combs, const NumericVector& mu_comb_vec, const NumericVector& variance_comb_vec);
-RcppExport SEXP _hdflex_rank_comb_(SEXP dpll_combsSEXP, SEXP mu_comb_vecSEXP, SEXP variance_comb_vecSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericVector& >::type dpll_combs(dpll_combsSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type mu_comb_vec(mu_comb_vecSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type variance_comb_vec(variance_comb_vecSEXP);
-    rcpp_result_gen = Rcpp::wrap(rank_comb_(dpll_combs, mu_comb_vec, variance_comb_vec));
-    return rcpp_result_gen;
-END_RCPP
-}
-// dsc_dpll_comb_
-void dsc_dpll_comb_(NumericVector& dpll_combs, const double& y_t, const NumericVector& forecasts_comb, const NumericVector& variances_comb, const double& delta, const int& method, Nullable<const NumericVector&> risk_aversion_, Nullable<const NumericVector&> min_weight_, Nullable<const NumericVector&> max_weight_);
-RcppExport SEXP _hdflex_dsc_dpll_comb_(SEXP dpll_combsSEXP, SEXP y_tSEXP, SEXP forecasts_combSEXP, SEXP variances_combSEXP, SEXP deltaSEXP, SEXP methodSEXP, SEXP risk_aversion_SEXP, SEXP min_weight_SEXP, SEXP max_weight_SEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector& >::type dpll_combs(dpll_combsSEXP);
-    Rcpp::traits::input_parameter< const double& >::type y_t(y_tSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type forecasts_comb(forecasts_combSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type variances_comb(variances_combSEXP);
-    Rcpp::traits::input_parameter< const double& >::type delta(deltaSEXP);
-    Rcpp::traits::input_parameter< const int& >::type method(methodSEXP);
-    Rcpp::traits::input_parameter< Nullable<const NumericVector&> >::type risk_aversion_(risk_aversion_SEXP);
-    Rcpp::traits::input_parameter< Nullable<const NumericVector&> >::type min_weight_(min_weight_SEXP);
-    Rcpp::traits::input_parameter< Nullable<const NumericVector&> >::type max_weight_(max_weight_SEXP);
-    dsc_dpll_comb_(dpll_combs, y_t, forecasts_comb, variances_comb, delta, method, risk_aversion_, min_weight_, max_weight_);
-    return R_NilValue;
-END_RCPP
-}
-// dsc_loop_
-List dsc_loop_(List dpll_cands, NumericVector& dpll_combs, const NumericVector& gamma_grid, const IntegerVector& psi_grid, const double& y_t, const NumericVector& forecast_tvc_t, const NumericVector& variance_tvc_t, const double& delta, const int& method, const bool& equal_weight, Nullable<const NumericVector&> risk_aversion_, Nullable<const NumericVector&> min_weight_, Nullable<const NumericVector&> max_weight_);
-RcppExport SEXP _hdflex_dsc_loop_(SEXP dpll_candsSEXP, SEXP dpll_combsSEXP, SEXP gamma_gridSEXP, SEXP psi_gridSEXP, SEXP y_tSEXP, SEXP forecast_tvc_tSEXP, SEXP variance_tvc_tSEXP, SEXP deltaSEXP, SEXP methodSEXP, SEXP equal_weightSEXP, SEXP risk_aversion_SEXP, SEXP min_weight_SEXP, SEXP max_weight_SEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< List >::type dpll_cands(dpll_candsSEXP);
-    Rcpp::traits::input_parameter< NumericVector& >::type dpll_combs(dpll_combsSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type gamma_grid(gamma_gridSEXP);
-    Rcpp::traits::input_parameter< const IntegerVector& >::type psi_grid(psi_gridSEXP);
-    Rcpp::traits::input_parameter< const double& >::type y_t(y_tSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type forecast_tvc_t(forecast_tvc_tSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type variance_tvc_t(variance_tvc_tSEXP);
-    Rcpp::traits::input_parameter< const double& >::type delta(deltaSEXP);
-    Rcpp::traits::input_parameter< const int& >::type method(methodSEXP);
-    Rcpp::traits::input_parameter< const bool& >::type equal_weight(equal_weightSEXP);
-    Rcpp::traits::input_parameter< Nullable<const NumericVector&> >::type risk_aversion_(risk_aversion_SEXP);
-    Rcpp::traits::input_parameter< Nullable<const NumericVector&> >::type min_weight_(min_weight_SEXP);
-    Rcpp::traits::input_parameter< Nullable<const NumericVector&> >::type max_weight_(max_weight_SEXP);
-    rcpp_result_gen = Rcpp::wrap(dsc_loop_(dpll_cands, dpll_combs, gamma_grid, psi_grid, y_t, forecast_tvc_t, variance_tvc_t, delta, method, equal_weight, risk_aversion_, min_weight_, max_weight_));
-    return rcpp_result_gen;
-END_RCPP
-}
-// stsc_loop
-List stsc_loop(const arma::vec& y, Nullable<const NumericMatrix&> X_, Nullable<const NumericMatrix&> Ext_F_, const int& sample_length, const arma::vec& lambda_grid, const arma::vec& kappa_grid, const int& burn_in_tvc, const NumericVector& gamma_grid, const IntegerVector& psi_grid, const double& delta, const int& burn_in_dsc, const int& method, const bool& equal_weight, Nullable<const NumericVector&> risk_aversion_, Nullable<const NumericVector&> min_weight_, Nullable<const NumericVector&> max_weight_);
-RcppExport SEXP _hdflex_stsc_loop(SEXP ySEXP, SEXP X_SEXP, SEXP Ext_F_SEXP, SEXP sample_lengthSEXP, SEXP lambda_gridSEXP, SEXP kappa_gridSEXP, SEXP burn_in_tvcSEXP, SEXP gamma_gridSEXP, SEXP psi_gridSEXP, SEXP deltaSEXP, SEXP burn_in_dscSEXP, SEXP methodSEXP, SEXP equal_weightSEXP, SEXP risk_aversion_SEXP, SEXP min_weight_SEXP, SEXP max_weight_SEXP) {
+// stsc_loop_
+List stsc_loop_(const arma::vec& y, Nullable<const NumericMatrix&> X_, Nullable<const NumericMatrix&> Ext_F_, int init, arma::vec lambda_grid, arma::vec kappa_grid, bool bias, arma::rowvec gamma_grid, arma::irowvec psi_grid, double delta, int burn_in, int burn_in_dsc, int metric, bool equal_weight, Nullable<IntegerVector> incl_, Nullable<NumericVector> portfolio_params_);
+RcppExport SEXP _hdflex_stsc_loop_(SEXP ySEXP, SEXP X_SEXP, SEXP Ext_F_SEXP, SEXP initSEXP, SEXP lambda_gridSEXP, SEXP kappa_gridSEXP, SEXP biasSEXP, SEXP gamma_gridSEXP, SEXP psi_gridSEXP, SEXP deltaSEXP, SEXP burn_inSEXP, SEXP burn_in_dscSEXP, SEXP metricSEXP, SEXP equal_weightSEXP, SEXP incl_SEXP, SEXP portfolio_params_SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
     Rcpp::traits::input_parameter< Nullable<const NumericMatrix&> >::type X_(X_SEXP);
     Rcpp::traits::input_parameter< Nullable<const NumericMatrix&> >::type Ext_F_(Ext_F_SEXP);
-    Rcpp::traits::input_parameter< const int& >::type sample_length(sample_lengthSEXP);
+    Rcpp::traits::input_parameter< int >::type init(initSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type lambda_grid(lambda_gridSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type kappa_grid(kappa_gridSEXP);
+    Rcpp::traits::input_parameter< bool >::type bias(biasSEXP);
+    Rcpp::traits::input_parameter< arma::rowvec >::type gamma_grid(gamma_gridSEXP);
+    Rcpp::traits::input_parameter< arma::irowvec >::type psi_grid(psi_gridSEXP);
+    Rcpp::traits::input_parameter< double >::type delta(deltaSEXP);
+    Rcpp::traits::input_parameter< int >::type burn_in(burn_inSEXP);
+    Rcpp::traits::input_parameter< int >::type burn_in_dsc(burn_in_dscSEXP);
+    Rcpp::traits::input_parameter< int >::type metric(metricSEXP);
+    Rcpp::traits::input_parameter< bool >::type equal_weight(equal_weightSEXP);
+    Rcpp::traits::input_parameter< Nullable<IntegerVector> >::type incl_(incl_SEXP);
+    Rcpp::traits::input_parameter< Nullable<NumericVector> >::type portfolio_params_(portfolio_params_SEXP);
+    rcpp_result_gen = Rcpp::wrap(stsc_loop_(y, X_, Ext_F_, init, lambda_grid, kappa_grid, bias, gamma_grid, psi_grid, delta, burn_in, burn_in_dsc, metric, equal_weight, incl_, portfolio_params_));
+    return rcpp_result_gen;
+END_RCPP
+}
+// stsc_loop_par_
+List stsc_loop_par_(const arma::vec& y, Nullable<const NumericMatrix&> X_, Nullable<const NumericMatrix&> Ext_F_, int init, arma::vec lambda_grid, arma::vec kappa_grid, bool bias, arma::rowvec gamma_grid, arma::irowvec psi_grid, double delta, int burn_in, int burn_in_dsc, int metric, bool equal_weight, Nullable<IntegerVector> incl_, int n_threads, Nullable<NumericVector> portfolio_params_);
+RcppExport SEXP _hdflex_stsc_loop_par_(SEXP ySEXP, SEXP X_SEXP, SEXP Ext_F_SEXP, SEXP initSEXP, SEXP lambda_gridSEXP, SEXP kappa_gridSEXP, SEXP biasSEXP, SEXP gamma_gridSEXP, SEXP psi_gridSEXP, SEXP deltaSEXP, SEXP burn_inSEXP, SEXP burn_in_dscSEXP, SEXP metricSEXP, SEXP equal_weightSEXP, SEXP incl_SEXP, SEXP n_threadsSEXP, SEXP portfolio_params_SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< Nullable<const NumericMatrix&> >::type X_(X_SEXP);
+    Rcpp::traits::input_parameter< Nullable<const NumericMatrix&> >::type Ext_F_(Ext_F_SEXP);
+    Rcpp::traits::input_parameter< int >::type init(initSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type lambda_grid(lambda_gridSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type kappa_grid(kappa_gridSEXP);
+    Rcpp::traits::input_parameter< bool >::type bias(biasSEXP);
+    Rcpp::traits::input_parameter< arma::rowvec >::type gamma_grid(gamma_gridSEXP);
+    Rcpp::traits::input_parameter< arma::irowvec >::type psi_grid(psi_gridSEXP);
+    Rcpp::traits::input_parameter< double >::type delta(deltaSEXP);
+    Rcpp::traits::input_parameter< int >::type burn_in(burn_inSEXP);
+    Rcpp::traits::input_parameter< int >::type burn_in_dsc(burn_in_dscSEXP);
+    Rcpp::traits::input_parameter< int >::type metric(metricSEXP);
+    Rcpp::traits::input_parameter< bool >::type equal_weight(equal_weightSEXP);
+    Rcpp::traits::input_parameter< Nullable<IntegerVector> >::type incl_(incl_SEXP);
+    Rcpp::traits::input_parameter< int >::type n_threads(n_threadsSEXP);
+    Rcpp::traits::input_parameter< Nullable<NumericVector> >::type portfolio_params_(portfolio_params_SEXP);
+    rcpp_result_gen = Rcpp::wrap(stsc_loop_par_(y, X_, Ext_F_, init, lambda_grid, kappa_grid, bias, gamma_grid, psi_grid, delta, burn_in, burn_in_dsc, metric, equal_weight, incl_, n_threads, portfolio_params_));
+    return rcpp_result_gen;
+END_RCPP
+}
+// tvc_
+List tvc_(const arma::vec& y, Nullable<const NumericMatrix&> X_, Nullable<const NumericMatrix&> Ext_F_, int init, const arma::vec& lambda_grid, const arma::vec& kappa_grid, bool bias);
+RcppExport SEXP _hdflex_tvc_(SEXP ySEXP, SEXP X_SEXP, SEXP Ext_F_SEXP, SEXP initSEXP, SEXP lambda_gridSEXP, SEXP kappa_gridSEXP, SEXP biasSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< Nullable<const NumericMatrix&> >::type X_(X_SEXP);
+    Rcpp::traits::input_parameter< Nullable<const NumericMatrix&> >::type Ext_F_(Ext_F_SEXP);
+    Rcpp::traits::input_parameter< int >::type init(initSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type lambda_grid(lambda_gridSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type kappa_grid(kappa_gridSEXP);
-    Rcpp::traits::input_parameter< const int& >::type burn_in_tvc(burn_in_tvcSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type gamma_grid(gamma_gridSEXP);
-    Rcpp::traits::input_parameter< const IntegerVector& >::type psi_grid(psi_gridSEXP);
-    Rcpp::traits::input_parameter< const double& >::type delta(deltaSEXP);
-    Rcpp::traits::input_parameter< const int& >::type burn_in_dsc(burn_in_dscSEXP);
-    Rcpp::traits::input_parameter< const int& >::type method(methodSEXP);
-    Rcpp::traits::input_parameter< const bool& >::type equal_weight(equal_weightSEXP);
-    Rcpp::traits::input_parameter< Nullable<const NumericVector&> >::type risk_aversion_(risk_aversion_SEXP);
-    Rcpp::traits::input_parameter< Nullable<const NumericVector&> >::type min_weight_(min_weight_SEXP);
-    Rcpp::traits::input_parameter< Nullable<const NumericVector&> >::type max_weight_(max_weight_SEXP);
-    rcpp_result_gen = Rcpp::wrap(stsc_loop(y, X_, Ext_F_, sample_length, lambda_grid, kappa_grid, burn_in_tvc, gamma_grid, psi_grid, delta, burn_in_dsc, method, equal_weight, risk_aversion_, min_weight_, max_weight_));
-    return rcpp_result_gen;
-END_RCPP
-}
-// init_tvc
-List init_tvc(arma::vec& y_var, arma::vec& x_var, int sample_length);
-RcppExport SEXP _hdflex_init_tvc(SEXP y_varSEXP, SEXP x_varSEXP, SEXP sample_lengthSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::vec& >::type y_var(y_varSEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type x_var(x_varSEXP);
-    Rcpp::traits::input_parameter< int >::type sample_length(sample_lengthSEXP);
-    rcpp_result_gen = Rcpp::wrap(init_tvc(y_var, x_var, sample_length));
-    return rcpp_result_gen;
-END_RCPP
-}
-// init_tvc_forecast
-List init_tvc_forecast(arma::vec& y_var, arma::vec& x_var, int sample_length);
-RcppExport SEXP _hdflex_init_tvc_forecast(SEXP y_varSEXP, SEXP x_varSEXP, SEXP sample_lengthSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::vec& >::type y_var(y_varSEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type x_var(x_varSEXP);
-    Rcpp::traits::input_parameter< int >::type sample_length(sample_lengthSEXP);
-    rcpp_result_gen = Rcpp::wrap(init_tvc_forecast(y_var, x_var, sample_length));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tvc_model
-List tvc_model(arma::vec& y_var, arma::vec& x_var, int i, double lambda, double kappa, arma::mat theta, arma::mat cov_mat, double h);
-RcppExport SEXP _hdflex_tvc_model(SEXP y_varSEXP, SEXP x_varSEXP, SEXP iSEXP, SEXP lambdaSEXP, SEXP kappaSEXP, SEXP thetaSEXP, SEXP cov_matSEXP, SEXP hSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::vec& >::type y_var(y_varSEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type x_var(x_varSEXP);
-    Rcpp::traits::input_parameter< int >::type i(iSEXP);
-    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
-    Rcpp::traits::input_parameter< double >::type kappa(kappaSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type theta(thetaSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type cov_mat(cov_matSEXP);
-    Rcpp::traits::input_parameter< double >::type h(hSEXP);
-    rcpp_result_gen = Rcpp::wrap(tvc_model(y_var, x_var, i, lambda, kappa, theta, cov_mat, h));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tvc_model_loop
-List tvc_model_loop(arma::vec& y_var, arma::vec& x_var, double lambda, double kappa, arma::mat theta, arma::mat cov_mat, double h, int ts_length, int drop_length, int max_length);
-RcppExport SEXP _hdflex_tvc_model_loop(SEXP y_varSEXP, SEXP x_varSEXP, SEXP lambdaSEXP, SEXP kappaSEXP, SEXP thetaSEXP, SEXP cov_matSEXP, SEXP hSEXP, SEXP ts_lengthSEXP, SEXP drop_lengthSEXP, SEXP max_lengthSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::vec& >::type y_var(y_varSEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type x_var(x_varSEXP);
-    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
-    Rcpp::traits::input_parameter< double >::type kappa(kappaSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type theta(thetaSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type cov_mat(cov_matSEXP);
-    Rcpp::traits::input_parameter< double >::type h(hSEXP);
-    Rcpp::traits::input_parameter< int >::type ts_length(ts_lengthSEXP);
-    Rcpp::traits::input_parameter< int >::type drop_length(drop_lengthSEXP);
-    Rcpp::traits::input_parameter< int >::type max_length(max_lengthSEXP);
-    rcpp_result_gen = Rcpp::wrap(tvc_model_loop(y_var, x_var, lambda, kappa, theta, cov_mat, h, ts_length, drop_length, max_length));
+    Rcpp::traits::input_parameter< bool >::type bias(biasSEXP);
+    rcpp_result_gen = Rcpp::wrap(tvc_(y, X_, Ext_F_, init, lambda_grid, kappa_grid, bias));
     return rcpp_result_gen;
 END_RCPP
 }

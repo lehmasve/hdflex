@@ -1,218 +1,278 @@
+###########################################################
 ### Simulate Data
+# Set Seed
 set.seed(123)
 
 # Set Dimensions
-numb_obs   <-  500
-numb_pred  <-  50
-numb_forc  <-  10
+n_obs <- 500
+n_sigs <- 90
 
-# Create Random Target-Variable
-target_var  <-  rnorm(n = numb_obs, mean = 0, sd = 1)
+### Simulate Data
+# Generate Covariates
+X <- matrix(rnorm(n_obs * n_sigs), nrow = n_obs, ncol = n_sigs)
 
-# Create Random Simple Signals
-raw_signals           <-  replicate(numb_pred, sample(0:10, numb_obs, rep = TRUE), )
-raw_names             <-  paste0("X", as.character(seq_len(ncol(raw_signals))))
-colnames(raw_signals) <-  raw_names
+# Generate Beta-Coefficients
+n_relevant <- 10
+beta <- runif(n_relevant, -1.0, 1.0)
 
-# Create Random (External) Point Forecasts
-f_signals            <-  replicate(10, rnorm(n = numb_obs, mean = 0, sd = 0.5), )
-f_names              <-  paste0("F", as.character(seq_len(ncol(f_signals))))
-colnames(f_signals)  <-  f_names
+# Compute f(x)
+f_x <- X[, seq(n_relevant)] %*% beta
 
-# Specify TV-C-Parameter
-sample_length  <-  100
-lambda_grid    <-  c(0.99, 0.999, 1.000)
-kappa_grid     <-  c(0.94)
-n_cores        <-  1
+# Generate Error-Term
+eps <- rnorm(n_obs)
 
-### Tests on Y
-test_that("Test whether y is Numeric Vector", {
+# Calculate Response
+y <- as.matrix(f_x + eps, ncol = 1)
 
-  target_var  <-  as.data.frame(target_var)
-  testthat::expect_error(tvc(target_var,
-                             raw_signals,
-                             f_signals,
-                             lambda_grid,
-                             kappa_grid,
-                             sample_length,
-                             n_cores),
-              "Must be of type 'numeric', not 'data.frame'.", fixed = TRUE)
+# F-Signals 
+Ext_F <- matrix(rep(y, 10), nrow = n_obs, ncol = 10) + rnorm(n_obs * 10)
+
+# Add Names
+colnames(X) <- paste0("X", seq_len(n_sigs))
+colnames(y) <- "response"
+colnames(Ext_F) <- paste0("F", seq_len(10))
+
+###########################################################
+### STSC Parameter
+# TV-C-Parameter
+init <- 10
+lambda_grid <- c(0.95, 1.00)
+kappa_grid <- c(0.95, 0.97)
+bias <- TRUE
+
+###########################################################
+### Test TVC
+test_that("Test TVC", {
+
+  # Apply TVC-Function
+  results <- hdflex::tvc(y,
+                         X,
+                         Ext_F,
+                         init,
+                         lambda_grid,
+                         kappa_grid,
+                         bias)
+
+  # List Contains three Elements
+  expect_equal(length(results), 2)
+
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
+
+  # Point Forecasts
+  expect_matrix(results$Forecasts$Point_Forecasts,
+                           nrow = n_obs,
+                           ncol = (ncol(X) + ncol(Ext_F)) * length(lambda_grid) * length(kappa_grid))
+
+  # Variance Forecasts
+  expect_matrix(results$Forecasts$Variance_Forecasts,
+                           nrow = n_obs,
+                           ncol = (ncol(X) + ncol(Ext_F)) * length(lambda_grid) * length(kappa_grid))
+
+  # Ensure minimum value is 0
+  expect_true(all(results$Forecasts$Variance_Forecasts[-1, ] >= 0))
+
+  # Realization
+  expect_numeric(results$Forecasts$Realization,
+                            len = n_obs,
+                            finite = TRUE)
+
+  # Model List Contains 4 Elements
+  expect_equal(length(results$Model), 4)
+
+  # Lambda Grid
+  expect_numeric(results$Model$Lambda_grid,
+                            len = length(lambda_grid),
+                            finite = TRUE)
+
+  # Kappa Grid
+  expect_numeric(results$Model$Kappa_grid,
+                            len = length(kappa_grid),
+                            finite = TRUE)
+
+  # Init
+  expect_numeric(results$Model$Init,
+                            len = 1,
+                            finite = TRUE)
+
+  # Bias
+  expect_logical(results$Model$Bias,
+                            len = 1,
+                            any.missing = FALSE)
 })
 
-test_that("Test whether y is not NULL", {
+###########################################################
+### Test STSC with X
+test_that("Test whether the STSC-Function works with X", {
 
-  target_var  <-  NULL
-  testthat::expect_error(tvc(target_var,
-                             raw_signals,
-                             f_signals,
-                             lambda_grid,
-                             kappa_grid,
-                             sample_length,
-                             n_cores),
-              "Must be of type 'numeric', not 'NULL'.", fixed = TRUE)
+  # Apply TVC-Function
+  results <- hdflex::tvc(y,
+                         X,
+                         NULL,
+                         init,
+                         lambda_grid,
+                         kappa_grid,
+                         bias)
+
+  # List Contains three Elements
+  expect_equal(length(results), 2)
+
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
+
+  # Point Forecasts
+  expect_matrix(results$Forecasts$Point_Forecasts,
+                           nrow = n_obs,
+                           ncol = ncol(X) * length(lambda_grid) * length(kappa_grid))
+
+  # Variance Forecasts
+  expect_matrix(results$Forecasts$Variance_Forecasts,
+                           nrow = n_obs,
+                           ncol = ncol(X) * length(lambda_grid) * length(kappa_grid))
+
+  # Ensure minimum value is 0
+  expect_true(all(results$Forecasts$Variance_Forecasts[-1, ] >= 0))
 })
 
-test_that("Test whether y has only numeric values", {
+###########################################################
+### Test STSC with Ext_F
+test_that("Test whether the STSC-Function works with Ext_F", {
 
-  target_var[10]  <-  "test"
-  testthat::expect_error(tvc(target_var,
-                             raw_signals,
-                             f_signals,
-                             lambda_grid,
-                             kappa_grid,
-                             sample_length,
-                             n_cores),
-              "Must be of type 'numeric', not 'character'.", fixed = TRUE)
+  # Apply TVC-Function
+  results <- hdflex::tvc(y,
+                         NULL,
+                         Ext_F,
+                         init,
+                         lambda_grid,
+                         kappa_grid,
+                         bias)
+
+  # List Contains three Elements
+  expect_equal(length(results), 2)
+
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
+
+  # Point Forecasts
+  expect_matrix(results$Forecasts$Point_Forecasts,
+                           nrow = n_obs,
+                           ncol =  ncol(Ext_F) * length(lambda_grid) * length(kappa_grid))
+
+  # Variance Forecasts
+  expect_matrix(results$Forecasts$Variance_Forecasts,
+                           nrow = n_obs,
+                           ncol = ncol(Ext_F) * length(lambda_grid) * length(kappa_grid))
+
+  # Ensure minimum value is 0
+  expect_true(all(results$Forecasts$Variance_Forecasts[-1, ] >= 0))
 })
 
-test_that("Test whether y has no NA-Values", {
+###########################################################
+### Test TVC without Bias Correction
+test_that("Test TVC without Bias Correction", {
 
-  target_var[10]  <-  NA
-  testthat::expect_error(tvc(target_var,
-                             raw_signals,
-                             f_signals,
-                             lambda_grid,
-                             kappa_grid,
-                             sample_length,
-                             n_cores),
-              "Contains missing values", fixed = TRUE)
+  # Apply TVC-Function
+  results <- hdflex::tvc(y,
+                         X,
+                         Ext_F,
+                         init,
+                         lambda_grid,
+                         kappa_grid,
+                         FALSE)
+
+  # List Contains three Elements
+  expect_equal(length(results), 2)
+
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
+
+  # Point Forecasts
+  expect_matrix(results$Forecasts$Point_Forecasts,
+                           nrow = n_obs,
+                           ncol = (ncol(X) + ncol(Ext_F)) * length(lambda_grid) * length(kappa_grid))
+
+  # Variance Forecasts
+  expect_matrix(results$Forecasts$Variance_Forecasts,
+                           nrow = n_obs,
+                           ncol = (ncol(X) + ncol(Ext_F)) * length(lambda_grid) * length(kappa_grid))
+
+  # Ensure minimum value is 0
+  expect_true(all(results$Forecasts$Variance_Forecasts[-1, ] >= 0))
 })
 
-### Tests on X
-test_that("Test whether x is matrix", {
+###########################################################
+### Test TVC with Missing Values
+test_that("Test TVC with Missing / Constant Values", {
 
-  raw_signals  <-  as.data.frame(raw_signals)
-  testthat::expect_error(tvc(target_var,
-                             raw_signals,
-                             f_signals,
-                             lambda_grid,
-                             kappa_grid,
-                             sample_length,
-                             n_cores),
-              "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
+  # Add Missing Values
+  X[1, 1:10] <- NA
+  Ext_F[1, 1:10] <- NA
+
+  X[2, 1:10] <- 1
+  Ext_F[2, 1:10] <- 1
+
+  # Apply TVC-Function
+  results <- hdflex::tvc(y,
+                         X,
+                         Ext_F,
+                         init,
+                         lambda_grid,
+                         kappa_grid,
+                         bias)
+
+  # List Contains three Elements
+  expect_equal(length(results), 2)
+
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
+
+  # Point Forecasts
+  expect_matrix(results$Forecasts$Point_Forecasts,
+                           nrow = n_obs,
+                           ncol = (ncol(X) + ncol(Ext_F)) * length(lambda_grid) * length(kappa_grid))
+
+  # Variance Forecasts
+  expect_matrix(results$Forecasts$Variance_Forecasts,
+                           nrow = n_obs,
+                           ncol = (ncol(X) + ncol(Ext_F)) * length(lambda_grid) * length(kappa_grid))
+
+  # Ensure minimum value is 0
+  expect_true(all(results$Forecasts$Variance_Forecasts[-c(1:11), ] >= 0))
 })
 
-test_that("Test whether x has the same number of observations as y", {
+###########################################################
+### Test TVC without providing colnames
+test_that("Test TVC without providing colnames", {
 
-  raw_signals  <-  raw_signals[1:10, ]
-  testthat::expect_error(tvc(target_var,
-                             raw_signals,
-                             f_signals,
-                             lambda_grid,
-                             kappa_grid,
-                             sample_length,
-                             n_cores),
-                        "Must have exactly", fixed = TRUE)
-})
+  # Remove Colnames
+  colnames(X) <- NULL
+  colnames(y) <- NULL
 
-test_that("Test whether exception works when cov_mat cannot be initialised", {
+  # Apply TVC-Function
+  results <- hdflex::tvc(y,
+                         X,
+                         Ext_F,
+                         init,
+                         lambda_grid,
+                         kappa_grid,
+                         bias)
 
-  raw_signals[1:100, 10]  <-  0
-  testthat::expect_no_error(tvc(target_var,
-                                raw_signals,
-                                f_signals,
-                                lambda_grid,
-                                kappa_grid,
-                                sample_length,
-                                n_cores))
-})
+  # List Contains three Elements
+  expect_equal(length(results), 2)
 
-### Tests on f
-test_that("Test whether f is matrix", {
+  # Forecasts List Contains three Elements
+  expect_equal(length(results$Forecasts), 3)
 
-  f_signals  <-  as.data.frame(f_signals)
-  testthat::expect_error(tvc(target_var,
-                             raw_signals,
-                             f_signals,
-                             lambda_grid,
-                             kappa_grid,
-                             sample_length,
-                             n_cores),
-                        "Must be of type 'matrix' (or 'NULL')", fixed = TRUE)
-})
+  # Point Forecasts
+  expect_matrix(results$Forecasts$Point_Forecasts,
+                           nrow = n_obs,
+                           ncol = (ncol(X) + ncol(Ext_F)) * length(lambda_grid) * length(kappa_grid))
 
-test_that("Test whether f has the same number of observations as y", {
+  # Variance Forecasts
+  expect_matrix(results$Forecasts$Variance_Forecasts,
+                           nrow = n_obs,
+                           ncol = (ncol(X) + ncol(Ext_F)) * length(lambda_grid) * length(kappa_grid))
 
-  f_signals  <-  f_signals[1:10, ]
-  testthat::expect_error(tvc(target_var,
-                             raw_signals,
-                             f_signals,
-                             lambda_grid,
-                             kappa_grid,
-                             sample_length,
-                             n_cores),
-                        "Must have exactly", fixed = TRUE)
-})
-
-### Tests on x and f
-test_that("Test whether either x or f is provided", {
-
-  raw_signals  <-  NULL
-  f_signals    <-  NULL
-  testthat::expect_error(tvc(target_var,
-                             raw_signals,
-                             f_signals,
-                             lambda_grid,
-                             kappa_grid,
-                             sample_length,
-                             n_cores),
-            "Assertion failed. One of the following must apply:
- * checkmate::checkMatrix(X): Must be of type 'matrix', not 'NULL'
- * checkmate::checkMatrix(Ext_F): Must be of type 'matrix', not 'NULL'",
-            fixed = TRUE)
-})
-
-test_that("Test whether Code still works without dimnames", {
-
-  colnames(raw_signals)  <-  NULL
-  colnames(f_signals)    <-  NULL
-  testthat::expect_no_error(tvc(target_var,
-                                raw_signals,
-                                f_signals,
-                                lambda_grid,
-                                kappa_grid,
-                                sample_length,
-                                n_cores))
-})
-
-### Output
-test_that("Test whether the output has the right format", {
-
-  # Apply TVP-Function
-  results  <-  tvc(target_var,
-                   raw_signals,
-                   f_signals,
-                   lambda_grid,
-                   kappa_grid,
-                   sample_length,
-                   n_cores)
-
-  # List Contains Two Elements
-  testthat::expect_equal(length(results), 2)
-
-  # Number of Models
-  numb_mods  <-  length(lambda_grid) * length(kappa_grid) * numb_pred +
-                 length(lambda_grid) * length(kappa_grid) * numb_forc
-
-  # Dimension of Forecasts
-  checkmate::expect_matrix(results[[1]],
-                           mode = "numeric",
-                           nrows = numb_obs,
-                           ncols = numb_mods)
-
-  # Dimension of Variances
-  checkmate::expect_matrix(results[[2]],
-                           mode = "numeric",
-                           nrows = numb_obs,
-                           ncols = numb_mods)
-
-  # Only positive values in Var-Matrix
-  checkmate::qassert(results[[2]],
-                     c("m+[0,]"))
-
-  # Check Candidate Forecast Names
-  checkmate::expect_character(colnames(results[[1]]),
-                              any.missing = FALSE,
-                              len = numb_mods,
-                              unique = TRUE)
+  # Ensure minimum value is 0
+  expect_true(all(results$Forecasts$Variance_Forecasts[-1, ] >= 0))
 })

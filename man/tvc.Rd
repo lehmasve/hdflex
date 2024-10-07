@@ -2,58 +2,86 @@
 % Please edit documentation in R/tvc.R
 \name{tvc}
 \alias{tvc}
-\title{Compute density forecasts based on univariate time-varying
-coefficient (TV-C) models in state-space form}
+\title{Compute density forecasts using univariate time-varying coefficient (TV-C) models}
 \usage{
-tvc(y, X, Ext_F, lambda_grid, kappa_grid, init_length, n_cores)
+tvc(y, X, Ext_F, init, lambda_grid, kappa_grid, bias)
 }
 \arguments{
 \item{y}{A matrix of dimension `T * 1` or numeric vector of length `T`
 containing the observations of the target variable.}
 
-\item{X}{A matrix with `T` rows containing
-the lagged 'simple' signals in each column.
-Use NULL if no 'simple' signal shall be included.}
+\item{X}{A matrix with `T` rows containing the lagged 'P-signals'
+in each column. Use `NULL` if no (external) 'P-signal' is to be included.}
 
-\item{Ext_F}{A matrix with `T` rows containing
-point forecasts of y in each column.
-Use NULL if no point forecasts shall be included.}
+\item{Ext_F}{A matrix with `T` rows containing the (external) 'F-signals'
+in each column. For 'F-Signals', the slope of the TV-C models is fixed to 1.
+Use `NULL` if no (external) 'F-signal' is to be included.}
 
-\item{lambda_grid}{A numeric vector denoting the discount factor(s)
-that control the dynamics of the coefficients.
-Each signal in combination with each value of
+\item{init}{An integer that denotes the number of observations used
+to initialize the observational variance and the coefficients' variance
+in the TV-C models.}
+
+\item{lambda_grid}{A numeric vector which takes values between 0 and 1
+denoting the discount factor(s) that control the dynamics of the time-varying
+coefficients. Each signal in combination with each value of
 lambda provides a separate candidate forecast.
 Constant coefficients are nested for the case `lambda = 1`.}
 
-\item{kappa_grid}{A numeric vector to accommodate time-varying volatility.
+\item{kappa_grid}{A numeric vector which takes values between 0 and 1
+to accommodate time-varying volatility in the TV-C models.
 The observational variance is estimated via
-Exponentially Weighted Moving Average.
-Constant variance is nested for the case `kappa = 1`.
+Exponentially Weighted Moving Average and kappa denotes the underlying
+decay factor. Constant variance is nested for the case `kappa = 1`.
 Each signal in combination with each value of
-kappa provides a separate forecast.}
+kappa provides a separate candidate density forecast.
+For the values of kappa, we follow the recommendation
+of RiskMetrics (Reuters, 1996).}
 
-\item{init_length}{An integer that denotes the number of observations used
-to initialize the observational variance and the coefficients' variance.}
-
-\item{n_cores}{An integer that denotes the number of CPU-cores used
-for the computation.}
+\item{bias}{A boolean to indicate whether the TV-C-models
+allow for a bias correction to F-signals.
+`TRUE` allows for a time-varying intercept, and `FALSE` sets (and fixes)
+the intercept to 0.}
 }
 \value{
-A list that contains:
-
-* (1) a matrix with the first moments (point forecasts)
-of the conditionally normal predictive distributions and
-
-* (2) a matrix with the second moments (variance)
-of the conditionally normal predictive distributions.
+A list containing:
+\describe{
+ \item{Forecasts}{A list containing:
+  \describe{
+    \item{Realization: }{
+    A vector with the actual values of the target variable.
+    }
+    \item{Point_Forecasts: }{
+    A vector with the first moments of the predictive densities.
+    }
+    \item{Variance_Forecasts: }{
+    A vector with the second moments of the predictive densities.
+    }
+  }
+}
+\item{Model}{A list containing:
+  \describe{
+    \item{Lambda_grid}{
+    The grid of lambda values used in the model.
+    }
+    \item{
+    Kappa_grid}{The grid of kappa values used in the model.
+    }
+    \item{Init}{
+    The init value used in the model.
+    }
+    \item{Bias}{
+    A boolean indicating if bias correct was applied to F-signals.
+    }
+  }
+ }
+}
 }
 \description{
-`tvc()` can be used to generate density forecasts based on
-univariate time-varying coefficient models. In each forecasting model,
-we include an intercept and one predictive signal. The predictive signal
-either represents the value of a 'simple' signal
-or the the value of an external point forecast.
-All models are estimated independently from each other and
+The `tvc()` function generates density forecasts
+based on univariate time-varying coefficient models in state-space form.
+Each forecasting model includes an intercept and one predictive signal,
+which can either be a 'P-signal' or 'F-signal'.
+All models are estimated independently and both
 estimation and forecasting are carried out recursively.
 }
 \examples{
@@ -65,173 +93,189 @@ estimation and forecasting are carried out recursively.
    #### details regarding the data & external forecasts ####
    #########################################################
 
-   # Packages
+   # Load Package
    library("hdflex")
+   library("ggplot2")
+   library("cowplot")
 
    ########## Get Data ##########
-   # Load Data
-   inflation_data   <-  inflation_data
-   benchmark_ar2    <-  benchmark_ar2
+   # Load Package Data
+   inflation_data <- inflation_data
 
-   # Set Index for Target Variable
-   i  <-  1   # (1 -> GDPCTPI; 2 -> PCECTPI; 3 -> CPIAUCSL; 4 -> CPILFESL)
+   # Set Target Variable
+   y <- inflation_data[,  1]
 
-   # Subset Data (keep only data relevant for target variable i)
-   dataset  <-  inflation_data[, c(1+(i-1),                          # Target Variable
-                                   5+(i-1),                          # Lag 1
-                                   9+(i-1),                          # Lag 2
-                                   (13:16)[-i],                      # Remaining Price Series
-                                   17:452,                           # Exogenous Predictor Variables
-                                   seq(453+(i-1)*16,468+(i-1)*16))]  # Ext. Point Forecasts
+   # Set 'P-Signals'
+   X <- inflation_data[, 2:442]
+
+   # Set 'F-Signals'
+   Ext_F <- inflation_data[, 443:462]
+
+   # Get Dates and Number of Observations
+   tdates <- rownames(inflation_data)
+   tlength <- length(tdates)
+
+   # First complete observation (no missing values)
+   first_complete <- which(complete.cases(inflation_data))[1]
+
+   ########## Rolling AR2-Benchmark ##########
+   # Set up matrix for predictions
+   benchmark <- matrix(NA, nrow = tlength,
+                       ncol = 1, dimnames = list(tdates, "AR2"))
+
+   # Set Window-Size (15 years of quarterly data)
+   window_size <- 15 * 4
+
+   # Time Sequence
+   t_seq <- seq(window_size, tlength - 1)
+
+   # Loop with rolling window
+   for (t in t_seq) {
+
+     # Split Data for Training Train Data
+     x_train <- cbind(int = 1, X[(t - window_size + 1):t, 1:2])
+     y_train <- y[(t - window_size + 1):t]
+
+     # Split Data for Prediction
+     x_pred <- cbind(int = 1, X[t + 1, 1:2, drop = FALSE])
+
+     # Fit AR-Model
+     model_ar <- .lm.fit(x_train, y_train)
+
+     # Predict and store in benchmark matrix
+     benchmark[t + 1, ] <- x_pred \%*\% model_ar$coefficients
+   }
 
    ########## STSC ##########
-   ### Part 1: TV-C Model ###
-   # Set Target Variable
-   y  <-  dataset[,  1, drop = FALSE]
-
-   # Set 'Simple' Signals
-   X  <-  dataset[, 2:442, drop = FALSE]
-
-   # Set External Point Forecasts (Koop & Korobilis 2023)
-   Ext_F  <-  dataset[, 443:458, drop = FALSE]
-
+   ### Part 1: TVC-Function
    # Set TV-C-Parameter
-   sample_length  <-  4 * 5
-   lambda_grid    <-  c(0.90, 0.95, 1)
-   kappa_grid     <-  0.98
-   n_cores        <-  1
+   init <- 5 * 4
+   lambda_grid <- c(0.90, 0.95, 1.00)
+   kappa_grid <- c(0.94, 0.96, 0.98)
+   bias <- TRUE
 
-   # Apply TV-C-Function
-   results  <-  hdflex::tvc(y,
-                            X,
-                            Ext_F,
-                            lambda_grid,
-                            kappa_grid,
-                            sample_length,
-                            n_cores)
+   # Apply TVC-Function
+   tvc_results <- hdflex::tvc(y,
+                              X,
+                              Ext_F,
+                              init,
+                              lambda_grid,
+                              kappa_grid,
+                              bias)
 
-   # Assign TV-C-Results
-   forecast_tvc      <-  results[[1]]
-   variance_tvc      <-  results[[2]]
+   # Assign TVC-Results
+   forecast_tvc <- tvc_results$Forecasts$Point_Forecasts
+   variance_tvc <- tvc_results$Forecasts$Variance_Forecasts
 
-   # Define Burn-In Period
-   sample_period_idx  <-  80:nrow(dataset)
-   sub_forecast_tvc   <-  forecast_tvc[sample_period_idx, , drop = FALSE]
-   sub_variance_tvc   <-  variance_tvc[sample_period_idx, , drop = FALSE]
-   sub_y              <-  y[sample_period_idx, , drop = FALSE]
-   sub_dates          <-  rownames(dataset)[sample_period_idx]
+   # First complete forecast period (no missing values)
+   sub_period <- seq(which(complete.cases(forecast_tvc))[1], tlength)
 
-   ### Part 2: Dynamic Subset Combination ###
+   ### Part 2: DSC-Function
    # Set DSC-Parameter
-   nr_mods     <-  ncol(sub_forecast_tvc)
-   gamma_grid  <-  c(0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
-                     0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00)
-   psi_grid    <-  c(1:100)
-   delta       <-  0.95
-   n_cores     <-  1
+   gamma_grid <- c(0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
+                   0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00)
+   psi_grid <- c(1:100, sapply(1:4, function(i) floor(i * ncol(forecast_tvc) / 4)))
+   delta <- 0.95
+   burn_in_tvc <- (init / 2) + 1
+   burn_in_dsc <- 1
+   metric <- 5
+   equal_weight <- TRUE
+   incl <- NULL
 
    # Apply DSC-Function
-   results  <-  hdflex::dsc(gamma_grid,
-                            psi_grid,
-                            sub_y,
-                            sub_forecast_tvc,
-                            sub_variance_tvc,
-                            delta,
-                            n_cores)
+   dsc_results <- hdflex::dsc(y[sub_period],
+                              forecast_tvc[sub_period, , drop = FALSE],
+                              variance_tvc[sub_period, , drop = FALSE],
+                              gamma_grid,
+                              psi_grid,
+                              delta,
+                              burn_in_tvc,
+                              burn_in_dsc,
+                              metric,
+                              equal_weight,
+                              incl,
+                              NULL)
 
    # Assign DSC-Results
-   sub_forecast_stsc    <-  results[[1]]
-   sub_variance_stsc    <-  results[[2]]
-   sub_chosen_gamma     <-  results[[3]]
-   sub_chosen_psi       <-  results[[4]]
-   sub_chosen_signals   <-  results[[5]]
+   pred_stsc <- dsc_results$Forecasts$Point_Forecasts
+   var_stsc <- dsc_results$Forecasts$Variance_Forecasts
 
-   # Define Evaluation Period
-   eval_date_start      <-  "1991-01-01"
-   eval_date_end        <-  "2021-12-31"
-   eval_period_idx      <-  which(sub_dates > eval_date_start & sub_dates <= eval_date_end)
+   ########## Evaluation ##########
+   # Define Evaluation Period (OOS-Period)
+   eval_period <- which(tdates[sub_period] >= "1991-04-01" & tdates[sub_period] <= "2021-12-01")
 
-   # Trim Objects
-   oos_y                <-  sub_y[eval_period_idx, ]
-   oos_forecast_stsc    <-  sub_forecast_stsc[eval_period_idx]
-   oos_variance_stsc    <-  sub_variance_stsc[eval_period_idx]
-   oos_chosen_gamma     <-  sub_chosen_gamma[eval_period_idx]
-   oos_chosen_psi       <-  sub_chosen_psi[eval_period_idx]
-   oos_chosen_signals   <-  sub_chosen_signals[eval_period_idx, , drop = FALSE]
-   oos_dates            <-  sub_dates[eval_period_idx]
+   # Get Evaluation Summary for STSC
+   eval_results <- summary(obj = dsc_results, eval_period = eval_period)
 
-   # Add Dates
-   names(oos_forecast_stsc)     <-  oos_dates
-   names(oos_variance_stsc)     <-  oos_dates
-   names(oos_chosen_gamma)      <-  oos_dates
-   names(oos_chosen_psi)        <-  oos_dates
-   rownames(oos_chosen_signals) <-  oos_dates
+   # Calculate (Mean-)Squared-Errors for AR2-Benchmark
+   oos_y <- y[sub_period][eval_period]
+   oos_benchmark <- benchmark[sub_period[eval_period], , drop = FALSE]
+   se_ar2 <- (oos_y - oos_benchmark)^2
+   mse_ar2 <- mean(se_ar2)
 
-   ### Part 3: Evaluation ###
-   # Apply Summary-Function
-   summary_results  <-  summary_stsc(oos_y,
-                                     benchmark_ar2[, i],
-                                     oos_forecast_stsc)
-   # Assign Summary-Results
-   cssed  <-  summary_results[[3]]
-   mse    <-  summary_results[[4]]
+   # Create Cumulative Squared Error Differences (CSSED) Plot
+   cssed <- cumsum(se_ar2 - eval_results$MSE[[2]])
+   plot_cssed <- ggplot(
+     data.frame(eval_period, cssed),
+     aes(x = eval_period, y = cssed)
+   ) +
+     geom_line() +
+     ylim(-0.0008, 0.0008) +
+     ggtitle("Cumulative Squared Error Differences") +
+     xlab("Time Index") +
+     ylab("CSSED") +
+     geom_hline(yintercept = 0, linetype = "dashed", color = "darkgray") +
+     theme_minimal(base_size = 15) +
+     theme(
+       panel.grid.major = element_blank(),
+       panel.grid.minor = element_blank(),
+       panel.border = element_rect(colour = "black", fill = NA),
+       axis.ticks = element_line(colour = "black"),
+       plot.title = element_text(hjust = 0.5)
+     )
 
-   ########## Results ##########
+   # Show Plots
+   options(repr.plot.width = 15, repr.plot.height = 15)
+   plots_list <- eval_results$Plots
+   plots_list <- c(list(plot_cssed), plots_list)
+   cowplot::plot_grid(plotlist = plots_list,
+                      ncol = 2,
+                      nrow = 3,
+                      align = "hv")
+
    # Relative MSE
-   print(paste("Relative MSE:", round(mse[[1]] / mse[[2]], 4)))
-
-   # Plot CSSED
-   plot(x    = as.Date(oos_dates),
-        y    = cssed,
-        ylim = c(-0.0008, 0.0008),
-        main = "Cumulated squared error differences",
-        type = "l",
-        lwd  = 1.5,
-        xlab = "Date",
-        ylab = "CSSED") + abline(h = 0, lty = 2, col = "darkgray")
-
-   # Plot Predictive Signals
-   vec  <-  seq_len(dim(oos_chosen_signals)[2])
-   mat  <-  oos_chosen_signals \%*\% diag(vec)
-   mat[mat == 0]  <- NA
-   matplot(x    = as.Date(oos_dates),
-           y    = mat,
-           cex  = 0.4,
-           pch  = 20,
-           type = "p",
-           main = "Evolution of selected signal(s)",
-           xlab = "Date",
-           ylab = "Predictive Signal")
-
-   # Plot Psi
-   plot(x    = as.Date(oos_dates),
-        y    = oos_chosen_psi,
-        ylim = c(1, 100),
-        main = "Evolution of the subset size",
-        type = "p",
-        cex  = 0.75,
-        pch  = 20,
-        xlab = "Date",
-        ylab = "Psi")
+   print(paste("Relative MSE:", round(eval_results$MSE[[1]] / mse_ar2, 4)))
  }
 }
 \references{
-Beckmann, J., Koop, G., Korobilis, D., and Schüssler, R. A. (2020) "Exchange rate predictability and dynamic bayesian learning."
+Beckmann, J., Koop, G., Korobilis, D., and Schüssler, R. A. (2020)
+"Exchange rate predictability and dynamic bayesian learning."
 \emph{Journal of Applied Econometrics}, 35 (4): 410–421.
 
-Dangl, T. and Halling, M. (2012) "Predictive regressions with time-varying coefficients."
+Dangl, T. and Halling, M. (2012)
+"Predictive regressions with time-varying coefficients."
 \emph{Journal of Financial Economics}, 106 (1): 157–181.
 
-Koop, G. and Korobilis, D. (2012) "Forecasting inflation using dynamic model averaging."
+Del Negro, M., Hasegawa, R. B., and Schorfheide, F. (2016)
+"Dynamic prediction pools:
+An investigation of financial frictions and forecasting performance."
+\emph{Journal of Econometrics}, 192 (2): 391–405.
+
+Koop, G. and Korobilis, D. (2012)
+"Forecasting inflation using dynamic model averaging."
 \emph{International Economic Review}, 53 (3): 867–886.
 
-Koop, G. and Korobilis, D. (2023) "Bayesian dynamic variable selection in high dimensions."
+Koop, G. and Korobilis, D. (2023)
+"Bayesian dynamic variable selection in high dimensions."
 \emph{International Economic Review}.
 
-Raftery, A. E., Kárn`y, M., and Ettler, P. (2010) "Online prediction under model uncertainty via dynamic model averaging: Application to a cold rolling mill."
+Raftery, A. E., Kárn`y, M., and Ettler, P. (2010)
+"Online prediction under model uncertainty via dynamic model averaging:
+Application to a cold rolling mill."
 \emph{Technometrics}, 52 (1): 52–66.
 
-West, M. and Harrison, J. (1997) "Bayesian forecasting and dynamic models"
+West, M. and Harrison, J. (1997)
+"Bayesian forecasting and dynamic models"
 \emph{Springer}, 2nd edn.
 }
 \seealso{
