@@ -9,8 +9,7 @@ Version](https://www.r-pkg.org/badges/version/hdflex)](https://CRAN.R-project.or
 [![R-CMD-check](https://github.com/lehmasve/hdflex/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/lehmasve/hdflex/actions/workflows/R-CMD-check.yaml)
 [![Total
 Downloads](https://cranlogs.r-pkg.org/badges/grand-total/hdflex?color=orange)](https://CRAN.R-project.org/package=hdflex)
-[![Codecov test
-coverage](https://codecov.io/gh/lehmasve/hdflex/graph/badge.svg)](https://app.codecov.io/gh/lehmasve/hdflex)
+[![codecov](https://codecov.io/gh/lehmasve/hdflex/graph/badge.svg?token=leKtsb0Kub)](https://codecov.io/gh/lehmasve/hdflex)
 ⁠<!-- badges: end -->⁠
 
 ## About
