@@ -9,29 +9,30 @@ Version](https://www.r-pkg.org/badges/version/hdflex)](https://CRAN.R-project.or
 [![R-CMD-check](https://github.com/lehmasve/hdflex/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/lehmasve/hdflex/actions/workflows/R-CMD-check.yaml)
 [![Total
 Downloads](https://cranlogs.r-pkg.org/badges/grand-total/hdflex?color=orange)](https://CRAN.R-project.org/package=hdflex)
-[![codecov](https://codecov.io/gh/lehmasve/hdflex/branch/dev/graph/badge.svg?token=leKtsb0Kub)](https://app.codecov.io/gh/lehmasve/hdflex)
+[![Codecov test
+coverage](https://codecov.io/gh/lehmasve/hdflex/graph/badge.svg)](https://app.codecov.io/gh/lehmasve/hdflex)
 ⁠<!-- badges: end -->⁠
 
 ## About
 
 This package contains the forecasting algorithm developed by [Adämmer,
 Lehmann and Schüssler (2023)](https://dx.doi.org/10.2139/ssrn.4342487).
-Please cite the paper when using the package.
+When using the package, please remember to cite the paper.
 
 The package comprises three functions:
 
 - `stsc()` can be used to directly apply the
-  “Signal-Transform-Subset-Combination” forecasting algorithm described
-  in [Adämmer, Lehmann and Schüssler
+  “Signal-Transformed-Subset-Combination” forecasting algorithm
+  described in [Adämmer, Lehmann and Schüssler
   (2023)](https://dx.doi.org/10.2139/ssrn.4342487).
 
-- `tvc()` can be used to compute density forecasts based on univariate
-  time-varying coefficient (TV-C) models in state-space form (first part
-  of the STSC algorithm).
+- `tvc()` can be used to transform predictive signals into
+  (conditionally normal) predictive densities based on univariate
+  time-varying coefficient models (first part of the STSC algorithm).
 
-- `dsc()` can be used to dynamically generate forecast combinations from
-  a subset of candidate density forecasts (second part of the STSC
-  algorithm).
+- `dsc()` can be used to dynamically generate density forecast
+  combinations from a subset of (conditionally normal) candidate density
+  forecasts (second part of the STSC algorithm).
 
 ## Installation
 
