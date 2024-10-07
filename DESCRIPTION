@@ -13,7 +13,7 @@ Description: Provides a forecasting method that efficiently maps vast
     in a time-varying and computationally fast manner. The method proceeds
     in two steps: First, it transforms a predictive signal into a density
     forecast and, second, it combines the resulting candidate density
-    forecasts into an ultimate aggregate density forecast.  For a detailed
+    forecasts into an ultimate aggregate density forecast. For a detailed
     explanation of the method, please refer to Adaemmer et al. (2023)
     <doi:10.2139/ssrn.4342487>.
 License: GPL (>= 2)
