@@ -2,21 +2,35 @@
 % Please edit documentation in R/ClassMethods.R
 \name{summary.dsc_obj}
 \alias{summary.dsc_obj}
-\title{Plots the evolution of the tuning parameter for 'dsc' object
-and returns basic performance metrics}
+\title{Summarize and Plot Tuning Parameter Evolution for 'dsc' Object}
 \usage{
 \method{summary}{dsc_obj}(object, eval_period = NULL, ...)
 }
 \arguments{
-\item{object}{An object of type 'dsc'}
+\item{object}{An object of type 'dsc'.}
 
-\item{eval_period}{(Optional) A vector of indices to specify the evaluation period}
+\item{eval_period}{(Optional) A vector of indices to specify the evaluation period. Defaults to the entire period after burn-in.}
 
-\item{...}{Additional arguments to be consistent with S3 print() function}
+\item{...}{Additional arguments to be consistent with the S3 summary() function.}
+}
+\value{
+A list containing:
+\describe{
+  \item{MSE}{A list with the mean squared error (MSE) and squared errors (SE).}
+  \item{ACRPS}{A list with the average continuous ranked probability score (ACRPS) and CRPS values.}
+  \item{APLL}{A list with the average predictive log-likelihood (APLL) and predictive log-likelihood (PLL) values.}
+  \item{Plots}{A list of ggplot objects for visualizing the tuning parameters and selected CFMs.}
+}
 }
 \description{
-Plots the evolution of the tuning parameter for 'dsc' object
-and returns basic performance metrics
+This function plots the evolution of the tuning parameters for a 'dsc' object and returns basic performance metrics.
+}
+\examples{
+\donttest{
+
+# See example for tvc().
+
+}
 }
 \references{
 Gneiting, T., Raftery, A. E., Westveld, A. H., and Goldman, T. (2005): Calibrated Probabilistic Forecasting Using Ensemble Model Output Statistics and Minimum CRPS Estimation. \emph{Monthly Weather Review}, 133: 1098–1118.

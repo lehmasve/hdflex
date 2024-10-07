@@ -8,10 +8,10 @@
 #' estimation and forecasting are carried out recursively.
 #' @param y A matrix of dimension `T * 1` or numeric vector of length `T`
 #' containing the observations of the target variable.
-#' @param X A matrix with `T` rows containing the lagged 'P-signals' in each column.
-#' Use `NULL` if no (external) 'P-signal' is to be included.
-#' @param Ext_F A matrix with `T` rows containing the (external) 'F-signals' in each column.
-#' For 'F-Signals', the slope of the TV-C models is fixed to 1.
+#' @param X A matrix with `T` rows containing the lagged 'P-signals'
+#' in each column. Use `NULL` if no (external) 'P-signal' is to be included.
+#' @param Ext_F A matrix with `T` rows containing the (external) 'F-signals'
+#' in each column. For 'F-Signals', the slope of the TV-C models is fixed to 1.
 #' Use `NULL` if no (external) 'F-signal' is to be included.
 #' @param init An integer that denotes the number of observations used
 #' to initialize the observational variance and the coefficients' variance
@@ -23,50 +23,82 @@
 #' Constant coefficients are nested for the case `lambda = 1`.
 #' @param kappa_grid A numeric vector which takes values between 0 and 1
 #' to accommodate time-varying volatility in the TV-C models.
-#' The observational variance is estimated via Exponentially Weighted Moving Average
-#' and kappa denotes the underlying decay factor.
-#' Constant variance is nested for the case `kappa = 1`.
+#' The observational variance is estimated via
+#' Exponentially Weighted Moving Average and kappa denotes the underlying
+#' decay factor. Constant variance is nested for the case `kappa = 1`.
 #' Each signal in combination with each value of
 #' kappa provides a separate candidate density forecast.
 #' For the values of kappa, we follow the recommendation
 #' of RiskMetrics (Reuters, 1996).
 #' @param bias A boolean to indicate whether the TV-C-models
 #' allow for a bias correction to F-signals.
-#' `TRUE` allows for a time-varying intercept, and `FALSE` sets (and fixes) the intercept to 0.
+#' `TRUE` allows for a time-varying intercept, and `FALSE` sets (and fixes)
+#' the intercept to 0.
 #' @return A list containing:
 #' \describe{
-#' \item{Forecasts}{A list containing:
+#'  \item{Forecasts}{A list containing:
 #'   \describe{
-#'     \item{Realization: }{A vector with the actual values of the target variable.}
-#'     \item{Point_Forecasts: }{A vector with the first moments of the predictive densities.}
-#'     \item{Variance_Forecasts: }{A vector with the second moments of the predictive densities.}
-#'  }
+#'     \item{Realization: }{
+#'     A vector with the actual values of the target variable.
+#'     }
+#'     \item{Point_Forecasts: }{
+#'     A vector with the first moments of the predictive densities.
+#'     }
+#'     \item{Variance_Forecasts: }{
+#'     A vector with the second moments of the predictive densities.
+#'     }
+#'   }
 #' }
 #' \item{Model}{A list containing:
 #'   \describe{
-#'     \item{Lambda_grid}{The grid of lambda values used in the model.}
-#'     \item{Kappa_grid}{The grid of kappa values used in the model.}
-#'     \item{Init}{The init value used in the model.}
-#'     \item{Bias}{A boolean indicating if bias correct was applied to F-signals.}
+#'     \item{Lambda_grid}{
+#'     The grid of lambda values used in the model.
+#'     }
+#'     \item{
+#'     Kappa_grid}{The grid of kappa values used in the model.
+#'     }
+#'     \item{Init}{
+#'     The init value used in the model.
+#'     }
+#'     \item{Bias}{
+#'     A boolean indicating if bias correct was applied to F-signals.
+#'     }
 #'   }
 #'  }
 #' }
 #' @seealso \url{https://github.com/lehmasve/hdflex#readme}
 #' @author Philipp Adämmer, Sven Lehmann, Rainer Schüssler
 #' @references
-#' Beckmann, J., Koop, G., Korobilis, D., and Schüssler, R. A. (2020) "Exchange rate predictability and dynamic bayesian learning." \emph{Journal of Applied Econometrics}, 35 (4): 410–421.
+#' Beckmann, J., Koop, G., Korobilis, D., and Schüssler, R. A. (2020)
+#' "Exchange rate predictability and dynamic bayesian learning."
+#' \emph{Journal of Applied Econometrics}, 35 (4): 410–421.
 #'
-#' Dangl, T. and Halling, M. (2012) "Predictive regressions with time-varying coefficients." \emph{Journal of Financial Economics}, 106 (1): 157–181.
+#' Dangl, T. and Halling, M. (2012)
+#' "Predictive regressions with time-varying coefficients."
+#' \emph{Journal of Financial Economics}, 106 (1): 157–181.
 #'
-#' Del Negro, M., Hasegawa, R. B., and Schorfheide, F. (2016) "Dynamic prediction pools: An investigation of financial frictions and forecasting performance." \emph{Journal of Econometrics}, 192 (2): 391–405.
+#' Del Negro, M., Hasegawa, R. B., and Schorfheide, F. (2016)
+#' "Dynamic prediction pools:
+#' An investigation of financial frictions and forecasting performance."
+#' \emph{Journal of Econometrics}, 192 (2): 391–405.
 #'
-#' Koop, G. and Korobilis, D. (2012) "Forecasting inflation using dynamic model averaging." \emph{International Economic Review}, 53 (3): 867–886.
+#' Koop, G. and Korobilis, D. (2012)
+#' "Forecasting inflation using dynamic model averaging."
+#' \emph{International Economic Review}, 53 (3): 867–886.
 #'
-#' Koop, G. and Korobilis, D. (2023) "Bayesian dynamic variable selection in high dimensions." \emph{International Economic Review}.
+#' Koop, G. and Korobilis, D. (2023)
+#' "Bayesian dynamic variable selection in high dimensions."
+#' \emph{International Economic Review}.
 #'
-#' Raftery, A. E., Kárn`y, M., and Ettler, P. (2010) "Online prediction under model uncertainty via dynamic model averaging: Application to a cold rolling mill." \emph{Technometrics}, 52 (1): 52–66.
+#' Raftery, A. E., Kárn`y, M., and Ettler, P. (2010)
+#' "Online prediction under model uncertainty via dynamic model averaging:
+#' Application to a cold rolling mill."
+#' \emph{Technometrics}, 52 (1): 52–66.
 #'
-#' West, M. and Harrison, J. (1997) "Bayesian forecasting and dynamic models" \emph{Springer}, 2nd edn.
+#' West, M. and Harrison, J. (1997)
+#' "Bayesian forecasting and dynamic models"
+#' \emph{Springer}, 2nd edn.
+#' 
 #' @export
 #' @import checkmate
 #' @importFrom stats na.omit
@@ -224,7 +256,10 @@
 #'    options(repr.plot.width = 15, repr.plot.height = 15)
 #'    plots_list <- eval_results$Plots
 #'    plots_list <- c(list(plot_cssed), plots_list)
-#'    cowplot::plot_grid(plotlist = plots_list, ncol = 2, nrow = 3, align = "hv")
+#'    cowplot::plot_grid(plotlist = plots_list,
+#'                       ncol = 2,
+#'                       nrow = 3,
+#'                       align = "hv")
 #'
 #'    # Relative MSE
 #'    print(paste("Relative MSE:", round(eval_results$MSE[[1]] / mse_ar2, 4)))
