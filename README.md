@@ -9,7 +9,7 @@ Version](https://www.r-pkg.org/badges/version/hdflex)](https://CRAN.R-project.or
 [![R-CMD-check](https://github.com/lehmasve/hdflex/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/lehmasve/hdflex/actions/workflows/R-CMD-check.yaml)
 [![Total
 Downloads](https://cranlogs.r-pkg.org/badges/grand-total/hdflex?color=orange)](https://CRAN.R-project.org/package=hdflex)
-[![codecov](https://codecov.io/gh/lehmasve/hdflex/graph/badge.svg?token=leKtsb0Kub)](https://codecov.io/gh/lehmasve/hdflex)
+[![codecov](https://codecov.io/gh/lehmasve/hdflex/graph/badge.svg?token=leKtsb0Kub)](https://app.codecov.io/gh/lehmasve/hdflex)
 ⁠<!-- badges: end -->⁠
 
 ## About
@@ -25,13 +25,15 @@ The package comprises three functions:
   described in [Adämmer, Lehmann and Schüssler
   (2023)](https://dx.doi.org/10.2139/ssrn.4342487).
 
-- `tvc()` can be used to transform predictive signals into
-  (conditionally normal) predictive densities based on univariate
-  time-varying coefficient models (first part of the STSC algorithm).
+- `tvc()` can be used to transform predictive signals into univariate
+  density forecasts via time-varying coefficient models, where each
+  model generates a conditionally gaussian predictive density for each
+  signal at each point in time (first part of the STSC algorithm).
 
-- `dsc()` can be used to dynamically generate density forecast
-  combinations from a subset of (conditionally normal) candidate density
-  forecasts (second part of the STSC algorithm).
+- `dsc()` can be used to dynamically select a subset of candidate
+  forecast models for each period based on their past performance in
+  terms of density forecast accuracy (second part of the STSC
+  algorithm).
 
 ## Installation
 
@@ -57,12 +59,12 @@ you need the appropriate compilers:
   [Rtools](https://cran.r-project.org/bin/windows/Rtools/) available
   from CRAN.
 
-- On macOS you need the very least Xcode and a Fortran compiler - for
-  more details see [Compiler](https://mac.r-project.org/tools/).
+- On macOS you need Xcode and a Fortran compiler - for more details see
+  [Compiler](https://mac.r-project.org/tools/).
 
 ## Usage
 
-First example using the `stsc()` function:
+Example using the `stsc()` function:
 
 ``` r
 #########################################################
@@ -207,7 +209,7 @@ cowplot::plot_grid(plotlist = plots_list, ncol = 2, nrow = 3, align = "hv")
 print(paste("Relative MSE:", round(eval_results$MSE[[1]] / mse_ar2, 4)))
 ```
 
-Second example using the `tvc()` and `dsc()` functions:
+Same example using the `tvc()` and `dsc()` functions:
 
 ``` r
 #########################################################
