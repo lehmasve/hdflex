@@ -1,8 +1,6 @@
 #include <RcppArmadillo.h>
-#include <thread>
 #include <RcppThread.h>
 using namespace Rcpp;
-using namespace RcppThread;
 
 // 1) TVC Regressions
 // Function I - Initialize TVC-Parameter
@@ -41,10 +39,10 @@ using namespace RcppThread;
       }
   
    // Parallel Loop over lambdas
-      parallelFor(0, lambda_grid.n_elem, [&y, &S, &init, 
-                  &kappa_grid, &bias, &n_signal, &n_raw_sig,
-                  &theta_cube, &cov_mat_cube, &h_vec, &cm_na_idx,
-                  &ctr_cube] (unsigned int l) {
+      RcppThread::parallelFor(0, lambda_grid.n_elem, [&y, &S, &init, 
+                              &kappa_grid, &bias, &n_signal, &n_raw_sig,
+                              &theta_cube, &cov_mat_cube, &h_vec, &cm_na_idx,
+                              &ctr_cube] (unsigned int l) {
                  
       // Define variables
         arma::vec x;
@@ -207,10 +205,10 @@ using namespace RcppThread;
       }
     
    // Parallel Loop over lambdas
-      parallelFor(0, lambda_grid.n_elem, [&y_t, &ctr_cube, &lambda_grid, &kappa_grid,
-                                          &s_t, &s_pred, &theta_cube,
-                                          &cov_mat_cube, &h_vec,
-                                          &mu_vec, &variance_vec] (unsigned int l) {
+      RcppThread::parallelFor(0, lambda_grid.n_elem, [&y_t, &ctr_cube, &lambda_grid, &kappa_grid,
+                                                      &s_t, &s_pred, &theta_cube,
+                                                      &cov_mat_cube, &h_vec,
+                                                      &mu_vec, &variance_vec] (unsigned int l) {
 
     // Set Lambda
        double lambda = lambda_grid(l);
@@ -633,12 +631,12 @@ using namespace RcppThread;
       int psi_max = max(psi_grid);
    
    // Parallel Loop over gammas
-      parallelFor(0, gamma_grid.n_elem, [&score_cands, &psi_max, &psi_grid, &ctr_mat,
-                                         &gamma_grid, &chosen_cands, &equal_weight,
-                                         &forecasts_comb, &variances_comb,
-                                         &forecast_tvc_t, &variance_tvc_t,
-                                         &y_t, &metric, &incl_idx, &risk_aversion, 
-                                         &min_weight, &max_weight] (unsigned int g) {
+      RcppThread::parallelFor(0, gamma_grid.n_elem, [&score_cands, &psi_max, &psi_grid, &ctr_mat,
+                                                     &gamma_grid, &chosen_cands, &equal_weight,
+                                                     &forecasts_comb, &variances_comb,
+                                                     &forecast_tvc_t, &variance_tvc_t,
+                                                     &y_t, &metric, &incl_idx, &risk_aversion, 
+                                                     &min_weight, &max_weight] (unsigned int g) {
     
       // Set Gamma
          double gamma = gamma_grid(g);

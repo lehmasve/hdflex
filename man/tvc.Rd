@@ -7,15 +7,15 @@
 tvc(y, X, Ext_F, init, lambda_grid, kappa_grid, bias)
 }
 \arguments{
-\item{y}{A matrix of dimension `T * 1` or numeric vector of length `T`
+\item{y}{A matrix of dimension \code{T * 1} or numeric vector of length \code{T}
 containing the observations of the target variable.}
 
-\item{X}{A matrix with `T` rows containing the lagged 'P-signals'
-in each column. Use `NULL` if no (external) 'P-signal' is to be included.}
+\item{X}{A matrix with \code{T} rows containing the lagged 'P-signals'
+in each column. Use \code{NULL} if no (external) 'P-signal' is to be included.}
 
-\item{Ext_F}{A matrix with `T` rows containing the (external) 'F-signals'
+\item{Ext_F}{A matrix with \code{T} rows containing the (external) 'F-signals'
 in each column. For 'F-Signals', the slope of the TV-C models is fixed to 1.
-Use `NULL` if no (external) 'F-signal' is to be included.}
+Use \code{NULL} if no (external) 'F-signal' is to be included.}
 
 \item{init}{An integer that denotes the number of observations used
 to initialize the observational variance and the coefficients' variance
@@ -25,13 +25,13 @@ in the TV-C models.}
 denoting the discount factor(s) that control the dynamics of the time-varying
 coefficients. Each signal in combination with each value of
 lambda provides a separate candidate forecast.
-Constant coefficients are nested for the case `lambda = 1`.}
+Constant coefficients are nested for the case \code{lambda = 1}.}
 
 \item{kappa_grid}{A numeric vector which takes values between 0 and 1
 to accommodate time-varying volatility in the TV-C models.
 The observational variance is estimated via
 Exponentially Weighted Moving Average and kappa denotes the underlying
-decay factor. Constant variance is nested for the case `kappa = 1`.
+decay factor. Constant variance is nested for the case \code{kappa = 1}.
 Each signal in combination with each value of
 kappa provides a separate candidate density forecast.
 For the values of kappa, we follow the recommendation
@@ -39,45 +39,45 @@ of RiskMetrics (Reuters, 1996).}
 
 \item{bias}{A boolean to indicate whether the TV-C-models
 allow for a bias correction to F-signals.
-`TRUE` allows for a time-varying intercept, and `FALSE` sets (and fixes)
+\code{TRUE} allows for a time-varying intercept, and \code{FALSE} sets (and fixes)
 the intercept to 0.}
 }
 \value{
 A list containing:
 \describe{
- \item{Forecasts}{A list containing:
-  \describe{
-    \item{Realization: }{
-    A vector with the actual values of the target variable.
-    }
-    \item{Point_Forecasts: }{
-    A vector with the first moments of the predictive densities.
-    }
-    \item{Variance_Forecasts: }{
-    A vector with the second moments of the predictive densities.
-    }
-  }
+\item{Forecasts}{A list containing:
+\describe{
+\item{Realization: }{
+A vector with the actual values of the target variable.
+}
+\item{Point_Forecasts: }{
+A vector with the first moments of the predictive densities.
+}
+\item{Variance_Forecasts: }{
+A vector with the second moments of the predictive densities.
+}
+}
 }
 \item{Model}{A list containing:
-  \describe{
-    \item{Lambda_grid}{
-    The grid of lambda values used in the model.
-    }
-    \item{
-    Kappa_grid}{The grid of kappa values used in the model.
-    }
-    \item{Init}{
-    The init value used in the model.
-    }
-    \item{Bias}{
-    A boolean indicating if bias correct was applied to F-signals.
-    }
-  }
- }
+\describe{
+\item{Lambda_grid}{
+The grid of lambda values used in the model.
+}
+\item{
+Kappa_grid}{The grid of kappa values used in the model.
+}
+\item{Init}{
+The init value used in the model.
+}
+\item{Bias}{
+A boolean indicating if bias correct was applied to F-signals.
+}
+}
+}
 }
 }
 \description{
-The `tvc()` function generates density forecasts
+The \code{tvc()} function generates density forecasts
 based on univariate time-varying coefficient models in state-space form.
 Each forecasting model includes an intercept and one predictive signal,
 which can either be a 'P-signal' or 'F-signal'.

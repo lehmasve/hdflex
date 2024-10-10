@@ -39,5 +39,5 @@
 #' McCracken, M., and S. Ng (2020) “FRED-QD: A Quarterly Database for Macroeconomic Research” \emph{National Bureau of Economic Research}, Working Paper 26872.
 #'
 #' Welch, I. and Goyal, A. (2008) "A comprehensive look at the empirical performance of equity premium prediction." \emph{The Review of Financial Studies}, 21 (4): 1455–1508.
-#' @source <https://doi.org/10.1111/iere.12623>
+#' @source \doi{10.1111/iere.12623}
 "inflation_data"
