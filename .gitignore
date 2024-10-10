@@ -59,5 +59,7 @@ rsconnect/
 *.o
 *.so
 
-# ...
+### Ignore specific files
 Build_Code.R
+sticker.ipynb
+package_example.ipynb

@@ -131,7 +131,7 @@ using namespace Rcpp;
       cov_mat = r_upt - r_upt * z_t.t() * inv_tvar * (z_t * r_upt);
        
    // Get Predictive Density for Predicting t + 1 (see Equation 9)
-      const double       mu = arma::as_scalar(z_pred * theta);
+      const double mu = arma::as_scalar(z_pred * theta);
       const double variance = arma::as_scalar(h + z_pred * ((1.0 / lambda) * cov_mat) * z_pred.t());
       
    // Fill Return-Field  
