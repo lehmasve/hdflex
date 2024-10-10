@@ -17,3 +17,5 @@
 Build_Code.R
 ^dev$
 ^revdep$
+^package_example.ipynb$
+^sticker.ipynb$
