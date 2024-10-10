@@ -2,7 +2,7 @@
 % Please edit documentation in R/ClassMethods.R
 \name{summary.stsc_obj}
 \alias{summary.stsc_obj}
-\title{Summarize and Plot Tuning Parameter Evolution for 'stsc' Object}
+\title{Summary for 'stsc' object}
 \usage{
 \method{summary}{stsc_obj}(object, eval_period = NULL, ...)
 }
@@ -11,7 +11,7 @@
 
 \item{eval_period}{(Optional) A vector of indices to specify the evaluation period. Defaults to the entire period after burn-in.}
 
-\item{...}{Additional arguments to be consistent with the S3 summary() function.}
+\item{...}{Additional arguments to be consistent with the S3 print() function.}
 }
 \value{
 A list containing:
@@ -33,6 +33,11 @@ This function plots the evolution of the tuning parameters for an 'stsc' object 
 }
 }
 \references{
-Gneiting, T., Raftery, A. E., Westveld, A. H., and Goldman, T. (2005): Calibrated Probabilistic Forecasting Using Ensemble Model Output Statistics and Minimum CRPS Estimation. \emph{Monthly Weather Review}, 133: 1098–1118.
-Jordan, A., Krueger, F., and Lerch, S. (2019): "Evaluating Probabilistic Forecasts with scoringRules." \emph{Journal of Statistical Software}, 90(12): 1-37.
+Gneiting, T., Raftery, A. E., Westveld, A. H., and Goldman, T. (2005):
+Calibrated Probabilistic Forecasting Using Ensemble Model Output Statistics and Minimum CRPS Estimation.
+\emph{Monthly Weather Review}, 133: 1098–1118.
+
+Jordan, A., Krueger, F., and Lerch, S. (2019):
+"Evaluating Probabilistic Forecasts with scoringRules."
+\emph{Journal of Statistical Software}, 90(12): 1-37.
 }

@@ -1,17 +1,38 @@
 # Submission notes
-### Reverse Dependency results
-* checked with tools::dependsOnPkgs() and tools::check_packages_in_dir()
+* Update to version 0.3.0
+
+## Reverse Dependency
+Checked with tools::dependsOnPkgs() and tools::check_packages_in_dir()
 * no reverse dependencies
 
-### Test environments
-* Using R version 4.4.1 (2024-06-14)
-* Using platform: aarch64-apple-darwin20
-* R was compiled by
-  Apple clang version 14.0.0 (clang-1400.0.29.202)
-  GNU Fortran (GCC) 12.2.0
-* Running under: macOS 15.0.1
+## Test environments
+Checked and passed using rhub v2.0.0 in the following environments:
+* R-hubv2 windows (R-devel)
+* R-hubv2 linux (R-devel)
+* R-hubv2 macos-arm64 (R-devel)
+* R-hubv2 clang-asan
+* R-hubv2 ubuntu-gcc12
+* R-hubv2 ubuntu-clang
 
-### R CMD check results
-Specified C++11: please drop specification unless essential
-* 0 errors ✔ | 0 warnings ✔ | 1 note ✖
-* Comment: C++11 specification needed for parallelization over RcppThread
+Checked and passed using win-builder.r-project.org:
+* windows (R-devel)
+* windows (R-release)
+* windows (R-old release)
+
+Check and passed using R-CMD-check github actions:
+* macos-latest (release)
+* ubuntu-latest (devel)
+* ubuntu-latest (oldrel-1)
+* ubuntu-latest (release)
+* windows-latest (release)
+
+## Notes
+* C++11 specification needed for parallelization over RcppThread
+
+
+
+
+
+
+
+and 
