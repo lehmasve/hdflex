@@ -1,5 +1,6 @@
 # hdflex 0.3.0
 * Enhanced parallelization using RcppThreads for the `stsc()` function.
+* Improved (computational) performance 
 * Added S3 class method for `stsc` and `dsc` objects: `summary.stsc_obj` and `summary.dsc_obj` for generating plots showing the evolution of the tuning parameter, as well as standard accuracy metrics such as Mean-Squared-Error, Continuous-Ranked-Probability-Score, and Predictive-Log-Likelihood-Score.
 * Introduction of the new argument `bias` for `stsc()` and `tvc`, allowing users to decide whether bias correction should be applied to the F-Signals in the TVC-models.
 * Addition of the new argument `incl` for `stsc()` and `dsc`, enabling users to specify whether certain signals are required to be included in the subsets.
