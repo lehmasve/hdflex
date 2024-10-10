@@ -12,8 +12,8 @@ using namespace Rcpp;
                   bool bias) {
 
    // Get Dimensions   
-      const int n_signal = S.n_cols;
-      const int n_cands  = n_signal * lambda_grid.n_elem * kappa_grid.n_elem;
+      int n_signal = S.n_cols;
+      int n_cands  = n_signal * lambda_grid.n_elem * kappa_grid.n_elem;
 
    // Define Variables 
       arma::cube theta_cube(2, 1, n_cands);
@@ -30,7 +30,7 @@ using namespace Rcpp;
       int ctr = 0;
          for (unsigned int l = 0; l < lambda_grid.n_elem; l++) {
            for (unsigned int k = 0; k < kappa_grid.n_elem; k++) {
-               for (unsigned int j = 0; j < n_signal; j++) {
+               for (int j = 0; j < n_signal; j++) {
 
                // Select Signal
                   x = S.col(j);
@@ -158,7 +158,7 @@ using namespace Rcpp;
                                              arma::rowvec& h_vec) {      
   
    // Get Dimensions
-      const int n_cands = s_t.n_elem * lambda_grid.n_elem * kappa_grid.n_elem;
+      int n_cands = s_t.n_elem * lambda_grid.n_elem * kappa_grid.n_elem;
 
    // Define Variables
       arma::field<arma::rowvec> ret(2);
@@ -170,13 +170,13 @@ using namespace Rcpp;
       for (unsigned int l = 0; l < lambda_grid.n_elem; l++) {
 
       // Set Lambda
-         const double lambda = lambda_grid(l);
+         double lambda = lambda_grid(l);
 
       // Loop over Kappa
          for (unsigned int k = 0; k < kappa_grid.n_elem; k++) {
 
          // Set Kappa
-            const double kappa =  kappa_grid(k);
+            double kappa =  kappa_grid(k);
 
          // Loop over all candidates
             for (unsigned int j = 0; j < s_t.n_elem; j++) {
@@ -186,7 +186,7 @@ using namespace Rcpp;
                const double s_pred_j = s_pred(j);
 
             // Check if signal is NA or not 
-               const bool is_na = !arma::is_finite(s_t_j);
+               bool is_na = !arma::is_finite(s_t_j);
                if(!is_na) {
    
                // Apply TVC-Function
@@ -246,7 +246,7 @@ using namespace Rcpp;
 
    // Fill Field for Candidate Models
       arma::field<arma::rowvec> score_cands(n_gamma);
-      for (unsigned int i = 0; i < n_gamma; ++i) {
+      for (int i = 0; i < n_gamma; ++i) {
           score_cands(i) = vec;
       }
   
@@ -312,8 +312,8 @@ using namespace Rcpp;
 
    // Calculate Combined Predictive Density (Logarithmic Combination Rule)
       const double variance_comb = 1.0 / accu(active_weights / oos_variance_tvp_sub);
-      const double       mu_comb = accu(active_weights % oos_forecast_tvp_sub / oos_variance_tvp_sub) *
-                                   variance_comb;
+      const double mu_comb = accu(active_weights % oos_forecast_tvp_sub / oos_variance_tvp_sub) *
+                             variance_comb;
    
    // Fill Field  
       ret(0) = mu_comb;
@@ -337,11 +337,11 @@ using namespace Rcpp;
                          double max_weight) {
                                      
    // Define Variables
-      const int n_cands = score_cands_gamma.n_elem;
+      int n_cands = score_cands_gamma.n_elem;
       arma::rowvec performance_score(n_cands); performance_score.fill(arma::datum::nan);
 
    // Calculate Performance
-      for (unsigned int i=0; i<n_cands; i++) {
+      for (int i=0; i<n_cands; i++) {
 
       // Check for NA value
          if (arma::is_finite(forecast_tvc_t(i))) {
@@ -426,16 +426,14 @@ using namespace Rcpp;
                               
    // Define Variables
       arma::field<double> ret(3);
-    
+   
    // Get index of highest performance score
-      const arma::uword best_idx = index_max(score_combs);
+      arma::uword best_idx = index_max(score_combs);
    
    // Select STSC-Forecast
-      auto it_mu  = mu_comb_vec.begin() + best_idx;
-      auto it_var = variance_comb_vec.begin() + best_idx;
-      const double forecast_stsc = *it_mu;
-      const double variance_stsc = *it_var;
-
+      double forecast_stsc = mu_comb_vec(best_idx);
+      double variance_stsc = variance_comb_vec(best_idx);
+   
    // Fill Field  
       ret(0) = forecast_stsc;
       ret(1) = variance_stsc;
@@ -459,11 +457,11 @@ using namespace Rcpp;
                        double max_weight) {
                                      
    // Define Variables
-      const int n_combs = score_combs.n_cols;
+      int n_combs = score_combs.n_cols;
       arma::rowvec performance_score(n_combs);
 
    // Calculate Performance
-      for (unsigned int i=0; i<n_combs; i++) {
+      for (int i=0; i<n_combs; i++) {
 
       // Optimization-metric
          switch(metric) {
@@ -584,7 +582,7 @@ using namespace Rcpp;
                                        double max_weight) {
 
    // Define Variables
-      const int n_combs = score_combs.n_cols;
+      int n_combs = score_combs.n_cols;
       arma::rowvec forecasts_comb(n_combs); forecasts_comb.fill(arma::datum::nan);
       arma::rowvec variances_comb(n_combs); variances_comb.fill(arma::datum::nan);
       arma::field<arma::rowvec> chosen_cands(n_combs); 
@@ -594,14 +592,14 @@ using namespace Rcpp;
       arma::field<arma::rowvec> ret(4); 
 
    // Set highest value for psi
-      const int psi_max = max(psi_grid);
+      int psi_max = max(psi_grid);
 
    // Loop over Gamma and Psi
       int ctr = 0;
       for (unsigned int g=0; g<gamma_grid.n_elem; g++) {
 
          // Set Gamma
-            const double gamma = gamma_grid(g);
+            double gamma = gamma_grid(g);
 
          // Compute Maximum Set of Active Candidate Models
             active_models = dsc_active_models_(score_cands(g), psi_max);
@@ -672,9 +670,9 @@ using namespace Rcpp;
                                 variances_comb);
 
    // Assign Results
-      const double stsc_forecast = stsc_results(0);
-      const double stsc_variance = stsc_results(1);
-      const int stsc_idx = stsc_results(2);           
+      double stsc_forecast = stsc_results(0);
+      double stsc_variance = stsc_results(1);
+      int stsc_idx = stsc_results(2);           
 
    // Update score for Combinations (Aggregated Predictive Distributions)
       dsc_score_comb_(score_combs, 
@@ -790,11 +788,11 @@ using namespace Rcpp;
       }
       
    // Number of Candiate Models and Signals
-      const int n_signal = n_raw_sig + n_point_f;
-      const int n_cands  = n_signal * lambda_grid.n_elem * kappa_grid.n_elem;
+      int n_signal = n_raw_sig + n_point_f;
+      int n_cands  = n_signal * lambda_grid.n_elem * kappa_grid.n_elem;
    
    // Define Variables for TVC-Models
-      const int tlength = y.n_elem;
+      int tlength = y.n_elem;
       arma::rowvec forecast_tvc_pred(n_cands); forecast_tvc_pred.fill(arma::datum::nan);
       arma::rowvec variance_tvc_pred(n_cands); variance_tvc_pred.fill(arma::datum::nan);
       arma::cube   theta_cube(2, 1, n_cands), cov_mat_cube(2, 2, n_cands);
@@ -802,7 +800,7 @@ using namespace Rcpp;
       arma::uvec   current_na_cm, new_na_cm;
 
    // Define Variables for Dynamic Subset Combinations
-      const int n_combs = gamma_grid.n_elem * psi_grid.n_elem;
+      int n_combs = gamma_grid.n_elem * psi_grid.n_elem;
       arma::vec  stsc_forecast(tlength); stsc_forecast.fill(arma::datum::nan);
       arma::vec  stsc_variance(tlength); stsc_variance.fill(arma::datum::nan);
       arma::vec stsc_idx(tlength); stsc_idx.fill(arma::datum::nan);  
@@ -865,12 +863,12 @@ using namespace Rcpp;
 
    // --- 
    // Loop over t
-      for (unsigned int t=0; t<(tlength-1); t++ ) {
+      for (int t=0; t<(tlength-1); t++ ) {
 
       // Subset Data
-         const double          y_t = y[t];
-         const double       y_pred = y[t+1];
-         const arma::rowvec    s_t = S.row(t);
+         const double y_t = y[t];
+         const double y_pred = y[t+1];
+         const arma::rowvec s_t = S.row(t);
          const arma::rowvec s_pred = S.row(t+1);
 
       // Check for NA-Values in Candidate Models in t 

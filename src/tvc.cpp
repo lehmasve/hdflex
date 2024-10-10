@@ -13,8 +13,8 @@ using namespace Rcpp;
                  bool bias) {
 
    // Get Dimensions   
-      const int n_signal = S.n_cols;
-      const int n_cands  = n_signal * lambda_grid.n_elem * kappa_grid.n_elem;
+      int n_signal = S.n_cols;
+      int n_cands  = n_signal * lambda_grid.n_elem * kappa_grid.n_elem;
 
    // Define Variables 
       arma::cube   theta_cube(2, 1, n_cands);
@@ -31,7 +31,7 @@ using namespace Rcpp;
       int ctr = 0;
          for (unsigned int l = 0; l < lambda_grid.n_elem; l++) {
            for (unsigned int k = 0; k < kappa_grid.n_elem; k++) {
-               for (unsigned int j = 0; j < n_signal; j++) {
+               for (int j = 0; j < n_signal; j++) {
 
                // Select Signal
                   x = S.col(j);
@@ -154,7 +154,7 @@ using namespace Rcpp;
                                             arma::rowvec& h_vec) {      
   
    // Get Dimensions
-      const int n_cands = s_t.n_elem * lambda_grid.n_elem * kappa_grid.n_elem;
+      int n_cands = s_t.n_elem * lambda_grid.n_elem * kappa_grid.n_elem;
 
    // Define Variables
       arma::field<arma::rowvec> ret(2);
@@ -166,13 +166,13 @@ using namespace Rcpp;
       for (unsigned int l = 0; l < lambda_grid.n_elem; l++) {
 
       // Set Lambda
-         const double lambda = lambda_grid(l);
+         double lambda = lambda_grid(l);
 
       // Loop over Kappa
          for (unsigned int k = 0; k < kappa_grid.n_elem; k++) {
 
          // Set Kappa
-            const double kappa =  kappa_grid(k);
+            double kappa =  kappa_grid(k);
 
          // Loop over all candidates
             for (unsigned int j = 0; j < s_t.n_elem; j++) {
@@ -182,7 +182,7 @@ using namespace Rcpp;
                const double s_pred_j = s_pred(j);
 
             // Check if signal is NA or not 
-               const bool is_na = !arma::is_finite(s_t_j);
+               bool is_na = !arma::is_finite(s_t_j);
                if(!is_na) {
    
                // Apply TV-C-Function
@@ -249,16 +249,16 @@ using namespace Rcpp;
       }
 
    // Number of Candiate Models and Signals
-      const int n_signal = n_raw_sig + n_point_f;
-      const int n_cands  = n_signal * lambda_grid.n_elem * kappa_grid.n_elem;
+      int n_signal = n_raw_sig + n_point_f;
+      int n_cands  = n_signal * lambda_grid.n_elem * kappa_grid.n_elem;
    
    // Define Variables for TV-C-Models
-      const int    tlength = y.n_elem;
-      arma::mat    tvc_forecast(tlength, n_cands); tvc_forecast.fill(arma::datum::nan);
-      arma::mat    tvc_variance(tlength, n_cands); tvc_variance.fill(arma::datum::nan);
-      arma::cube   theta_cube(2, 1, n_cands), cov_mat_cube(2, 2, n_cands);
+      int tlength = y.n_elem;
+      arma::mat tvc_forecast(tlength, n_cands); tvc_forecast.fill(arma::datum::nan);
+      arma::mat tvc_variance(tlength, n_cands); tvc_variance.fill(arma::datum::nan);
+      arma::cube theta_cube(2, 1, n_cands), cov_mat_cube(2, 2, n_cands);
       arma::rowvec h_vec(n_cands);
-      arma::uvec   current_na_cm, new_na_cm;
+      arma::uvec current_na_cm, new_na_cm;
 
    // --- 
    // Apply TV-C-Init-Function
@@ -278,7 +278,7 @@ using namespace Rcpp;
     
    // --- 
    // Loop over t
-      for (unsigned int t=0; t<(tlength-1); t++ ) {
+      for (int t=0; t<(tlength-1); t++ ) {
 
       // Subset Data
          const double           y_t = y[t];
