@@ -26,15 +26,15 @@ stsc(
 )
 }
 \arguments{
-\item{y}{A matrix of dimension `T * 1` or numeric vector of length `T`
+\item{y}{A matrix of dimension \code{T * 1} or numeric vector of length \code{T}
 containing the observations of the target variable.}
 
-\item{X}{A matrix with `T` rows containing the lagged 'P-signals'
-in each column. Use `NULL` if no (external) 'P-signal' is to be included.}
+\item{X}{A matrix with \code{T} rows containing the lagged 'P-signals'
+in each column. Use \code{NULL} if no (external) 'P-signal' is to be included.}
 
-\item{Ext_F}{A matrix with `T` rows containing the (external) 'F-signals'
+\item{Ext_F}{A matrix with \code{T} rows containing the (external) 'F-signals'
 in each column. For 'F-Signals', the slope of the TV-C models is fixed to 1.
-Use `NULL` if no (external) 'F-signal' is to be included.}
+Use \code{NULL} if no (external) 'F-signal' is to be included.}
 
 \item{init}{An integer that denotes the number of observations used
 to initialize the observational variance and the coefficients' variance
@@ -44,13 +44,13 @@ in the TV-C models.}
 denoting the discount factor(s) that control the dynamics of the time-varying
 coefficients. Each signal in combination with each value of
 lambda provides a separate candidate forecast.
-Constant coefficients are nested for the case `lambda = 1`.}
+Constant coefficients are nested for the case \code{lambda = 1}.}
 
 \item{kappa_grid}{A numeric vector which takes values between 0 and 1
 to accommodate time-varying volatility in the TV-C models.
 The observational variance is estimated via
 Exponentially Weighted Moving Average and kappa denotes the underlying
-decay factor. Constant variance is nested for the case `kappa = 1`.
+decay factor. Constant variance is nested for the case \code{kappa = 1}.
 Each signal in combination with each value of
 kappa provides a separate candidate density forecast.
 For the values of kappa, we follow the recommendation
@@ -58,7 +58,7 @@ of RiskMetrics (Reuters, 1996).}
 
 \item{bias}{A boolean to indicate whether the TV-C-models
 allow for a bias correction to F-signals.
-`TRUE` allows for a time-varying intercept, and `FALSE` sets (and fixes)
+\code{TRUE} allows for a time-varying intercept, and \code{FALSE} sets (and fixes)
 the intercept to 0.}
 
 \item{gamma_grid}{A numeric vector containing potential discount factors
@@ -78,118 +78,118 @@ For details, \emph{see Adaemmer et al. (2023)}.}
 applied to down-weight the past predictive performance of the
 aggregate predictive densities.}
 
-\item{burn_in}{An integer value `>= 1` that denotes the number of
+\item{burn_in}{An integer value \verb{>= 1} that denotes the number of
 observations used to 'initialize' the rankings.
 After 'burn_in' observations, the rankings for both,
 the candidate forecasting models and aggregate predictive densities
-are reset. `burn_in = 1` means no burn-in period is applied.}
+are reset. \code{burn_in = 1} means no burn-in period is applied.}
 
-\item{burn_in_dsc}{An integer value `>= 1` that denotes the number of
+\item{burn_in_dsc}{An integer value \verb{>= 1} that denotes the number of
 observations used to 'initialize' the rankings.
 After 'burn_in_dsc' observations, only the ranking of the
 aggregate predictive densities is reset.
-`burn_in_dsc = 1` means no burn-in period is applied.}
+\code{burn_in_dsc = 1} means no burn-in period is applied.}
 
-\item{metric}{An integer from the set `1, 2, 3, 4, 5` representing
+\item{metric}{An integer from the set \verb{1, 2, 3, 4, 5} representing
 the metric used to rank the candidate forecasting models (TV-C models)
 and subset combinations based on their predictive performance.
-The default value is `metric = 5` which ranks them according to the
+The default value is \code{metric = 5} which ranks them according to the
 sum of (discounted) Continuous-Ranked-Probability-Scores (CRPS).
-`metric = 1` uses discounted Predictive Log-Likelihoods,
-`metric = 2` uses discounted Squared-Errors,
-`metric = 3` uses discounted Absolute-Errors,
-`metric = 4` uses discounted Compounded-Returns
+\code{metric = 1} uses discounted Predictive Log-Likelihoods,
+\code{metric = 2} uses discounted Squared-Errors,
+\code{metric = 3} uses discounted Absolute-Errors,
+\code{metric = 4} uses discounted Compounded-Returns
 (in this case the target variable y has to be a time series of
 financial returns).}
 
 \item{equal_weight}{A boolean that denotes whether equal weights are used to
-combine the candidate forecasts within a subset. If `FALSE`, the weights are
+combine the candidate forecasts within a subset. If \code{FALSE}, the weights are
 calculated applying the softmax function on the ranking scores of
 the candidate forecasting models. The method proposed in
 Adaemmer et al. (2023) uses equal weights to combine the
 candidate forecasting models.}
 
 \item{incl}{An optional integer vector that denotes signals that
-must be included in the subset combinations. For example, `incl = c(1, 3)`
+must be included in the subset combinations. For example, \code{incl = c(1, 3)}
 includes all candidate forecasting models generated by
-the first and third signals. If `NULL`, no signal is forced to be included.}
+the first and third signals. If \code{NULL}, no signal is forced to be included.}
 
 \item{parallel}{A boolean indicating whether the function should
 be parallelized.}
 
 \item{n_threads}{An integer that denotes the number of cores used
-for parallelization. Only necessary if `parallel = TRUE`.}
+for parallelization. Only necessary if \code{parallel = TRUE}.}
 
 \item{portfolio_params}{A numeric vector of length 3
 containing the following elements:
- \describe{
-  \item{risk_aversion}{
-  A non-negative double representing the investor's
-  risk aversion. Higher values indicate more risk-averse behavior.
-  }
-  \item{min_weight}{
-  A double specifying the minimum weight allocated to the market.
-  A non-negative lower bound effectively rules out short sales.
-  }
-  \item{max_weight}{
-  A double specifying the maximum weight allocated to the market.
-  For example, a value of 2 allows for a maximum leverage ratio of two.
-  }
+\describe{
+\item{risk_aversion}{
+A non-negative double representing the investor's
+risk aversion. Higher values indicate more risk-averse behavior.
 }
-This parameter is only required if `metric = 4`.}
+\item{min_weight}{
+A double specifying the minimum weight allocated to the market.
+A non-negative lower bound effectively rules out short sales.
+}
+\item{max_weight}{
+A double specifying the maximum weight allocated to the market.
+For example, a value of 2 allows for a maximum leverage ratio of two.
+}
+}
+This parameter is only required if \code{metric = 4}.}
 }
 \value{
 A list containing:
 \describe{
- \item{Forecasts}{A list containing:
-  \describe{
-    \item{Realization}{
-    A vector with the actual values of the target variable.
-    }
-    \item{Point_Forecast}{
-    A vector with the first moments of the aggregate predictive densities
-    of the STSC model.
-    }
-    \item{Variance_Prediction}{
-    A vector with the second moments of the aggregate predictive densities
-    of the STSC model.
-   }
-  }
+\item{Forecasts}{A list containing:
+\describe{
+\item{Realization}{
+A vector with the actual values of the target variable.
+}
+\item{Point_Forecast}{
+A vector with the first moments of the aggregate predictive densities
+of the STSC model.
+}
+\item{Variance_Prediction}{
+A vector with the second moments of the aggregate predictive densities
+of the STSC model.
+}
+}
 }
 \item{Tuning_Parameters}{A list containing:
-  \describe{
-    \item{Gamma}{
+\describe{
+\item{Gamma}{
 A vector containing the selected values for the tuning parameter gamma.}
-    \item{Psi}{
+\item{Psi}{
 A vector containing the selected values for the tuning parameter psi.}
-    \item{Signals}{
+\item{Signals}{
 A matrix containing the selected signals.}
-    \item{Lambda}{
+\item{Lambda}{
 A matrix containing the selected values for the tuning parameter lambda.}
-    \item{Kappa}{
+\item{Kappa}{
 A matrix containing the selected values for the tuning parameter kappa.}
-  }
+}
 }
 \item{Model}{A list containing:
-  \describe{
-    \item{Lambda_grid}{The grid of lambda values used in the model.}
-    \item{Kappa_grid}{The grid of kappa values used in the model.}
-    \item{Gamma_grid}{The grid of gamma values used in the model.}
-    \item{Psi_grid}{The grid of psi values used in the model.}
-    \item{Delta}{The delta value used in the model.}
-    \item{Init}{The init value used in the model.}
-    \item{Burn_in}{The burn-in period used in the model.}
-    \item{Burn_in_dsc}{The burn-in period used in the model.}
-    \item{metric}{The ranking metric used in the model.}
-    \item{Equal_weight}{A boolean indicating if equal weighting was used.}
-    \item{Bias}{A boolean indicating if bias correction was applied.}
-    \item{Incl}{Additional included parameters.}
-  }
- }
+\describe{
+\item{Lambda_grid}{The grid of lambda values used in the model.}
+\item{Kappa_grid}{The grid of kappa values used in the model.}
+\item{Gamma_grid}{The grid of gamma values used in the model.}
+\item{Psi_grid}{The grid of psi values used in the model.}
+\item{Delta}{The delta value used in the model.}
+\item{Init}{The init value used in the model.}
+\item{Burn_in}{The burn-in period used in the model.}
+\item{Burn_in_dsc}{The burn-in period used in the model.}
+\item{metric}{The ranking metric used in the model.}
+\item{Equal_weight}{A boolean indicating if equal weighting was used.}
+\item{Bias}{A boolean indicating if bias correction was applied.}
+\item{Incl}{Additional included parameters.}
+}
+}
 }
 }
 \description{
-`stsc()` is a time series forecasting method designed to handle
+\code{stsc()} is a time series forecasting method designed to handle
 vast sets of predictive signals, many of which may be irrelevant or
 short-lived. This method transforms heterogeneous scalar-valued signals into
 candidate density forecasts via time-varying coefficient models (TV-C),

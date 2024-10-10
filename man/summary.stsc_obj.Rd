@@ -16,10 +16,10 @@
 \value{
 A list containing:
 \describe{
-  \item{MSE}{A list with the mean squared error (MSE) and squared errors (SE).}
-  \item{ACRPS}{A list with the average continuous ranked probability score (ACRPS) and CRPS values.}
-  \item{APLL}{A list with the average predictive log-likelihood (APLL) and predictive log-likelihood (PLL) values.}
-  \item{Plots}{A list of ggplot objects for visualizing the tuning parameters and selected signals.}
+\item{MSE}{A list with the mean squared error (MSE) and squared errors (SE).}
+\item{ACRPS}{A list with the average continuous ranked probability score (ACRPS) and CRPS values.}
+\item{APLL}{A list with the average predictive log-likelihood (APLL) and predictive log-likelihood (PLL) values.}
+\item{Plots}{A list of ggplot objects for visualizing the tuning parameters and selected signals.}
 }
 }
 \description{
