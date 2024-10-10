@@ -56,7 +56,7 @@ using namespace RcppThread;
         
          // Loop over Kappas and Sinals
          for (unsigned int k = 0; k < kappa_grid.n_elem; k++) {
-           for (unsigned int j = 0; j < n_signal; j++) {
+           for (int j = 0; j < n_signal; j++) {
                                 
             // Select Signal
                x = S.col(j);

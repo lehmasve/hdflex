@@ -360,11 +360,6 @@ using namespace Rcpp;
             arma::uvec active_idx = active_models(0);
             const int non_na_ctr = active_models(1)(0);
 
-         // Check
-            if (active_idx.n_elem > psi_max) {
-              throw std::invalid_argument("Error in Active Models Selection");
-            } 
-
          // Add Keep-Index & Remove Duplicates
             if (incl_idx.n_elem > 0) {
                active_idx = arma::join_cols(incl_idx, active_idx);
