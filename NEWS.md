@@ -1,3 +1,6 @@
+# hdflex 0.3.1
+* Updated e-mail address
+
 # hdflex 0.3.0
 * Enhanced parallelization using RcppThreads for the `stsc()` function.
 * Improved (computational) performance 
