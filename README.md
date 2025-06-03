@@ -14,57 +14,61 @@ Downloads](https://cranlogs.r-pkg.org/badges/grand-total/hdflex?color=orange)](h
 
 ## About
 
-This package contains the forecasting algorithm developed by [Adämmer,
-Lehmann and Schüssler (2023)](https://dx.doi.org/10.2139/ssrn.4342487).
-When using the package, please remember to cite the paper.
+The `hdflex` package implements the
+“Signal-Transformed-Subset-Combination” (STSC) forecasting algorithm
+developed by [Adämmer, Lehmann, and Schüssler
+(2023)](https://dx.doi.org/10.2139/ssrn.4342487). Please cite the paper
+when using this package.
 
-The package comprises three functions:
+The package provides three core functions:
 
-- `stsc()` can be used to directly apply the
-  “Signal-Transformed-Subset-Combination” forecasting algorithm
-  described in [Adämmer, Lehmann and Schüssler
+- `stsc()`: Directly applies the complete STSC forecasting algorithm
+  described in [Adämmer, Lehmann, and Schüssler
   (2023)](https://dx.doi.org/10.2139/ssrn.4342487).
-
-- `tvc()` can be used to transform predictive signals into univariate
-  density forecasts via time-varying coefficient models, where each
-  model generates a conditionally gaussian predictive density for each
-  signal at each point in time (first part of the STSC algorithm).
-
-- `dsc()` can be used to dynamically select a subset of candidate
-  forecast models for each period based on their past performance in
-  terms of density forecast accuracy (second part of the STSC
-  algorithm).
+- `tvc()`: Transforms predictive signals into univariate density
+  forecasts using time-varying coefficient (TVC) models. Each model
+  generates a conditionally Gaussian predictive density for each signal
+  at each point in time. This function performs the first part of the
+  STSC algorithm.
+- `dsc()`: Dynamically selects a subset of candidate forecast models for
+  each period based on their past density forecast accuracy. This
+  function performs the second part of the STSC algorithm.
 
 ## Installation
 
-You can install the released version of **hdflex** from
-[CRAN](https://CRAN.R-project.org):
+Install the released version of `hdflex` from CRAN:
 
 ``` r
 install.packages("hdflex")
 ```
 
-You can install **hdflex** from
-[GitHub](https://github.com/lehmasve/hdflex):
+Alternatively, install the development version from GitHub:
 
 ``` r
 # install.packages("devtools")
 devtools::install_github("https://github.com/lehmasve/hdflex")
 ```
 
-The package compiles some C++ source code for installation, which is why
-you need the appropriate compilers:
+**Compiler Requirements:** The package involves C++ source code
+compilation during installation. Ensure you have the necessary
+compilers:
 
-- On Windows you need
-  [Rtools](https://cran.r-project.org/bin/windows/Rtools/) available
-  from CRAN.
-
-- On macOS you need Xcode and a Fortran compiler - for more details see
-  [Compiler](https://mac.r-project.org/tools/).
+- **Windows:** [Rtools](https://cran.r-project.org/bin/windows/Rtools/)
+  (available from CRAN).
+- **macOS:** Xcode Command Line Tools and a Fortran compiler. For
+  detailed setup, refer to the [R for macOS Developer
+  Page](https://mac.r-project.org/tools/).
 
 ## Usage
 
-Example using the `stsc()` function:
+The following examples demonstrate how to forecast quarterly U.S.
+inflation. For further details on the data and external forecasts,
+please see Koop & Korobilis (2023).
+
+### Example 1: Using the `stsc()` function
+
+This example shows how to apply the STSC algorithm directly using the
+`stsc()` function.
 
 ``` r
 #########################################################
@@ -209,7 +213,11 @@ cowplot::plot_grid(plotlist = plots_list, ncol = 2, nrow = 3, align = "hv")
 print(paste("Relative MSE:", round(eval_results$MSE[[1]] / mse_ar2, 4)))
 ```
 
-Same example using the `tvc()` and `dsc()` functions:
+### Example 2: Using `tvc()` and `dsc()` functions separately
+
+This example demonstrates the two-step application of the STSC
+algorithm, first using `tvc()` to generate individual model forecasts
+and then `dsc()` to combine them.
 
 ``` r
 #########################################################
@@ -369,9 +377,183 @@ cowplot::plot_grid(plotlist = plots_list, ncol = 2, nrow = 3, align = "hv")
 print(paste("Relative MSE:", round(eval_results$MSE[[1]] / mse_ar2, 4)))
 ```
 
+### Python Example: Using `hdflex` with `rpy2`
+
+This section illustrates how to utilize the `hdflex` R package within a
+Python environment using the `rpy2` library. `rpy2` acts as an interface
+to R, enabling you to execute R functions and manipulate R objects
+directly from Python. The example replicates the U.S. inflation
+forecasting task shown previously.
+
+**Prerequisites:**
+
+Ensure the following are installed to run this example:
+
+- **Python:** Version 3.9 or newer.
+- **R:** The R version used for installing the `hdflex` package.
+- **Python Packages:** `rpy2`, `pandas`, and `matplotlib`. Install them
+  via pip: `bash     pip install rpy2 pandas matplotlib`
+- **R Packages:** `hdflex`, `ggplot2`, and `cowplot`. Install them in
+  your R environment:
+  `R     install.packages(c("hdflex", "ggplot2", "cowplot"))`
+
+``` python
+### Imports
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from numpy.linalg import lstsq
+
+from rpy2 import robjects
+from rpy2.robjects import pandas2ri, numpy2ri
+from rpy2.robjects.packages import importr
+from rpy2.robjects.conversion import localconverter
+from rpy2.robjects.lib import grdevices
+from IPython.display import display, Image
+
+# Import R packages
+hdflex  = importr("hdflex")
+ggplot2 = importr("ggplot2")
+cowplot = importr("cowplot")
+base    = importr("base")
+
+#########################################################
+######### Forecasting quarterly U.S. inflation ##########
+#### Please see Koop & Korobilis (2023) for further  ####
+#### details regarding the data & external forecasts ####
+#########################################################
+
+########## Get Data ##########
+# Load Package Data
+inflation_r = robjects.r["inflation_data"]
+
+with localconverter(robjects.default_converter + pandas2ri.converter):
+    tmp = robjects.conversion.rpy2py(inflation_r)
+
+row_names = list(robjects.r["rownames"](inflation_r))
+col_names = list(robjects.r["colnames"](inflation_r))
+inflation_df = pd.DataFrame(tmp, index=row_names, columns=col_names)
+inflation_df.index = pd.to_datetime(inflation_df.index)
+
+# Set Target Variable, P-Signals and F-Signals
+y = inflation_df.iloc[:, 0].to_numpy()
+X = inflation_df.iloc[:, 1:443].to_numpy()
+Ext_F = inflation_df.iloc[:, 443:463].to_numpy()
+
+# Dates, Observations and First Complete Row
+tlength = len(inflation_df)
+tdates = inflation_df.index
+first_complete = np.where(~inflation_df.isna().any(axis=1))[0][0]
+
+########## Rolling AR2-Benchmark ##########
+# Set up matrix for predictions
+benchmark   = np.full(tlength, np.nan)
+
+# Set Window Size (15 years, quarterly data)
+window_size = 15 * 4
+
+# Time Sequence
+for t in range(window_size - 1, tlength - 1):
+    x_train = np.column_stack((
+        np.ones(window_size),
+        X[t - window_size + 1 : t + 1, :2]
+    ))
+    y_train = y[t - window_size + 1 : t + 1]
+
+    # OLS coefficients
+    beta, *_ = lstsq(x_train, y_train, rcond=None)
+
+    # 1-step-ahead prediction
+    x_pred = np.concatenate(([1.0], X[t + 1, :2]))
+    benchmark[t + 1] = x_pred @ beta
+
+########## STSC ##########
+# Convert Python numpy arrays to R objects for hdflex
+with localconverter(robjects.default_converter + numpy2ri.converter):
+    y_r     = robjects.conversion.py2rpy(y)
+    X_r     = robjects.conversion.py2rpy(X)
+    Ext_F_r = robjects.conversion.py2rpy(Ext_F)
+
+# Set TV-C-Parameter
+init = 5 * 4
+lambda_grid = robjects.FloatVector([0.90, 0.95, 1.00])
+kappa_grid = robjects.FloatVector([0.94, 0.96, 0.98])
+bias = True
+
+# Set DSC-Parameter
+gamma_grid = robjects.FloatVector(
+    [0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
+     0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00]
+)
+n_tvc = (X.shape[1] + Ext_F.shape[1]) * len(lambda_grid) * len(kappa_grid)
+psi_vec = list(range(1, 101)) + [int(i * n_tvc / 4) for i in range(1, 5)]
+psi_grid = robjects.IntVector(psi_vec)
+delta = 0.95
+burn_in = int(first_complete + init / 2)
+burn_in_dsc = 1
+metric = 5
+equal_weight = True
+incl = robjects.NULL
+parallel = False
+n_threads = robjects.NULL
+
+# Apply STSC-Function
+results = hdflex.stsc(
+    y_r, X_r, Ext_F_r,
+    init,
+    lambda_grid, kappa_grid, bias,
+    gamma_grid, psi_grid, delta,
+    burn_in, burn_in_dsc,
+    metric, equal_weight,
+    incl, parallel, n_threads, robjects.NULL
+)
+
+########## Evaluation ##########
+# Define Evaluation Period (OOS-Period)
+eval_idx = np.where(
+    (tdates >= "1991-04-01") & (tdates <= "2021-12-01")
+)[0]
+
+# Apply Evaluation Summary for STSC
+summary = robjects.r["summary"]
+eval_res = summary(results, eval_period = robjects.IntVector(eval_idx + 1))
+
+with localconverter(robjects.default_converter + pandas2ri.converter):
+    mse_vec = robjects.conversion.rpy2py(eval_res.rx2("MSE"))
+mse_stsc = mse_vec[0].item()
+
+# Calculate MSE for AR2-Benchmark
+se_ar2 = (y[eval_idx] - benchmark[eval_idx])**2
+mse_ar2 = np.nanmean(se_ar2)
+
+# Print MSE values
+print(f"Relative MSE (STSC / AR2 benchmark): {mse_stsc / mse_ar2:.3f}")
+
+# Create Cumulative Squared Error Differences (CSSED) Plot
+cssed = np.cumsum(se_ar2 - np.asarray(mse_vec[1], dtype=float))
+plt.figure(figsize=(10, 6))
+plt.plot(tdates[eval_idx], cssed, color="black")
+plt.ylim(-0.0008, 0.0008)
+plt.title("Cumulative Squared-Error Differences (AR2 – STSC)")
+plt.ylabel("CSSED")
+plt.xlabel("Time Index", fontsize=12)
+plt.axhline(0, linestyle="--", lw=1)
+plt.grid(False)
+plt.tight_layout()
+plt.show()
+
+# Retrieve ggplot objects from R
+plots = eval_res.rx2("Plots")
+for p in plots:
+    with grdevices.render_to_bytesio(
+            grdevices.png, width=6, height=4, units="in", res=150) as img:
+        ggplot2.print_ggplot(p)
+    display(Image(img.getvalue()))
+```
+
 ### Authors
 
-Philipp Adämmer, Sven Lehmann and Rainer Schüssler
+Philipp Adämmer, Sven Lehmann and Rainer Schüssler.
 
 ### License
 
