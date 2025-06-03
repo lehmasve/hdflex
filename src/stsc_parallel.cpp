@@ -85,6 +85,10 @@ using namespace Rcpp;
                var_x = arma::var(x_sample.col(1));  
                cov_mat = arma::zeros<arma::mat>(2, 2); 
 
+            // // Set Theta
+            //    theta(0, 0) = coef(0);
+            //    theta(1, 0) = coef(1);
+
             // Set Intercept Variance
                cov_mat(0, 0) = pow(intercept, 2) + var_y; // Set to Zero for Constant Intercept
             
@@ -406,14 +410,17 @@ using namespace Rcpp;
                  }
                  case 4: {
                      // Compounded Returns
-                     // Calculate Market Weight
+                     // Calculate Market Weight (Mean-Variance-Optimization)
                         double w = (1.0 / risk_aversion) * (forecast_tvc_t(i) / variance_tvc_t(i));
     
                      // Restrict Market Weight
                         double weight = std::min(std::max(w, min_weight), max_weight);
+
+                     // Convert log-return to gross return
+                        double gross_return = std::exp(y_t) - 1.0;
     
                      // Returns
-                        performance_score(i) = (weight * y_t <= -1.0) ? -10000 : std::log(1.0 + weight * y_t);
+                        performance_score(i) = (weight * gross_return <= -1.0) ? -10000 : std::log1p(weight * gross_return);
                         break;
                  }
                  case 5: {
@@ -500,31 +507,34 @@ using namespace Rcpp;
          switch(metric) {
             case 1: { 
                // Predictive-Log-Likelihoods
-               performance_score(i) = arma::log_normpdf(y_t,   
-                                                        forecasts_comb(i),
-                                                        pow(variances_comb(i), 0.5));
-               break;
+                  performance_score(i) = arma::log_normpdf(y_t,   
+                                                           forecasts_comb(i),
+                                                           pow(variances_comb(i), 0.5));
+                  break;
             }
             case 2: { 
                // Squared-Errors
-               performance_score(i) = -pow(y_t - forecasts_comb(i), 2.0);
-               break;
+                  performance_score(i) = -pow(y_t - forecasts_comb(i), 2.0);
+                  break;
             }
             case 3: {
                // Absolute-Errors
-               performance_score(i) = -std::abs(y_t - forecasts_comb(i));
-               break;
+                  performance_score(i) = -std::abs(y_t - forecasts_comb(i));
+                  break;
             }
             case 4: {
                // Compounded Returns
-               // Calculate Market Weight
+               // Calculate Market Weight (Mean-Variance-Optimization)
                   double w = (1.0 / risk_aversion) * (forecasts_comb(i) / variances_comb(i));
 
                // Restrict Market Weight
                   double weight = std::min(std::max(w, min_weight), max_weight);
+
+               // Convert log-return to gross return
+                  double gross_return = std::exp(y_t) - 1.0;
                   
                // Returns
-                  performance_score(i) = (weight * y_t <= -1.0) ? -10000 : std::log(1 + weight * y_t);
+                  performance_score(i) = (weight * gross_return <= -1.0) ? -10000 : std::log1p(weight * gross_return);
                   break;
             }
             case 5: {

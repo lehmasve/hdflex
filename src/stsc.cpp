@@ -60,6 +60,10 @@ using namespace Rcpp;
                   var_y = arma::var(y_sample);         
                   var_x = arma::var(x_sample.col(1));  
                   cov_mat = arma::zeros<arma::mat>(2, 2); 
+
+               // Set Theta
+               //    theta(0, 0) = 1.0; //coef(0);
+               //    theta(1, 0) = 1.0; //coef(1);
                
                // Set Intercept Variance
                   cov_mat(0, 0) = pow(intercept, 2) + var_y; // Set to Zero for Constant Intercept
@@ -236,24 +240,21 @@ using namespace Rcpp;
 
    // Define Variables
       arma::field<arma::field<arma::rowvec>> ret(2); 
-
-   // Initialize Vector for Performance-Score (Subset Combinations) -> Ranking
-      arma::rowvec score_combs(n_combs, arma::fill::zeros);
    
    // Initialize Vector for Performance-Score (Candidate Models) -> Ranking 
       arma::rowvec vec(n_cands, arma::fill::zeros);
                    vec.elem(na_idx).fill(arma::datum::nan);
 
-   // Fill Field for Candidate Models
+   // Fill Field for Candidate Models (Candidate Model Ranking for every gamma)
       arma::field<arma::rowvec> score_cands(n_gamma);
       for (int i = 0; i < n_gamma; ++i) {
           score_cands(i) = vec;
       }
   
    // Fill Return-Field 
-      ret(0) = score_cands;
+      ret(0) = std::move(score_cands);
       ret(1) = arma::field<arma::rowvec>(1);
-      ret(1)(0) = score_combs;
+      ret(1)(0) = arma::rowvec(n_combs, arma::fill::zeros); // Aggregate Ranking
 
    // Return
       return ret;
@@ -350,46 +351,47 @@ using namespace Rcpp;
                switch (metric) {
                   case 1: {
                      // Predictive-Log-Likelihoods
-                     performance_score(i) = arma::log_normpdf(y_t,   
-                                                              forecast_tvc_t(i),
-                                                              pow(variance_tvc_t(i), 0.5));
-                     break;
+                        performance_score(i) = arma::log_normpdf(y_t,   
+                                                                 forecast_tvc_t(i),
+                                                                 std::sqrt(variance_tvc_t(i)));
+                        break;
                   }
                   case 2: {
                      // Squared-Errors
-                     performance_score(i) = -pow(y_t - forecast_tvc_t(i), 2.0);
-                     break;
+                        performance_score(i) = -std::pow(y_t - forecast_tvc_t(i), 2.0);
+                        break;
                   }
                   case 3: {
                      // Absolute-Errors
-                     performance_score(i) = -std::abs(y_t - forecast_tvc_t(i));
-                     break;
+                        performance_score(i) = -std::abs(y_t - forecast_tvc_t(i));
+                        break;
                   }
                   case 4: {
                      // Compounded Returns
-                     // Calculate Market Weight
+                     // Calculate Market Weight (Mean-Variance-Optimization)
                         double w = (1.0 / risk_aversion) * (forecast_tvc_t(i) / variance_tvc_t(i));
    
                      // Restrict Market Weight
                         double weight = std::min(std::max(w, min_weight), max_weight);
+
+                     // Convert log-return to gross return
+                        double gross_return = std::exp(y_t) - 1.0;
    
                      // Returns
-                        if (weight * y_t <= -1.0) {
+                        if (weight * gross_return <= -1.0) {
                            performance_score(i) = -10000;
                         } else {
-                           performance_score(i) = log(1.0 + weight * y_t);
+                           performance_score(i) = std::log1p(weight * gross_return);
                         }
                         break;
                   }
                   case 5: {
                      // Continuous-Ranked-Probability-Scores
                      // Convert
-                        double obs = y_t;
-                        double mu = forecast_tvc_t(i);
-                        double sig = pow(variance_tvc_t(i), 0.5);
+                        double sig = std::sqrt(variance_tvc_t(i));
    
                      // Standardize Prediction Error
-                        double z = (obs - mu) / sig;
+                        double z = (y_t - forecast_tvc_t(i)) / sig;
    
                      // PDF evaluated at normalized Prediction Error
                         double pdf = arma::normpdf(z);
@@ -398,7 +400,7 @@ using namespace Rcpp;
                         double cdf = arma::normcdf(z);
    
                      // Inverse of pi
-                        double pi_inv = 1.0 / pow(arma::datum::pi, 0.5);
+                        double pi_inv = 1.0 / std::sqrt(arma::datum::pi);
    
                      // Compute Continuous Ranked Probability Score
                         double crps = sig * (z * (2.0 * cdf - 1.0) + 2.0 * pdf - pi_inv);
@@ -457,7 +459,7 @@ using namespace Rcpp;
                        double max_weight) {
                                      
    // Define Variables
-      int n_combs = score_combs.n_cols;
+      int n_combs = score_combs.n_elem;
       arma::rowvec performance_score(n_combs);
 
    // Calculate Performance
@@ -469,12 +471,12 @@ using namespace Rcpp;
                // Predictive-Log-Likelihoods
                performance_score(i) = arma::log_normpdf(y_t,   
                                                         forecasts_comb(i),
-                                                        pow(variances_comb(i), 0.5));
+                                                        std::sqrt(variances_comb(i)));
                break;
             }
             case 2: { 
                // Squared-Errors
-               performance_score(i) = -pow(y_t - forecasts_comb(i), 2.0);
+               performance_score(i) = -std::pow(y_t - forecasts_comb(i), 2.0);
                break;
             }
             case 3: {
@@ -484,29 +486,30 @@ using namespace Rcpp;
             }
             case 4: {
                // Compounded Returns
-               // Calculate Market Weight
+               // Calculate Market Weight (Mean-Variance-Optimization)
                   double w = (1.0 / risk_aversion) * (forecasts_comb(i) / variances_comb(i));
 
                // Restrict Market Weight
                   double weight = std::min(std::max(w, min_weight), max_weight); 
+               
+               // Convert log-return to gross return
+                  double gross_return = std::exp(y_t) - 1.0;
                   
                // Returns
-                  if (weight * y_t <= -1.0) {
+                  if (weight * gross_return <= -1.0) {
                      performance_score(i) = -10000;
                   } else {
-                     performance_score(i) = log(1 + weight * y_t);
+                     performance_score(i) = std::log1p(weight * gross_return);
                   }
                   break;
             }
             case 5: {
                // Continuous-Ranked-Probability-Scores
                // Convert
-                  double obs = y_t;
-                  double mu = forecasts_comb(i);
-                  double sig = pow(variances_comb(i), 0.5);
+                  double sig = std::sqrt(variances_comb(i));
 
                // Standardize Prediction Error
-                  double z = (obs - mu) / sig;
+                  double z = (y_t - forecasts_comb(i)) / sig;
 
                // PDF evaluated at normalized Prediction Error
                   double pdf = arma::normpdf(z);
@@ -861,8 +864,8 @@ using namespace Rcpp;
       for (int t=0; t<(tlength-1); t++ ) {
 
       // Subset Data
-         const double y_t = y[t];
-         const double y_pred = y[t+1];
+         double y_t = y[t];
+         double y_pred = y[t+1];
          const arma::rowvec s_t = S.row(t);
          const arma::rowvec s_pred = S.row(t+1);
 

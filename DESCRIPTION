@@ -1,13 +1,13 @@
 Type: Package
 Package: hdflex
 Title: High-Dimensional Aggregate Density Forecasts
-Version: 0.3.0
+Version: 0.3.1
 Authors@R: c(
-    person("Sven", "Lehmann", , "sven.lehmann@uni-rostock.de", role = c("aut", "cre", "cph")),
+    person("Sven", "Lehmann", , "slehman5@uni-muenster.de", role = c("aut", "cre", "cph")),
     person("Philipp", "Adämmer", , "philipp.adaemmer@uni-greifswald.de", role = "aut"),
     person("Rainer", "Schüssler", , "rainer.schüssler@uni-rostock.de", role = "aut")
   )
-Maintainer: Sven Lehmann <sven.lehmann@uni-rostock.de>
+Maintainer: Sven Lehmann <slehman5@uni-muenster.de>
 Description: Provides a forecasting method that efficiently maps vast
     numbers of (scalar-valued) signals into an aggregate density forecast
     in a time-varying and computationally fast manner. The method proceeds
@@ -20,7 +20,7 @@ License: GPL (>= 2)
 URL: https://github.com/lehmasve/hdflex
 BugReports: https://github.com/lehmasve/hdflex/issues
 Depends: 
-    R (>= 4.3.0)
+    R (>= 4.2.0)
 Imports: 
     checkmate (>= 2.3.1),
     ggplot2 (>= 3.5.1),
