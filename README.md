@@ -5,7 +5,7 @@
 
 ⁠<!-- badges: start -->⁠ [![CRAN
 Version](https://www.r-pkg.org/badges/version/hdflex)](https://CRAN.R-project.org/package=hdflex)
-[![DOI:10.2139/ssrn.4342487](http://img.shields.io/badge/DOI-10.2139/ssrn.4342487-163870.svg)](https://dx.doi.org/10.2139/ssrn.4342487)
+[![DOI:10.1080/07350015.2025.2526424](https://img.shields.io/badge/DOI-10.1080%2F07350015.2025.2526424-163870.svg)](https://doi.org/10.1080/07350015.2025.2526424)
 [![R-CMD-check](https://github.com/lehmasve/hdflex/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/lehmasve/hdflex/actions/workflows/R-CMD-check.yaml)
 [![Total
 Downloads](https://cranlogs.r-pkg.org/badges/grand-total/hdflex?color=orange)](https://CRAN.R-project.org/package=hdflex)
@@ -17,14 +17,14 @@ Downloads](https://cranlogs.r-pkg.org/badges/grand-total/hdflex?color=orange)](h
 The `hdflex` package implements the
 “Signal-Transformed-Subset-Combination” (STSC) forecasting algorithm
 developed by [Adämmer, Lehmann, and Schüssler
-(2023)](https://dx.doi.org/10.2139/ssrn.4342487). Please cite the paper
-when using this package.
+(2025)](https://doi.org/10.1080/07350015.2025.2526424). Please cite the
+paper when using this package.
 
 The package provides three core functions:
 
 - `stsc()`: Directly applies the complete STSC forecasting algorithm
   described in [Adämmer, Lehmann, and Schüssler
-  (2023)](https://dx.doi.org/10.2139/ssrn.4342487).
+  (2025)](https://doi.org/10.1080/07350015.2025.2526424).
 - `tvc()`: Transforms predictive signals into univariate density
   forecasts using time-varying coefficient (TVC) models. Each model
   generates a conditionally Gaussian predictive density for each signal
@@ -63,7 +63,8 @@ compilers:
 
 The following examples demonstrate how to forecast quarterly U.S.
 inflation. For further details on the data and external forecasts,
-please see Koop & Korobilis (2023).
+please see [Koop & Korobilis
+(2023)](https://doi.org/10.1111/iere.12623).
 
 ### Example 1: Using the `stsc()` function
 
