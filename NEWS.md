@@ -1,3 +1,7 @@
+# hdflex 0.3.2
+* Replaced deprecated arma::is_finite(val) with std::isfinite(val)
+* Replaced deprecated ggplot2::is.ggplot(plot) with ggplot2::is_ggplot(plot)
+
 # hdflex 0.3.1
 * Updated e-mail address
 
