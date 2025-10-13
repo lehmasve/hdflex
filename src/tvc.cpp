@@ -182,7 +182,7 @@ using namespace Rcpp;
                const double s_pred_j = s_pred(j);
 
             // Check if signal is NA or not 
-               bool is_na = !arma::is_finite(s_t_j);
+               bool is_na = !std::isfinite(s_t_j);
                if(!is_na) {
    
                // Apply TV-C-Function

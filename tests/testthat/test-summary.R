@@ -135,11 +135,11 @@ test_that("summary calculates metrics correctly", {
 test_that("summary generates plots", {
   result <- summary(stsc_results)
   expect_true("Plots" %in% names(result))
-  expect_true(is.ggplot(result$Plots$Gamma))
-  expect_true(is.ggplot(result$Plots$Psi))
-  expect_true(is.ggplot(result$Plots$Signals))
-  expect_true(is.ggplot(result$Plots$Lambda))
-  expect_true(is.ggplot(result$Plots$Kappa))
+  expect_true(is_ggplot(result$Plots$Gamma))
+  expect_true(is_ggplot(result$Plots$Psi))
+  expect_true(is_ggplot(result$Plots$Signals))
+  expect_true(is_ggplot(result$Plots$Lambda))
+  expect_true(is_ggplot(result$Plots$Kappa))
 })
 
 ### DSC - Object
@@ -168,7 +168,7 @@ test_that("summary calculates metrics correctly", {
 test_that("summary generates plots", {
   result <- summary(dsc_results)
   expect_true("Plots" %in% names(result))
-  expect_true(is.ggplot(result$Plots$Gamma))
-  expect_true(is.ggplot(result$Plots$Psi))
-  expect_true(is.ggplot(result$Plots$CFM))
+  expect_true(is_ggplot(result$Plots$Gamma))
+  expect_true(is_ggplot(result$Plots$Psi))
+  expect_true(is_ggplot(result$Plots$CFM))
 })

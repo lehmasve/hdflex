@@ -5,10 +5,13 @@
 #' @param object An object of type 'stsc'.
 #' @param eval_period (Optional) A vector of indices to specify the evaluation period. Defaults to the entire period after burn-in.
 #' @param ... Additional arguments to be consistent with the S3 print() function.
-#' @method summary stsc_obj
-#' @import ggplot2
-#' @importFrom reshape2 melt
-#' @importFrom stats complete.cases dnorm pnorm
+#' @return A list containing:
+#' \describe{
+#'   \item{MSE}{A list with the mean squared error (MSE) and squared errors (SE).}
+#'   \item{ACRPS}{A list with the average continuous ranked probability score (ACRPS) and CRPS values.}
+#'   \item{APLL}{A list with the average predictive log-likelihood (APLL) and predictive log-likelihood (PLL) values.}
+#'   \item{Plots}{A list of ggplot objects for visualizing the tuning parameters and selected signals.}
+#' }
 #' @references
 #' Gneiting, T., Raftery, A. E., Westveld, A. H., and Goldman, T. (2005):
 #' Calibrated Probabilistic Forecasting Using Ensemble Model Output Statistics and Minimum CRPS Estimation.
@@ -17,21 +20,17 @@
 #' Jordan, A., Krueger, F., and Lerch, S. (2019):
 #' "Evaluating Probabilistic Forecasts with scoringRules."
 #' \emph{Journal of Statistical Software}, 90(12): 1-37.
-#'
-#' @return A list containing:
-#' \describe{
-#'   \item{MSE}{A list with the mean squared error (MSE) and squared errors (SE).}
-#'   \item{ACRPS}{A list with the average continuous ranked probability score (ACRPS) and CRPS values.}
-#'   \item{APLL}{A list with the average predictive log-likelihood (APLL) and predictive log-likelihood (PLL) values.}
-#'   \item{Plots}{A list of ggplot objects for visualizing the tuning parameters and selected signals.}
-#' }
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @importFrom stats complete.cases dnorm pnorm
+#' @export
+#' @method summary stsc_obj
 #' @examples
 #' \donttest{
 #'
 #' # See example for stsc().
 #'
 #' }
-#' @export
 
 summary.stsc_obj <- function(object, eval_period = NULL, ...) {
 
@@ -250,10 +249,13 @@ summary.stsc_obj <- function(object, eval_period = NULL, ...) {
 #' @param object An object of type 'dsc'.
 #' @param eval_period (Optional) A vector of indices to specify the evaluation period. Defaults to the entire period after burn-in.
 #' @param ... Additional arguments to be consistent with the S3 print() function.
-#' @method summary dsc_obj
-#' @import ggplot2
-#' @importFrom reshape2 melt
-#' @importFrom stats complete.cases dnorm na.omit pnorm
+#' @return A list containing:
+#' \describe{
+#'   \item{MSE}{A list with the mean squared error (MSE) and squared errors (SE).}
+#'   \item{ACRPS}{A list with the average continuous ranked probability score (ACRPS) and CRPS values.}
+#'   \item{APLL}{A list with the average predictive log-likelihood (APLL) and predictive log-likelihood (PLL) values.}
+#'   \item{Plots}{A list of ggplot objects for visualizing the tuning parameters and selected CFMs.}
+#' }
 #' @references
 #' Gneiting, T., Raftery, A. E., Westveld, A. H., and Goldman, T. (2005):
 #' Calibrated Probabilistic Forecasting Using Ensemble Model Output Statistics and Minimum CRPS Estimation.
@@ -262,21 +264,17 @@ summary.stsc_obj <- function(object, eval_period = NULL, ...) {
 #' Jordan, A., Krueger, F., and Lerch, S. (2019):
 #' "Evaluating Probabilistic Forecasts with scoringRules."
 #' \emph{Journal of Statistical Software}, 90(12): 1-37.
-#'
-#' @return A list containing:
-#' \describe{
-#'   \item{MSE}{A list with the mean squared error (MSE) and squared errors (SE).}
-#'   \item{ACRPS}{A list with the average continuous ranked probability score (ACRPS) and CRPS values.}
-#'   \item{APLL}{A list with the average predictive log-likelihood (APLL) and predictive log-likelihood (PLL) values.}
-#'   \item{Plots}{A list of ggplot objects for visualizing the tuning parameters and selected CFMs.}
-#' }
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @importFrom stats complete.cases dnorm na.omit pnorm
+#' @export
+#' @method summary dsc_obj
 #' @examples
 #' \donttest{
 #'
 #' # See example for tvc().
 #'
 #' }
-#' @export
 
 summary.dsc_obj <- function(object, eval_period = NULL, ...) {
 
