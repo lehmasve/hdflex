@@ -1,6 +1,7 @@
 # Submission notes
 * Update to version 0.3.2
 * Replaced deprecated arma::is_finite(val) with std::isfinite(val)
+* Replaced deprecated ggplot2::is.ggplot(plot) with ggplot2::is_ggplot(plot)
 
 ## Reverse Dependency
 Checked with tools::dependsOnPkgs() and tools::check_packages_in_dir()
