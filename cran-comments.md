@@ -1,6 +1,6 @@
 # Submission notes
-* Update to version 0.3.1
-* Updated e-mail address
+* Update to version 0.3.2
+* Replaced deprecated arma::is_finite(val) with std::isfinite(val)
 
 ## Reverse Dependency
 Checked with tools::dependsOnPkgs() and tools::check_packages_in_dir()

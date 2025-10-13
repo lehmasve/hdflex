@@ -190,7 +190,7 @@ using namespace Rcpp;
                const double s_pred_j = s_pred(j);
 
             // Check if signal is NA or not 
-               bool is_na = !arma::is_finite(s_t_j);
+               bool is_na = !std::isfinite(s_t_j);
                if(!is_na) {
    
                // Apply TVC-Function
@@ -345,7 +345,7 @@ using namespace Rcpp;
       for (int i=0; i<n_cands; i++) {
 
       // Check for NA value
-         if (arma::is_finite(forecast_tvc_t(i))) {
+         if (std::isfinite(forecast_tvc_t(i))) {
 
             // Optimization-metric
                switch (metric) {
@@ -877,7 +877,7 @@ using namespace Rcpp;
                for (unsigned int j = 0; j < S.n_cols; j++) {
       
                // Check and Count for NA-Values
-                  if (!arma::is_finite(s_t(j))) {
+                  if (!std::isfinite(s_t(j))) {
                      new_na_cm.insert_rows(new_na_cm.n_rows, 1);
                      new_na_cm(new_na_cm.n_rows-1) = ctr;                        
                   }
